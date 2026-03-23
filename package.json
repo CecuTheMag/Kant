@@ -1,0 +1,19 @@
+{
+  "name": "kant-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Kant: Serverless P2P encrypted messenger",
+  "scripts": {
+    "install:all": "pnpm install",
+    "dev": "pnpm run dev --filter=app",
+    "build": "pnpm run build --filter=app"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "pnpm": "^10.13.1"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "workspaces": [
+    "packages/*"
+  ]
+}

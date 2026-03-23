@@ -1,0 +1,13 @@
+{
+  "name": "@kant/admin",
+  "version": "0.0.1",
+  "description": "Kant Enterprise Admin Node (Phase 3)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

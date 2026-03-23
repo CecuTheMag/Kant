@@ -1,0 +1,456 @@
+================================================================================
+  Kant — FULL PRODUCT BRIEF & BUILD ROADMAP
+  Private. Serverless. Open Source.
+================================================================================
+
+--------------------------------------------------------------------------------
+  THE IDEA IN ONE PARAGRAPH
+--------------------------------------------------------------------------------
+
+Kant is a fully serverless, peer-to-peer encrypted messaging platform built
+for people and organisations that refuse to trust a third party with their
+communications. There are no servers to breach, no databases to subpoena, and no
+company that can hand over your messages — because none of it is stored anywhere
+central. Personal use is free and open source forever. Enterprises pay a yearly
+licence for a hardened version that adds admin policy controls, remote wipe, and
+member management — all without giving the admin any ability to read content.
+Every message travels over onion-routed P2P connections. Every device is locked
+behind a mandatory password. The code is fully auditable by anyone.
+
+
+--------------------------------------------------------------------------------
+  THE PROBLEM
+--------------------------------------------------------------------------------
+
+Every major messaging and team communication platform — Slack, Teams, WhatsApp,
+Telegram, even many "secure" alternatives — stores data on centralised servers.
+This creates a single point of failure for privacy:
+
+  - Servers can be hacked (Slack 2015, Microsoft 2023, Twilio 2022)
+  - Servers can be subpoenaed by governments
+  - Employees at the company can access metadata or content
+  - Advertisers can influence what the platform does with data
+  - A company can change its privacy policy at any time
+
+Even Signal, the gold standard for encryption, runs centralised servers and
+stores metadata about who contacts whom. Self-hosted alternatives like Mattermost
+and Rocket.Chat still require someone to run a server that becomes a target.
+
+The root issue is architectural: centralisation is the vulnerability.
+
+
+--------------------------------------------------------------------------------
+  THE SOLUTION
+--------------------------------------------------------------------------------
+
+Kant eliminates the server entirely. Key principles:
+
+  1. TRULY SERVERLESS
+     There is no Kant server. Peers connect directly to each other using
+     WebRTC and libp2p. Messages are never stored anywhere except on the
+     sender's and recipient's own devices.
+
+  2. ONION ROUTING
+     All traffic is routed through multiple encrypted hops (like Tor) so that
+     no peer can tell who is communicating with whom, even at the network level.
+
+  3. SELF-SOVEREIGN IDENTITY
+     Users have no account with Kant. Their identity is an Ed25519 keypair
+     generated on their device. Their public key is their identity. No email,
+     no phone number, no username database.
+
+  4. DOUBLE RATCHET ENCRYPTION
+     Every conversation uses the Signal Double Ratchet algorithm — the same
+     cryptography that powers Signal. Every message gets a new encryption key.
+     Compromising one message does not compromise past or future messages
+     (forward secrecy + break-in recovery).
+
+  5. MANDATORY APP PASSWORD
+     The app cannot be opened without a password. The password derives the
+     local decryption key via Argon2id. A seized device is useless without it.
+
+  6. BLIND ADMIN FOR ENTERPRISES
+     The enterprise version adds an admin node — a desktop app the company
+     runs on an always-on machine. The admin can manage membership (approve
+     joins, kick users, trigger remote wipes) but is cryptographically
+     incapable of reading any message content. This is verifiable in the
+     open-source code.
+
+
+--------------------------------------------------------------------------------
+  WHO IT IS FOR
+--------------------------------------------------------------------------------
+
+FREE TIER — PERSONAL USE
+  - Privacy-conscious individuals
+  - Journalists and their sources
+  - Activists and NGOs in high-risk environments
+  - Developers and open-source contributors
+  - Anyone who has read one too many data breach headlines
+
+ENTERPRISE TIER — PAID YEARLY
+  - Law firms (attorney-client privilege, zero metadata leakage)
+  - Healthcare providers (HIPAA-sensitive internal communication)
+  - Defence contractors and government agencies (air-gapped, no attack surface)
+  - Financial services firms (regulatory and data governance requirements)
+  - Any company that has been through a data breach and never wants another
+  - Companies operating in jurisdictions with aggressive surveillance laws
+
+
+--------------------------------------------------------------------------------
+  BUSINESS MODEL
+--------------------------------------------------------------------------------
+
+PERSONAL: Free forever, open source (MIT or Apache 2.0 licence)
+  - Builds trust, community, and security credibility
+  - Open source means the cryptography can be independently audited
+  - Personal users become internal champions at their companies
+
+ENTERPRISE: Yearly per-seat licence
+  - Small org (up to 50 users):       $10/user/month billed yearly
+  - Mid org (51–500 users):           $7/user/month billed yearly
+  - Large org (500+ users):           Custom / flat org licence
+  - What the licence gates:
+      * Admin node desktop app
+      * Org roster management (approve, kick, suspend members)
+      * Remote wipe (signed wipe instruction delivered on next app open)
+      * Cached policy with configurable TTL (how long policies hold offline)
+      * Priority support and SLA
+      * Compliance export (signed audit log of membership events — not messages)
+
+REVENUE PROJECTIONS (conservative)
+  Year 1:  10 enterprise clients, avg 25 users @ $10/mo  =  $30,000 ARR
+  Year 2:  50 enterprise clients, avg 35 users @ $9/mo   = $189,000 ARR
+  Year 3: 150 enterprise clients, avg 50 users @ $8/mo   = $720,000 ARR
+  
+  One mid-size law firm (200 users @ $7/mo) = $16,800/year from one client.
+  One government or defence contract could be a flat $50,000–$200,000/year.
+
+
+--------------------------------------------------------------------------------
+  TECHNICAL ARCHITECTURE
+--------------------------------------------------------------------------------
+
+TRANSPORT LAYER
+  - libp2p: unified transport abstraction over WebRTC + WebSockets
+  - WebRTC for direct browser-to-browser connections
+  - WebSockets as fallback through lightweight relay (relay sees encrypted
+    onion packets only — no content, no metadata)
+  - Noise protocol for channel-level encryption on every connection
+  - STUN/TURN for NAT traversal only (no content passes through these)
+
+ONION ROUTING
+  - Messages are wrapped in multiple encryption layers before sending
+  - Each hop decrypts one layer and forwards — no single peer sees both
+    sender and recipient
+  - Inspired by Tor's onion routing model, implemented over libp2p
+
+IDENTITY
+  - Ed25519 keypair generated locally on first app launch
+  - Private key stored in device keychain / secure enclave, encrypted
+    with Argon2id-derived key from user's app password
+  - Public key is the user's identity — shared via QR code or invite link
+  - No central user registry
+
+ENCRYPTION
+  - Double Ratchet Algorithm (Signal protocol) for all conversations
+  - X3DH (Extended Triple Diffie-Hellman) for initial key exchange
+  - AES-256-GCM for message payload encryption
+  - Every message encrypted with a unique key — perfect forward secrecy
+
+PEER DISCOVERY
+  - Kademlia DHT (via libp2p) for global peer routing
+  - mDNS for local network discovery (same office / WiFi)
+  - Bootstrap nodes: stateless, open-source, hold zero data — just help
+    new peers enter the DHT mesh
+
+STORAGE
+  - All messages stored in IndexedDB on user's device only
+  - Media and attachments via Helia (browser-native IPFS)
+    content-addressed, distributed across willing peers
+  - Group shared state (online presence, read receipts) via GunDB CRDTs
+
+ENTERPRISE ADMIN NODE
+  - Electron desktop app (Windows + macOS + Linux)
+  - Holds the organisation's Ed25519 admin keypair
+  - Signs and broadcasts: org roster, join approvals, revocations,
+    remote wipe instructions, policy objects
+  - Never connects to the onion mesh — operates on a separate
+    policy channel only
+  - Cached policies are TTL-signed JSON objects stored on each device
+  - When admin is offline: cached policies apply until TTL expires
+
+REMOTE WIPE
+  - Admin signs a wipe instruction: { action:"wipe", target_pubkey, timestamp, sig }
+  - Instruction propagates through the mesh
+  - Target device checks for pending signed instructions on every app unlock
+  - If valid wipe instruction found: purges all local IndexedDB data,
+    keypair, and cached policies before rendering any UI
+  - Cannot be bypassed because decryption (and thus any UI) requires
+    the password check, which triggers policy verification
+
+GROUP KEY ROTATION ON KICK
+  - When a member is removed, admin broadcasts a revocation
+  - All remaining peers verify the admin signature and update local roster
+  - A new group encryption key is distributed to all remaining members
+  - The removed user's public key is excluded — they cannot decrypt
+    any message sent after rotation
+  - Combined with remote wipe: complete cryptographic and data severance
+
+TECHNOLOGY STACK
+  - Language:     TypeScript throughout
+  - Transport:    libp2p (@libp2p/webrtc, @libp2p/kad-dht, @libp2p/noise)
+  - Crypto:       libsodium-wrappers (Ed25519, X3DH, Double Ratchet)
+  - Storage:      idb (IndexedDB wrapper), Helia (IPFS in browser)
+  - State:        GunDB (P2P CRDTs for shared state)
+  - UI:           React + Vite
+  - Mobile:       Capacitor (wrap web app for iOS + Android)
+  - Desktop:      Electron (admin node + optional desktop client)
+  - Packaging:    vite-plugin-pwa (installable PWA for web/mobile)
+
+
+--------------------------------------------------------------------------------
+  BUILD ROADMAP
+--------------------------------------------------------------------------------
+
+The strategy is: ship the minimum trustworthy thing as fast as possible,
+get it in front of one paying enterprise customer, then expand.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 0 — FOUNDATION  (Weeks 1–4)
+  Goal: Working encrypted P2P connection between two browsers
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Set up TypeScript monorepo (pnpm workspaces)
+      packages/core     — crypto, protocol, P2P logic
+      packages/app      — React UI
+      packages/admin    — Electron admin node
+      packages/relay    — lightweight bootstrap/relay node (Node.js)
+
+  [ ] Implement keypair generation (Ed25519 via libsodium)
+  [ ] Implement Argon2id password-derived local encryption
+  [ ] Store keypair encrypted in IndexedDB
+  [ ] Basic libp2p node: WebRTC transport + noise encryption
+  [ ] Two browsers connect and exchange a plaintext ping
+  [ ] Add message encryption layer (AES-256-GCM, shared secret via ECDH)
+
+  MILESTONE: Two browsers on different networks exchange an encrypted message.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 1 — CORE MESSENGER  (Weeks 5–10)
+  Goal: Usable 1:1 chat with full Double Ratchet encryption
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Implement X3DH initial key exchange
+  [ ] Implement Double Ratchet (full Signal protocol)
+  [ ] Contact addition via QR code / public key share
+  [ ] Basic React chat UI (conversation list, message thread, input)
+  [ ] Mandatory app password screen on every open
+  [ ] Messages persisted in IndexedDB (encrypted at rest)
+  [ ] Message delivery status (sent / delivered / failed)
+  [ ] Kademlia DHT peer discovery via libp2p
+  [ ] mDNS for local network discovery
+  [ ] Offline message queuing (hold until peer comes online)
+  [ ] Basic onion routing (3-hop minimum)
+
+  MILESTONE: Full working private 1:1 messenger. Give to 10 friends. 
+             Fix what breaks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 2 — GROUP CHAT  (Weeks 11–16)
+  Goal: Encrypted group conversations with key management
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Group key generation and distribution (Sender Keys protocol)
+  [ ] Group creation, naming, invite link generation
+  [ ] Group member list (local, verified by shared keypairs)
+  [ ] Group message delivery across multiple peers
+  [ ] Group key rotation when a member leaves
+  [ ] Media/file sharing via Helia (IPFS, content-addressed)
+  [ ] Read receipts and online presence via GunDB CRDTs
+  [ ] Message expiry timers (user-configurable per conversation)
+  [ ] UI polish: avatars (local, never uploaded), search, notifications
+
+  MILESTONE: Groups work reliably. Open source repository goes public.
+             Post on Hacker News, Reddit r/privacy, r/netsec.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 3 — ENTERPRISE ADMIN NODE  (Weeks 17–26)
+  Goal: First paying enterprise customer
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Admin node Electron app scaffold (Windows + macOS + Linux builds)
+  [ ] Org keypair generation on first admin setup
+  [ ] Invite code generation (signed, time-limited tokens)
+  [ ] Member join flow: user scans invite → admin countersigns → roster update
+  [ ] Signed policy objects with configurable TTL
+  [ ] Cached policy enforcement on user devices (offline resilience)
+  [ ] Member removal: signed revocation broadcast to mesh
+  [ ] Group key rotation triggered automatically on member removal
+  [ ] Remote wipe: signed wipe instruction, executes on next device unlock
+  [ ] Admin dashboard UI: member list, online status, pending joins,
+      audit log of membership events (join/leave/wipe — never message content)
+  [ ] Enterprise app build: same codebase, policy-enforcement layer enabled
+  [ ] Licence key system (simple, no server — cryptographically signed
+      licence file validated locally)
+
+  MILESTONE: Demo to 3 target companies (law firm, healthcare, fintech).
+             Close first paying customer.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 4 — MOBILE + POLISH  (Weeks 27–36)
+  Goal: iOS and Android apps in app stores
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Capacitor wrapper for iOS and Android
+  [ ] Secure Enclave / Android Keystore integration for keypair storage
+  [ ] Push notification support (metadata-free: nudge only, no content)
+  [ ] Biometric unlock option (Face ID / fingerprint) as password substitute
+  [ ] Background message sync when app is backgrounded
+  [ ] iOS App Store submission
+  [ ] Google Play Store submission
+  [ ] PWA polish for desktop web use
+  [ ] Accessibility audit and fixes
+  [ ] Full UI/UX design pass — the app needs to feel as good as Signal
+
+  MILESTONE: App store presence. Press outreach. Product Hunt launch.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PHASE 5 — TRUST & GROWTH  (Months 10–18)
+  Goal: Security credibility + enterprise pipeline
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Commission independent cryptography audit (Trail of Bits, Cure53,
+      or similar — budget $15,000–$40,000, non-negotiable for enterprise trust)
+  [ ] Publish audit results publicly (good and bad — transparency builds trust)
+  [ ] Bug bounty programme (HackerOne or self-hosted)
+  [ ] Security whitepaper for enterprise procurement teams
+  [ ] GDPR compliance documentation (remote wipe = Article 17 solution)
+  [ ] HIPAA technical safeguards documentation
+  [ ] Enterprise onboarding flow (self-serve licence purchase + setup guide)
+  [ ] SSO/SAML integration for large enterprise (optional, revenue-gated)
+  [ ] Dedicated support portal for enterprise customers
+  [ ] Community forum / Discord for open-source users
+  [ ] Expand to 50+ enterprise clients
+
+  MILESTONE: Audit published. Enterprise sales motion established.
+             $200,000+ ARR. Series of press coverage from audit results.
+
+
+--------------------------------------------------------------------------------
+  WHAT TO BUILD FIRST — THE CRITICAL PATH
+--------------------------------------------------------------------------------
+
+Do not try to build everything at once. The single most important thing you can
+ship is a working, trustworthy 1:1 encrypted P2P chat. Everything else is built
+on top of that proof.
+
+The order that matters:
+
+  1. Keypair + password encryption     (trust foundation)
+  2. P2P connection via libp2p         (the hard technical problem)
+  3. Double Ratchet encryption         (the security core)
+  4. Basic chat UI                     (makes it real)
+  5. Open source release               (builds community and credibility)
+  6. Group chat                        (expands utility)
+  7. Admin node                        (unlocks enterprise revenue)
+  8. Mobile apps                       (unlocks mass market)
+  9. Security audit                    (unlocks serious enterprise)
+
+Do not skip to step 7 or 8 before steps 1–4 are solid. An enterprise customer
+discovering a cryptographic flaw after paying you is far worse than a slow launch.
+
+
+--------------------------------------------------------------------------------
+  THE ONE-LINE PITCH
+--------------------------------------------------------------------------------
+
+"Kant — the only messenger where there is no server to hack, no admin who
+can read your messages, and nothing to hand over when someone comes knocking."
+
+
+--------------------------------------------------------------------------------
+  COMPETITIVE POSITIONING
+--------------------------------------------------------------------------------
+
+  Slack / Teams        — centralised, employer reads everything, ad-funded
+  WhatsApp             — centralised Meta servers, metadata harvested
+  Signal               — excellent encryption, but centralised servers
+  Telegram             — not end-to-end by default, centralised
+  Mattermost           — self-hosted, but you still run a server (attack surface)
+  Rocket.Chat          — self-hosted, same problem as Mattermost
+  Element / Matrix     — federated (servers talk to servers), complex
+  Wire for Business    — centralised servers, closed source enterprise tier
+
+  Kant              — no server, no metadata, blind admin, fully auditable
+                         The only one where "there's nothing to give" is
+                         architecturally true, not just a policy promise.
+
+
+--------------------------------------------------------------------------------
+  RISKS AND HOW TO HANDLE THEM
+--------------------------------------------------------------------------------
+
+RISK: Adoption cold start (P2P needs people online to work well)
+HOW:  Nail the invite flow. One person pulls in their whole team via
+      invite codes. Target communities that already care (legal, medical).
+
+RISK: Enterprise sales cycles are slow (6–18 months)
+HOW:  Build runway. Keep personal expenses low. The open source community
+      generates goodwill and inbound interest while you wait.
+
+RISK: Competitor copies the concept
+HOW:  Move fast. Open source code is not your moat — trust, reputation,
+      and the audit are. Be first to get audited and publish the results.
+
+RISK: Cryptography flaw discovered
+HOW:  Get the audit done before serious enterprise sales. Bug bounty programme.
+      Respond fast and transparently if anything is found — this builds more
+      trust than having no bugs would.
+
+RISK: App stores reject or restrict the app
+HOW:  PWA works without app store. Web app is always the fallback.
+      Frame the store submission carefully — this is a business tool,
+      not an anonymity tool.
+
+RISK: Legal pressure (governments don't like things they can't intercept)
+HOW:  Open source means you cannot be secretly compelled to add backdoors
+      (the code is public — a backdoor would be visible). Operate in a
+      jurisdiction with strong software freedom protections.
+
+
+--------------------------------------------------------------------------------
+  SUGGESTED NAME
+--------------------------------------------------------------------------------
+
+Kant
+  - Implies invisibility, no trace, no presence
+  - Works for both consumer and enterprise positioning
+  - Short, memorable, available as a concept
+  - Tagline: "No trace. No server. No compromise."
+
+Alternatives worth considering:
+  VOID      — nothing there to find
+  NULLMESH  — technical, developer-friendly
+  ETHER     — disappears into the air
+  SPECTRE   — present but untouchable
+
+
+--------------------------------------------------------------------------------
+  FINAL NOTE
+--------------------------------------------------------------------------------
+
+This is a real product solving a real problem with a technically sound approach.
+The architecture is coherent. The business model is proven. The market is growing.
+
+The only thing that turns this from an idea into a company is execution — 
+shipping clean code, being honest about limitations, getting the cryptography
+audited, and finding the first 10 customers who need this badly enough to pay
+for it before you've perfected it.
+
+Build the thing. Ship it. Make it trustworthy. The rest follows.
+
+================================================================================
+  END OF DOCUMENT
+  Generated as part of Kant product planning session
+================================================================================
