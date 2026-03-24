@@ -6,7 +6,14 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@kant/core': path.resolve(__dirname, '../../packages/core/src')
+      '@kant/core': path.resolve(__dirname, '../core/src'),
+      'libsodium-wrappers': path.resolve(
+        __dirname,
+        '../core/node_modules/libsodium-wrappers/dist/modules/libsodium-wrappers.js'
+      )
     }
+  },
+  define: {
+    global: 'globalThis'
   }
 });

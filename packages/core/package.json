@@ -7,14 +7,22 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-"test": "npm run build && node keypair.test.mjs"
+    "test": "npm run build && node keypair.test.mjs"
   },
   "dependencies": {
+    "@libp2p/circuit-relay-v2": "^4.1.6",
+    "@libp2p/identify": "^4.0.13",
+    "@libp2p/noise": "^1.0.1",
+    "@libp2p/websockets": "^10.1.6",
+    "@libp2p/yamux": "^8.0.1",
+    "@multiformats/multiaddr": "^13.0.1",
+    "libp2p": "^3.1.6",
     "libsodium-wrappers": "^0.7.10"
   },
   "devDependencies": {
+    "@types/libsodium-wrappers": "^0.8.2",
     "@types/node": "^22.7.4",
-    "typescript": "^5.6.3",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
   }
 }

@@ -2,9 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
-    "noEmit": false
+    "noEmit": true
   },
-  "include": ["./src/**/*", "./index.html"],
+  "include": ["./src/**/*", "../core/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

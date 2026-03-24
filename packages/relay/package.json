@@ -2,10 +2,20 @@
   "name": "@kant/relay",
   "version": "0.0.1",
   "description": "Kant bootstrap/relay node (stateless, Phase 0)",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node src/index.ts"
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "libp2p": "^3.1.6",
+    "@libp2p/websockets": "^10.1.6",
+    "@libp2p/noise": "^1.0.1",
+    "@libp2p/yamux": "^8.0.1",
+    "@libp2p/circuit-relay-v2": "^4.1.6",
+    "@libp2p/identify": "^4.0.13"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
