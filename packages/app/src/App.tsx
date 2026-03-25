@@ -23,7 +23,7 @@ export default function App() {
 
     const node = await createNode((fromPeer, message) => {
       addLog(`← ping from ${fromPeer.slice(0, 12)}…: "${message}"`);
-    });
+    }, relayAddr);
     nodeRef.current = node;
     setPeerId(node.peerId.toString());
     addLog(`Node started. PeerID: ${node.peerId.toString().slice(0, 16)}…`);

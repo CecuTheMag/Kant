@@ -43,8 +43,11 @@ async function readAll(stream: any): Promise<string> {
   return new TextDecoder().decode(total);
 }
 
-export async function createNode(onPing?: PingHandler): Promise<Libp2p> {
+export async function createNode(onPing?: PingHandler, relayAddr?: string): Promise<Libp2p> {
   const node = await createLibp2p({
+    addresses: {
+      listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
+    },
     transports: [
       webSockets(),
       circuitRelayTransport()
@@ -60,7 +63,7 @@ export async function createNode(onPing?: PingHandler): Promise<Libp2p> {
     onPing?.(connection.remotePeer.toString(), message);
     stream.send(new TextEncoder().encode(`pong: ${message}`));
     await stream.close();
-  });
+  }, { runOnLimitedConnection: true });
 
   await node.start();
   return node;
@@ -72,7 +75,7 @@ export async function connectToRelay(node: Libp2p, relayMultiaddr: string): Prom
 
 export async function sendPing(node: Libp2p, peerMultiaddr: string, message: string): Promise<string> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stream: any = await node.dialProtocol(multiaddr(peerMultiaddr), PING_PROTOCOL);
+  const stream: any = await node.dialProtocol(multiaddr(peerMultiaddr), PING_PROTOCOL, { runOnLimitedConnection: true });
   stream.send(new TextEncoder().encode(message));
   await stream.close();
   return readAll(stream);

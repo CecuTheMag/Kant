@@ -2,11 +2,12 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-"rootDir": "src",
+    "rootDir": "src",
     "declaration": true,
     "noEmit": false,
     "module": "ESNext",
-    "target": "ES2022"
+    "target": "ES2022",
+    "types": []
   },
   "include": ["./src/**/*"],
   "exclude": ["node_modules", "dist"]
