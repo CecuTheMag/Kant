@@ -1,24 +1,77 @@
 /**
- * Kant Core - Crypto & P2P primitives (Phase 0)
+ * Kant Core — Crypto & P2P primitives (Phase 0)
  */
 import sodium from 'libsodium-wrappers';
-/**
- * Generate Ed25519 keypair for user identity.
- * Private key encrypted with Argon2id-derived key from app password.
- */
+import { createLibp2p } from 'libp2p';
+import { webSockets } from '@libp2p/websockets';
+import { noise } from '@libp2p/noise';
+import { yamux } from '@libp2p/yamux';
+import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
+import { identify } from '@libp2p/identify';
+import { multiaddr } from '@multiformats/multiaddr';
+export { hasIdentity, createIdentity, unlockIdentity, wipeIdentity } from './identity.js';
+export { generateX25519Keypair, ed25519ToX25519, x3dhSend, x3dhReceive, initSenderRatchet, initReceiverRatchet, ratchetEncrypt, ratchetDecrypt } from './ratchet.js';
+export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, PREKEY_PROTOCOL } from './prekey.js';
+export const PING_PROTOCOL = '/kant/ping/1.0.0';
 export async function generateKeypair(_password) {
     await sodium.ready;
-    const keyPair = sodium.crypto_sign_keypair();
-    console.log('Ed25519 keypair generated');
-    console.log('Public key (identity):', sodium.to_hex(keyPair.publicKey));
-    // TODO: Argon2id password => encryption key => encrypt private key
-    // Store in IndexedDB
+    const kp = sodium.crypto_sign_keypair();
     return {
-        publicKey: keyPair.publicKey,
-        privateKey: keyPair.privateKey
-    }; // Simplified for Phase 0
+        publicKey: kp.publicKey,
+        privateKey: kp.privateKey,
+        publicKeyHex: sodium.to_hex(kp.publicKey)
+    };
 }
-// Phase 0 milestone ping
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function readAll(stream) {
+    const chunks = [];
+    for await (const chunk of stream) {
+        chunks.push(chunk instanceof Uint8Array ? chunk : chunk.subarray());
+    }
+    const total = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+    let offset = 0;
+    for (const c of chunks) {
+        total.set(c, offset);
+        offset += c.length;
+    }
+    return new TextDecoder().decode(total);
+}
+import { registerPrekeyHandler } from './prekey.js';
+export async function createNode(onPing, relayAddr, identity) {
+    const node = await createLibp2p({
+        addresses: {
+            listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
+        },
+        transports: [
+            webSockets(),
+            circuitRelayTransport()
+        ],
+        connectionEncrypters: [noise()],
+        streamMuxers: [yamux()],
+        services: { identify: identify() }
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await node.handle(PING_PROTOCOL, async (stream, connection) => {
+        const message = await readAll(stream);
+        onPing?.(connection.remotePeer.toString(), message);
+        stream.send(new TextEncoder().encode(`pong: ${message}`));
+        await stream.close();
+    }, { runOnLimitedConnection: true });
+    await node.start();
+    if (identity)
+        await registerPrekeyHandler(node, identity);
+    return node;
+}
+export async function connectToRelay(node, relayMultiaddr) {
+    await node.dial(multiaddr(relayMultiaddr));
+}
+export async function sendPing(node, peerMultiaddr, message) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stream = await node.dialProtocol(multiaddr(peerMultiaddr), PING_PROTOCOL, { runOnLimitedConnection: true });
+    stream.send(new TextEncoder().encode(message));
+    await stream.close();
+    return readAll(stream);
+}
 export function ping() {
     return 'Kant Phase 0: P2P crypto foundation ready';
 }

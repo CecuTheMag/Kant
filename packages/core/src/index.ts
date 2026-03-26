@@ -11,6 +11,17 @@ import { circuitRelayTransport } from '@libp2p/circuit-relay-v2';
 import { identify } from '@libp2p/identify';
 import { multiaddr } from '@multiformats/multiaddr';
 
+export { hasIdentity, createIdentity, unlockIdentity, wipeIdentity } from './identity.js';
+export type { StoredKeypair } from './identity.js';
+export {
+  generateX25519Keypair, ed25519ToX25519,
+  x3dhSend, x3dhReceive,
+  initSenderRatchet, initReceiverRatchet,
+  ratchetEncrypt, ratchetDecrypt
+} from './ratchet.js';
+export type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle, RatchetState, EncryptedMessage } from './ratchet.js';
+export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, PREKEY_PROTOCOL } from './prekey.js';
+
 export const PING_PROTOCOL = '/kant/ping/1.0.0';
 
 export interface Keypair {
@@ -43,7 +54,10 @@ async function readAll(stream: any): Promise<string> {
   return new TextDecoder().decode(total);
 }
 
-export async function createNode(onPing?: PingHandler, relayAddr?: string): Promise<Libp2p> {
+import type { StoredKeypair } from './identity.js';
+import { registerPrekeyHandler } from './prekey.js';
+
+export async function createNode(onPing?: PingHandler, relayAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
   const node = await createLibp2p({
     addresses: {
       listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
@@ -66,6 +80,7 @@ export async function createNode(onPing?: PingHandler, relayAddr?: string): Prom
   }, { runOnLimitedConnection: true });
 
   await node.start();
+  if (identity) await registerPrekeyHandler(node, identity);
   return node;
 }
 
