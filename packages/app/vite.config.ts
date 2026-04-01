@@ -5,14 +5,12 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    conditions: ['require', 'default'],
     alias: {
       '@kant/core': path.resolve(__dirname, '../core/src'),
-      'libsodium-wrappers': path.resolve(
-        __dirname,
-        '../core/node_modules/libsodium-wrappers/dist/modules/libsodium-wrappers.js'
-      )
     }
   },
+
   define: {
     global: 'globalThis'
   }

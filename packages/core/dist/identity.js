@@ -3,13 +3,24 @@
  */
 import sodium from 'libsodium-wrappers';
 const DB_NAME = 'kant';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = 'identity';
 const KEY = 'keypair';
 function openDB() {
     return new Promise((resolve, reject) => {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+        req.onupgradeneeded = (_e) => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains('contacts')) {
+                db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
+            }
+            if (!db.objectStoreNames.contains('messages')) {
+                db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
+            }
+            if (!db.objectStoreNames.contains(STORE)) {
+                db.createObjectStore(STORE);
+            }
+        };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
     });
@@ -38,22 +49,16 @@ function dbDelete(db, key) {
         req.onerror = () => reject(req.error);
     });
 }
-/** Derive a 32-byte key from password using Argon2id */
 async function deriveKey(password, salt) {
     await sodium.ready;
-    return sodium.crypto_pwhash(32, password, salt, sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE, sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE, sodium.crypto_pwhash_ALG_ARGON2ID13);
+    return sodium.crypto_pwhash(32, sodium.from_string(password), salt, sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE, sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE, sodium.crypto_pwhash_ALG_ARGON2ID13);
 }
-/** Check if a keypair exists in IndexedDB */
 export async function hasIdentity() {
     const db = await openDB();
     const stored = await dbGet(db, KEY);
     db.close();
     return stored !== undefined;
 }
-/**
- * Create a new Ed25519 keypair, encrypt the private key with Argon2id(password),
- * and store in IndexedDB. Throws if identity already exists.
- */
 export async function createIdentity(password) {
     await sodium.ready;
     const kp = sodium.crypto_sign_keypair();
@@ -73,10 +78,6 @@ export async function createIdentity(password) {
     db.close();
     return { publicKey: kp.publicKey, privateKey: kp.privateKey, publicKeyHex: stored.publicKeyHex };
 }
-/**
- * Unlock the stored keypair with the given password.
- * Returns null if password is wrong.
- */
 export async function unlockIdentity(password) {
     await sodium.ready;
     const db = await openDB();
@@ -90,10 +91,9 @@ export async function unlockIdentity(password) {
         return { publicKey: stored.publicKey, privateKey, publicKeyHex: stored.publicKeyHex };
     }
     catch {
-        return null; // wrong password
+        return null;
     }
 }
-/** Wipe all identity data from IndexedDB */
 export async function wipeIdentity() {
     const db = await openDB();
     await dbDelete(db, KEY);

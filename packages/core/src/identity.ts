@@ -5,7 +5,7 @@
 import sodium from 'libsodium-wrappers';
 
 const DB_NAME = 'kant';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE = 'identity';
 const KEY = 'keypair';
 
@@ -16,9 +16,9 @@ export interface StoredKeypair {
 }
 
 interface EncryptedKeypair {
-  salt: Uint8Array;       // Argon2id salt
-  nonce: Uint8Array;      // XSalsa20-Poly1305 nonce
-  ciphertext: Uint8Array; // encrypted privateKey
+  salt: Uint8Array;
+  nonce: Uint8Array;
+  ciphertext: Uint8Array;
   publicKey: Uint8Array;
   publicKeyHex: string;
 }
@@ -26,7 +26,18 @@ interface EncryptedKeypair {
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onupgradeneeded = (_e) => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains('contacts')) {
+        db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
+      }
+      if (!db.objectStoreNames.contains('messages')) {
+        db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
+      }
+      if (!db.objectStoreNames.contains(STORE)) {
+        db.createObjectStore(STORE);
+      }
+    };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
@@ -59,12 +70,11 @@ function dbDelete(db: IDBDatabase, key: string): Promise<void> {
   });
 }
 
-/** Derive a 32-byte key from password using Argon2id */
 async function deriveKey(password: string, salt: Uint8Array): Promise<Uint8Array> {
   await sodium.ready;
   return sodium.crypto_pwhash(
     32,
-    password,
+    sodium.from_string(password),
     salt,
     sodium.crypto_pwhash_OPSLIMIT_INTERACTIVE,
     sodium.crypto_pwhash_MEMLIMIT_INTERACTIVE,
@@ -72,7 +82,6 @@ async function deriveKey(password: string, salt: Uint8Array): Promise<Uint8Array
   );
 }
 
-/** Check if a keypair exists in IndexedDB */
 export async function hasIdentity(): Promise<boolean> {
   const db = await openDB();
   const stored = await dbGet(db, KEY);
@@ -80,10 +89,6 @@ export async function hasIdentity(): Promise<boolean> {
   return stored !== undefined;
 }
 
-/**
- * Create a new Ed25519 keypair, encrypt the private key with Argon2id(password),
- * and store in IndexedDB. Throws if identity already exists.
- */
 export async function createIdentity(password: string): Promise<StoredKeypair> {
   await sodium.ready;
   const kp = sodium.crypto_sign_keypair();
@@ -107,10 +112,6 @@ export async function createIdentity(password: string): Promise<StoredKeypair> {
   return { publicKey: kp.publicKey, privateKey: kp.privateKey, publicKeyHex: stored.publicKeyHex };
 }
 
-/**
- * Unlock the stored keypair with the given password.
- * Returns null if password is wrong.
- */
 export async function unlockIdentity(password: string): Promise<StoredKeypair | null> {
   await sodium.ready;
   const db = await openDB();
@@ -124,13 +125,13 @@ export async function unlockIdentity(password: string): Promise<StoredKeypair | 
     const privateKey = sodium.crypto_secretbox_open_easy(stored.ciphertext, stored.nonce, encKey);
     return { publicKey: stored.publicKey, privateKey, publicKeyHex: stored.publicKeyHex };
   } catch {
-    return null; // wrong password
+    return null;
   }
 }
 
-/** Wipe all identity data from IndexedDB */
 export async function wipeIdentity(): Promise<void> {
   const db = await openDB();
   await dbDelete(db, KEY);
   db.close();
 }
+

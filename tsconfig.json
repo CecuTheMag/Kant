@@ -16,7 +16,8 @@
     "baseUrl": ".",
     "paths": {
       "@kant/*": ["packages/*/src"]
-    }
+    },
+    "types": ["node"]
   },
   "include": ["packages/**/*.ts", "packages/**/*.tsx"],
   "exclude": ["node_modules"]

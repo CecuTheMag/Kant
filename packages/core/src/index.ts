@@ -22,6 +22,14 @@ export {
 export type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle, RatchetState, EncryptedMessage } from './ratchet.js';
 export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, PREKEY_PROTOCOL } from './prekey.js';
 
+export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR } from './contacts.js';
+export type { Contact } from './contacts.js';
+
+export { saveMessage, getConversation, getAllConversations, deleteConversation } from './messages.js';
+export type { StoredMessage, Conversation, MessageStatus } from './messages.js';
+
+export const RECEIPT_PROTOCOL = '/kant/receipt/1.0.0';
+
 export const PING_PROTOCOL = '/kant/ping/1.0.0';
 
 export interface Keypair {
@@ -57,7 +65,9 @@ async function readAll(stream: any): Promise<string> {
 import type { StoredKeypair } from './identity.js';
 import { registerPrekeyHandler } from './prekey.js';
 
-export async function createNode(onPing?: PingHandler, relayAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
+export type ReceiptHandler = (fromPeerId: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string}) => void;
+
+export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandler, relayAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
   const node = await createLibp2p({
     addresses: {
       listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
@@ -71,11 +81,21 @@ export async function createNode(onPing?: PingHandler, relayAddr?: string, ident
     services: { identify: identify() }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   await node.handle(PING_PROTOCOL, async (stream: any, connection: any) => {
     const message = await readAll(stream);
     onPing?.(connection.remotePeer.toString(), message);
     stream.send(new TextEncoder().encode(`pong: ${message}`));
+    await stream.close();
+  }, { runOnLimitedConnection: true });
+
+  // Receipt protocol handler
+  await node.handle(RECEIPT_PROTOCOL, async (stream: any, connection: any) => {
+    const receiptJson = await readAll(stream);
+    try {
+    const receipt = JSON.parse(receiptJson) as {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string};
+      onReceipt?.(connection.remotePeer.toString(), receipt);
+    } catch {}
     await stream.close();
   }, { runOnLimitedConnection: true });
 
@@ -86,6 +106,14 @@ export async function createNode(onPing?: PingHandler, relayAddr?: string, ident
 
 export async function connectToRelay(node: Libp2p, relayMultiaddr: string): Promise<void> {
   await node.dial(multiaddr(relayMultiaddr));
+}
+
+export async function sendReceipt(node: Libp2p, peerMultiaddr: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex?: string}): Promise<void> {
+  const receiptJson = JSON.stringify(receipt);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stream: any = await node.dialProtocol(multiaddr(peerMultiaddr), RECEIPT_PROTOCOL, { runOnLimitedConnection: true });
+  stream.send(new TextEncoder().encode(receiptJson));
+  await stream.close();
 }
 
 export async function sendPing(node: Libp2p, peerMultiaddr: string, message: string): Promise<string> {

@@ -12,6 +12,9 @@ import { multiaddr } from '@multiformats/multiaddr';
 export { hasIdentity, createIdentity, unlockIdentity, wipeIdentity } from './identity.js';
 export { generateX25519Keypair, ed25519ToX25519, x3dhSend, x3dhReceive, initSenderRatchet, initReceiverRatchet, ratchetEncrypt, ratchetDecrypt } from './ratchet.js';
 export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, PREKEY_PROTOCOL } from './prekey.js';
+export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR } from './contacts.js';
+export { saveMessage, getConversation, getAllConversations, deleteConversation } from './messages.js';
+export const RECEIPT_PROTOCOL = '/kant/receipt/1.0.0';
 export const PING_PROTOCOL = '/kant/ping/1.0.0';
 export async function generateKeypair(_password) {
     await sodium.ready;
@@ -37,7 +40,7 @@ async function readAll(stream) {
     return new TextDecoder().decode(total);
 }
 import { registerPrekeyHandler } from './prekey.js';
-export async function createNode(onPing, relayAddr, identity) {
+export async function createNode(onPing, onReceipt, relayAddr, identity) {
     const node = await createLibp2p({
         addresses: {
             listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
@@ -57,6 +60,16 @@ export async function createNode(onPing, relayAddr, identity) {
         stream.send(new TextEncoder().encode(`pong: ${message}`));
         await stream.close();
     }, { runOnLimitedConnection: true });
+    // Receipt protocol handler
+    await node.handle(RECEIPT_PROTOCOL, async (stream, connection) => {
+        const receiptJson = await readAll(stream);
+        try {
+            const receipt = JSON.parse(receiptJson);
+            onReceipt?.(connection.remotePeer.toString(), receipt);
+        }
+        catch { }
+        await stream.close();
+    }, { runOnLimitedConnection: true });
     await node.start();
     if (identity)
         await registerPrekeyHandler(node, identity);
@@ -64,6 +77,13 @@ export async function createNode(onPing, relayAddr, identity) {
 }
 export async function connectToRelay(node, relayMultiaddr) {
     await node.dial(multiaddr(relayMultiaddr));
+}
+export async function sendReceipt(node, peerMultiaddr, receipt) {
+    const receiptJson = JSON.stringify(receipt);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stream = await node.dialProtocol(multiaddr(peerMultiaddr), RECEIPT_PROTOCOL, { runOnLimitedConnection: true });
+    stream.send(new TextEncoder().encode(receiptJson));
+    await stream.close();
 }
 export async function sendPing(node, peerMultiaddr, message) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
