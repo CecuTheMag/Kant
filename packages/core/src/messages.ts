@@ -2,7 +2,7 @@
  * Kant Messages — Per-contact conversation persistence with at-rest encryption
  */
 
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 
 const DB_NAME = 'kant';
 const STORE = 'messages';

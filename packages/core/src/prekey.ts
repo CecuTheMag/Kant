@@ -6,8 +6,8 @@
  * Response: JSON { identityKey: number[], signedPreKey: number[] }
  */
 
-import { generateX25519Keypair, ed25519ToX25519 } from './ratchet.js';
-import type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle } from './ratchet.js';
+import { generateX25519Keypair, ed25519ToX25519 } from './ratchet';
+import type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle } from './ratchet';
 import type { StoredKeypair } from './identity.js';
 import type { Libp2p } from 'libp2p';
 import { multiaddr } from '@multiformats/multiaddr';

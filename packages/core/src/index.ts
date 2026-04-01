@@ -2,7 +2,7 @@
  * Kant Core — Crypto & P2P primitives (Phase 0)
  */
 
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 import { createLibp2p, type Libp2p } from 'libp2p';
 import { webSockets } from '@libp2p/websockets';
 import { noise } from '@libp2p/noise';

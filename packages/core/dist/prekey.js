@@ -5,7 +5,7 @@
  * Request:  empty (just open stream)
  * Response: JSON { identityKey: number[], signedPreKey: number[] }
  */
-import { generateX25519Keypair, ed25519ToX25519 } from './ratchet.js';
+import { generateX25519Keypair, ed25519ToX25519 } from './ratchet';
 import { multiaddr } from '@multiformats/multiaddr';
 export const PREKEY_PROTOCOL = '/kant/prekey/1.0.0';
 const DB_NAME = 'kant';

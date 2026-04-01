@@ -2,9 +2,10 @@
  * Kant Identity — keypair generation, Argon2id password derivation, IndexedDB storage
  */
 
-import sodium from 'libsodium-wrappers';
+import { getSodium } from './sodium';
 
-const DB_NAME = 'kant';
+ const DB_NAME = 'kant';
+
 const DB_VERSION = 2;
 const STORE = 'identity';
 const KEY = 'keypair';
@@ -71,6 +72,7 @@ function dbDelete(db: IDBDatabase, key: string): Promise<void> {
 }
 
 async function deriveKey(password: string, salt: Uint8Array): Promise<Uint8Array> {
+  const sodium = await getSodium();
   await sodium.ready;
   return sodium.crypto_pwhash(
     32,
@@ -90,7 +92,7 @@ export async function hasIdentity(): Promise<boolean> {
 }
 
 export async function createIdentity(password: string): Promise<StoredKeypair> {
-  await sodium.ready;
+  const sodium = await getSodium();
   const kp = sodium.crypto_sign_keypair();
   const salt = sodium.randombytes_buf(sodium.crypto_pwhash_SALTBYTES);
   const encKey = await deriveKey(password, salt);
@@ -113,8 +115,9 @@ export async function createIdentity(password: string): Promise<StoredKeypair> {
 }
 
 export async function unlockIdentity(password: string): Promise<StoredKeypair | null> {
-  await sodium.ready;
+  const sodium = await getSodium();
   const db = await openDB();
+
   const stored = await dbGet(db, KEY);
   db.close();
 

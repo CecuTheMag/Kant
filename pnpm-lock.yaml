@@ -87,6 +87,9 @@ importers:
       libsodium-wrappers:
         specifier: ^0.7.10
         version: 0.7.16
+      libsodium-wrappers-sumo:
+        specifier: ^0.8.2
+        version: 0.8.2
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -870,6 +873,12 @@ packages:
 
   libp2p@3.1.7:
     resolution: {integrity: sha512-Yccp5frTOwyIB6Wt7KLHBBWc4UOfF03nDqbWrKV/0T056mWKd87YDI5kR248sSAyc/S0r3TrgSgTpBThUeHJFA==}
+
+  libsodium-sumo@0.8.2:
+    resolution: {integrity: sha512-uMgnjphJ717jLN+jFG1HUgNrK/gOVVfaO1DGZ1Ig/fKLKLVhvaH/sM1I1v784JFvmkJDaczDpi7xSYC4Jvdo1Q==}
+
+  libsodium-wrappers-sumo@0.8.2:
+    resolution: {integrity: sha512-wd1xAY++Kr6VMikSaa4EPRAHJmFvNlGWiiwU3Jh3GR1zRYF3/I3vy/wYsr4k3LVsNzwb9sqfEQ4LdVQ6zEebyQ==}
 
   libsodium-wrappers@0.7.16:
     resolution: {integrity: sha512-Gtr/WBx4dKjvRL1pvfwZqu7gO6AfrQ0u9vFL+kXihtHf6NfkROR8pjYWn98MFDI3jN19Ii1ZUfPR9afGiPyfHg==}
@@ -2022,6 +2031,12 @@ snapshots:
       progress-events: 1.0.1
       race-signal: 2.0.0
       uint8arrays: 5.1.0
+
+  libsodium-sumo@0.8.2: {}
+
+  libsodium-wrappers-sumo@0.8.2:
+    dependencies:
+      libsodium-sumo: 0.8.2
 
   libsodium-wrappers@0.7.16:
     dependencies:

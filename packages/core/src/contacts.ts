@@ -2,7 +2,7 @@
  * Kant Contacts — IndexedDB storage for contacts with QR code sharing
  */
 
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 import QRCode from 'qrcode';
 
 const DB_NAME = 'kant';
