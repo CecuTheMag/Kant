@@ -5,7 +5,7 @@
  * Request:  empty (just open stream)
  * Response: JSON { identityKey: number[], signedPreKey: number[] }
  */
-import { generateX25519Keypair, ed25519ToX25519 } from './ratchet';
+import { generateX25519Keypair, ed25519ToX25519 } from './ratchet.js';
 import { multiaddr } from '@multiformats/multiaddr';
 export const PREKEY_PROTOCOL = '/kant/prekey/1.0.0';
 const DB_NAME = 'kant';
@@ -19,6 +19,10 @@ function openDB() {
             const db = e.target.result;
             if (!db.objectStoreNames.contains('identity'))
                 db.createObjectStore('identity');
+            if (!db.objectStoreNames.contains('contacts'))
+                db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
+            if (!db.objectStoreNames.contains('messages'))
+                db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
             if (!db.objectStoreNames.contains(STORE))
                 db.createObjectStore(STORE);
         };
@@ -98,8 +102,8 @@ export async function registerPrekeyHandler(node, identity) {
 export async function fetchPreKeyBundle(node, peerCircuitAddr) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stream = await node.dialProtocol(multiaddr(peerCircuitAddr), PREKEY_PROTOCOL, { runOnLimitedConnection: true });
-    await stream.close();
     const raw = await readAll(stream);
+    await stream.close();
     const json = JSON.parse(new TextDecoder().decode(raw));
     return {
         identityKey: new Uint8Array(json.identityKey),

@@ -1,7 +1,7 @@
 /**
  * Kant Identity — keypair generation, Argon2id password derivation, IndexedDB storage
  */
-import { getSodium } from './sodium';
+import { getSodium } from './sodium.js';
 const DB_NAME = 'kant';
 const DB_VERSION = 2;
 const STORE = 'identity';
@@ -11,15 +11,14 @@ function openDB() {
         const req = indexedDB.open(DB_NAME, DB_VERSION);
         req.onupgradeneeded = (_e) => {
             const db = req.result;
-            if (!db.objectStoreNames.contains('contacts')) {
+            if (!db.objectStoreNames.contains('contacts'))
                 db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
-            }
-            if (!db.objectStoreNames.contains('messages')) {
+            if (!db.objectStoreNames.contains('messages'))
                 db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
-            }
-            if (!db.objectStoreNames.contains(STORE)) {
+            if (!db.objectStoreNames.contains('prekeys'))
+                db.createObjectStore('prekeys');
+            if (!db.objectStoreNames.contains(STORE))
                 db.createObjectStore(STORE);
-            }
         };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);

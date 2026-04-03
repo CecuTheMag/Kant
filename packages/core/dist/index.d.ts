@@ -11,6 +11,10 @@ export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR
 export type { Contact } from './contacts.js';
 export { saveMessage, getConversation, getAllConversations, deleteConversation } from './messages.js';
 export type { StoredMessage, Conversation, MessageStatus } from './messages.js';
+export { startDiscovery, getKnownPeers } from './discovery.js';
+export type { DiscoveredPeer, PeerDiscoveryHandler } from './discovery.js';
+export { enqueue, dequeue, getPendingForContact, startQueueRetry } from './queue.js';
+export type { QueuedMessage, SendFn } from './queue.js';
 export declare const RECEIPT_PROTOCOL = "/kant/receipt/1.0.0";
 export declare const PING_PROTOCOL = "/kant/ping/1.0.0";
 export interface Keypair {

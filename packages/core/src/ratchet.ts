@@ -2,7 +2,7 @@
  * Kant Ratchet — X3DH key exchange + Double Ratchet encryption
  */
 
-import { getSodium } from './sodium';
+import { getSodium } from './sodium.js';
 
 export interface X25519Keypair {
   publicKey: Uint8Array;

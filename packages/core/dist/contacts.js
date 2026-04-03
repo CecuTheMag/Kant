@@ -1,7 +1,7 @@
 /**
  * Kant Contacts — IndexedDB storage for contacts with QR code sharing
  */
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 import QRCode from 'qrcode';
 const DB_NAME = 'kant';
 const STORE = 'contacts';
@@ -39,12 +39,11 @@ async function dbDelete(db, key) {
 /** Add or update a contact */
 export async function addContact(publicKeyHex, nickname) {
     await sodium.ready;
+    // Validate it's already a hex string (64 hex chars = 32-byte Ed25519 pubkey)
+    if (!/^[0-9a-fA-F]{64}$/.test(publicKeyHex))
+        throw new Error('Invalid public key hex');
     const db = await openDB();
-    await dbPut(db, {
-        publicKeyHex: sodium.to_hex(publicKeyHex), // ensure hex
-        nickname,
-        addedAt: Date.now()
-    });
+    await dbPut(db, { publicKeyHex, nickname, addedAt: Date.now() });
     db.close();
 }
 /** Get all contacts */

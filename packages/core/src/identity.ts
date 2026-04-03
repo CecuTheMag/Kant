@@ -2,7 +2,7 @@
  * Kant Identity — keypair generation, Argon2id password derivation, IndexedDB storage
  */
 
-import { getSodium } from './sodium';
+import { getSodium } from './sodium.js';
 
  const DB_NAME = 'kant';
 

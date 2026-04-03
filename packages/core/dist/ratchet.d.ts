@@ -25,11 +25,21 @@ export interface RatchetState {
 }
 export interface EncryptedMessage {
     ciphertext: Uint8Array;
+    nonce: Uint8Array;
+    header: {
+        dhPublic: Uint8Array;
+        msgNum: number;
+        prevChainLen: number;
+    };
+    /** @deprecated use header.dhPublic */
     ephemeralPublicKey: Uint8Array;
 }
 export declare function generateX25519Keypair(): Promise<X25519Keypair>;
 export declare function ed25519ToX25519(publicKey: Uint8Array, privateKey: Uint8Array): Promise<X25519Keypair>;
-export declare function x3dhSend(publicBundle: X3DHPublicBundle, ephemeralKp: X25519Keypair): Promise<Uint8Array>;
+export declare function x3dhSend(myX25519: X25519Keypair, publicBundle: X3DHPublicBundle): Promise<{
+    sharedSecret: Uint8Array;
+    ephemeralPublic: Uint8Array;
+}>;
 export declare function x3dhReceive(privateBundle: X3DHPrivateBundle, ephemeralPub: Uint8Array): Promise<Uint8Array>;
 export declare function initSenderRatchet(sharedSecret: Uint8Array, bobSignedPrePublic: Uint8Array): Promise<RatchetState>;
 export declare function initReceiverRatchet(sharedSecret: Uint8Array, signedPreKeyPair: X25519Keypair): Promise<RatchetState>;

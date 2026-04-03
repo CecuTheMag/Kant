@@ -1,5 +1,5 @@
 // Phase 0 test stub
-import { generateKeypair, ping } from './index';
+import { generateKeypair, ping } from './index.js';
 
 async function testKeypair() {
   const kp = await generateKeypair('testpass');

@@ -1,7 +1,7 @@
 /**
  * Kant Core — Crypto & P2P primitives (Phase 0)
  */
-import sodium from 'libsodium-wrappers';
+import sodium from 'libsodium-wrappers-sumo';
 import { createLibp2p } from 'libp2p';
 import { webSockets } from '@libp2p/websockets';
 import { noise } from '@libp2p/noise';
@@ -14,6 +14,8 @@ export { generateX25519Keypair, ed25519ToX25519, x3dhSend, x3dhReceive, initSend
 export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, PREKEY_PROTOCOL } from './prekey.js';
 export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR } from './contacts.js';
 export { saveMessage, getConversation, getAllConversations, deleteConversation } from './messages.js';
+export { startDiscovery, getKnownPeers } from './discovery.js';
+export { enqueue, dequeue, getPendingForContact, startQueueRetry } from './queue.js';
 export const RECEIPT_PROTOCOL = '/kant/receipt/1.0.0';
 export const PING_PROTOCOL = '/kant/ping/1.0.0';
 export async function generateKeypair(_password) {

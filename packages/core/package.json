@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "test": "npm run build && node keypair.test.mjs"
+"test":"npm run build && node --loader ./sodium-loader.mjs keypair.test.mjs"
   },
   "dependencies": {
     "@libp2p/circuit-relay-v2": "^4.1.6",

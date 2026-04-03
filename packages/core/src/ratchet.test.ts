@@ -1,6 +1,11 @@
 import { createIdentity, unlockIdentity, x3dhSend, x3dhReceive, initSenderRatchet, initReceiverRatchet, ratchetEncrypt, ratchetDecrypt, buildPublicBundle, buildPrivateBundle } from './index.js';
 
-async function testRatchet() {\n  const { generateX25519Keypair } = await import('./ratchet.js');\n  // Alice creates identity\n  const alicePass = 'alicepass';\n  await createIdentity(alicePass);\n  const aliceKp = await unlockIdentity(alicePass);\n  if (!aliceKp) throw new Error('Alice unlock failed');\n\n  const aliceEphemeral = await generateX25519Keypair();
+async function testRatchet() {
+  // Alice creates identity
+  const alicePass = 'alicepass';
+  await createIdentity(alicePass);
+  const aliceKp = await unlockIdentity(alicePass);
+  if (!aliceKp) throw new Error('Alice unlock failed');
 
   // Bob creates identity
   const bobPass = 'bobpass';
@@ -11,18 +16,18 @@ async function testRatchet() {\n  const { generateX25519Keypair } = await import
   // Bob builds public bundle
   const bobPublicBundle = await buildPublicBundle(bobKp);
 
-  // Alice generates ephemeral, performs X3DH send
-  const aliceEphemeral = await generateX25519Keypair();
-  const aliceShared = await x3dhSend(bobPublicBundle, aliceEphemeral);
+  // Alice performs X3DH send with her identity Kp
+  const x3dhResult = await x3dhSend(aliceKp, bobPublicBundle);
+  const aliceShared = x3dhResult.sharedSecret;
 
   // Bob performs X3DH receive
   const bobPrivateBundle = await buildPrivateBundle(bobKp);
-  const bobShared = await x3dhReceive(bobPrivateBundle, aliceEphemeral.publicKey);
+  const bobShared = await x3dhReceive(bobPrivateBundle, x3dhResult.ephemeralPublic);
 
   console.assert(aliceShared.length === 32 && bobShared.length === 32, 'X3DH shared secrets mismatch length');
   console.log('X3DH ✅');
 
-  // Init ratchets (Alice sender, Bob receiver)
+  // Init ratchets
   const aliceRatchet = await initSenderRatchet(aliceShared, bobPublicBundle.signedPreKey);
   const bobRatchet = await initReceiverRatchet(bobShared, bobPrivateBundle.signedPreKeypair);
 
@@ -42,3 +47,4 @@ async function testRatchet() {\n  const { generateX25519Keypair } = await import
 }
 
 testRatchet().catch(console.error);
+

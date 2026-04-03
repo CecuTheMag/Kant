@@ -1,7 +1,7 @@
 /**
  * Kant Ratchet — X3DH key exchange + Double Ratchet encryption
  */
-import { getSodium } from './sodium';
+import { getSodium } from './sodium.js';
 export async function generateX25519Keypair() {
     const sodium = await getSodium();
     const kp = sodium.crypto_kx_keypair();
@@ -28,20 +28,18 @@ async function kdf(sodium, inputKey, context) {
         output.slice(32)
     ];
 }
-export async function x3dhSend(publicBundle, ephemeralKp) {
+export async function x3dhSend(myX25519, publicBundle) {
     const sodium = await getSodium();
-    // DH1 = ephemeralPriv * identityPub
+    const ephemeralKp = await generateX25519Keypair();
     const dh1 = sodium.crypto_scalarmult_curve25519(ephemeralKp.privateKey, publicBundle.identityKey);
-    // DH2 = ephemeralPriv * signedPrePub
     const dh2 = sodium.crypto_scalarmult_curve25519(ephemeralKp.privateKey, publicBundle.signedPreKey);
-    // DH3 = ephemeralPub * identityPriv (done on receiver)
-    // DH4 = ephemeralPub * signedPrePriv (done on receiver)
-    // Shared secret K = HKDF(DH1 || DH2 || DH3 || DH4)[0:32]
-    const kdfInput = new Uint8Array(dh1.length + dh2.length);
+    const dh3 = sodium.crypto_scalarmult_curve25519(myX25519.privateKey, publicBundle.identityKey);
+    const kdfInput = new Uint8Array(dh1.length + dh2.length + dh3.length);
     kdfInput.set(dh1);
     kdfInput.set(dh2, dh1.length);
+    kdfInput.set(dh3, dh1.length + dh2.length);
     const [sharedSecret] = await kdf(sodium, kdfInput, 'x3dh');
-    return sharedSecret;
+    return { sharedSecret, ephemeralPublic: ephemeralKp.publicKey };
 }
 export async function x3dhReceive(privateBundle, ephemeralPub) {
     const sodium = await getSodium();
@@ -107,31 +105,35 @@ async function dhRatchetStep(sodium, state, theirPub) {
 export async function ratchetEncrypt(state, plaintext) {
     const sodium = await getSodium();
     const [messageKey, newSendingChainKey] = await hkdfChain(sodium, state.sendingChainKey, 'send-msg');
-    const nonce = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_npubbytes());
+    const nonce = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_NPUBBYTES);
     const plaintextBytes = new TextEncoder().encode(plaintext);
     const ciphertext = sodium.crypto_aead_xchacha20poly1305_ietf_encrypt(plaintextBytes, null, null, nonce, messageKey);
+    const msgNum = state.sendingNumber;
     state.sendingChainKey = newSendingChainKey;
     state.sendingNumber++;
     return {
         ciphertext,
+        nonce,
+        header: { dhPublic: state.sendingRatchetKeyPair.publicKey, msgNum, prevChainLen: 0 },
         ephemeralPublicKey: state.sendingRatchetKeyPair.publicKey,
     };
 }
 export async function ratchetDecrypt(state, msg) {
     const sodium = await getSodium();
-    // Try current receiving chain
-    let [messageKey] = await hkdfChain(sodium, state.receivingChainKey, 'recv-msg');
-    let nonce = sodium.randombytes_buf(sodium.crypto_aead_xchacha20poly1305_ietf_npubbytes()); // Header has nonce? Simplified
+    const dhPublic = msg.header?.dhPublic ?? msg.ephemeralPublicKey;
+    const nonce = msg.nonce;
+    let [messageKey, newChain] = await hkdfChain(sodium, state.receivingChainKey, 'recv-msg');
     let plaintext;
     try {
-        plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(msg.ciphertext, null, null, nonce, // assume included
-        messageKey);
+        plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, msg.ciphertext, null, nonce, messageKey);
+        state.receivingChainKey = newChain;
     }
     catch {
-        // Ratchet step if header DH mismatch
-        await dhRatchetStep(sodium, state, msg.ephemeralPublicKey);
-        [messageKey] = await hkdfChain(sodium, state.receivingChainKey, 'recv-msg');
-        plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(msg.ciphertext, null, null, nonce, messageKey);
+        // DH ratchet step
+        await dhRatchetStep(sodium, state, dhPublic);
+        [messageKey, newChain] = await hkdfChain(sodium, state.receivingChainKey, 'recv-msg');
+        plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, msg.ciphertext, null, nonce, messageKey);
+        state.receivingChainKey = newChain;
     }
     state.receivingNumber++;
     return new TextDecoder().decode(plaintext);
