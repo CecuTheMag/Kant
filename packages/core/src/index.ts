@@ -28,6 +28,12 @@ export type { Contact } from './contacts.js';
 export { saveMessage, getConversation, getAllConversations, deleteConversation } from './messages.js';
 export type { StoredMessage, Conversation, MessageStatus } from './messages.js';
 
+export { startDiscovery, getKnownPeers } from './discovery.js';
+export type { DiscoveredPeer, PeerDiscoveryHandler } from './discovery.js';
+
+export { enqueue, dequeue, getPendingForContact, startQueueRetry } from './queue.js';
+export type { QueuedMessage, SendFn } from './queue.js';
+
 export const RECEIPT_PROTOCOL = '/kant/receipt/1.0.0';
 
 export const PING_PROTOCOL = '/kant/ping/1.0.0';

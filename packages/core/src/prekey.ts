@@ -25,6 +25,8 @@ function openDB(): Promise<IDBDatabase> {
     req.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains('identity')) db.createObjectStore('identity');
+      if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
+      if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
     };
     req.onsuccess = () => resolve(req.result);
@@ -108,8 +110,8 @@ export async function registerPrekeyHandler(node: Libp2p, identity: StoredKeypai
 export async function fetchPreKeyBundle(node: Libp2p, peerCircuitAddr: string): Promise<X3DHPublicBundle> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stream: any = await node.dialProtocol(multiaddr(peerCircuitAddr), PREKEY_PROTOCOL, { runOnLimitedConnection: true });
-  await stream.close();
   const raw = await readAll(stream);
+  await stream.close();
   const json = JSON.parse(new TextDecoder().decode(raw));
   return {
     identityKey: new Uint8Array(json.identityKey),

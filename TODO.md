@@ -1,17 +1,49 @@
-# Kant Core Completion Plan - Double Ratchet Implementation
+# Kant — TODO / Completion Status
 
-## Status: Pending Implementation (Awaiting User Confirmation)
+## Phase 0: P2P Crypto Foundation ✅
+- [x] `packages/core/src/ratchet.ts`: X3DH + Double Ratchet implemented
+- [x] `packages/core/src/identity.ts`: Argon2id + Ed25519 identity, IndexedDB storage
+- [x] `packages/core/src/prekey.ts`: X3DH pre-key bundle serve/fetch over libp2p
+- [x] `packages/relay/src/index.ts`: libp2p circuit relay v2 bootstrap node
+- [x] Delivery receipts protocol (`/kant/receipt/1.0.0`)
+- [x] Contact management with QR codes
+- [x] Message persistence in IndexedDB with at-rest encryption
 
-### 1. Fix syntax and imports (Critical - unblocks dev server)
-- [x] `packages/core/src/ratchet.ts`: Fix import to './sodium', remove broken `const get`, add types.\n- [x] `packages/core/src/identity.ts`: Change import './sodium.js' → './sodium'.\n- [x] Fix vite.config.ts libsodium exclude to unblock dev server.
+## Phase 1: Core Messenger — Bugs Fixed ✅
 
-### 2. Implement Ratchet primitives in ratchet.ts\n - [x] X25519 keygen, ed25519ToX25519.\n - [x] X3DH: x3dhSend/public bundle → shared secret; x3dhReceive/private bundle.\n - [x] Ratchet state init: sender/receiver.\n - [x] ratchetEncrypt/decrypt with DH ratcheting, header (pubkeys), ChaChaPoly.
+### Bug Fixes
+- [x] **Message decryption placeholder** — `App.tsx` now calls `getConversation()` and displays
+      actual decrypted text (via `messages.ts` `decryptText`). No more `[decrypted] xxxx`.
+- [x] **DB version conflict** — All `openDB()` functions (`identity.ts`, `prekey.ts`, `queue.ts`)
+      now create all 5 stores (`identity`, `contacts`, `messages`, `prekeys`, `queue`) in a
+      single `onupgradeneeded` handler at version 2. No more store-not-found errors.
+- [x] **contacts.ts double-hexing** — `addContact()` validates input is already a 64-char hex
+      string and stores it directly. Removed `sodium.to_hex(publicKeyHex)` re-encoding.
+- [x] **ratchet.ts nonce bug** — `ratchetDecrypt` now uses the nonce from the incoming message
+      instead of generating a random one. `ratchetEncrypt` returns `nonce` in the result.
+- [x] **ratchet.ts x3dhSend signature** — Now returns `{ sharedSecret, ephemeralPublic }` and
+      generates the ephemeral keypair internally (matches App.tsx destructuring).
+- [x] **prekey.ts fetchPreKeyBundle** — Fixed: reads stream before closing it.
 
-### 3. Update exports and types\n - [x] Ensure index.ts exports work.\n - [x] Define types: RatchetState, EncryptedMessage, etc.
+### New Features
+- [x] **Peer discovery** (`packages/core/src/discovery.ts`) — `startDiscovery()` listens for
+      `peer:connect` events and surfaces peers with circuit-relay multiaddrs to the UI.
+      `getKnownPeers()` queries the peerStore for already-known circuit peers.
+- [x] **Offline message queue** (`packages/core/src/queue.ts`) — `enqueue()`/`dequeue()` persist
+      unsent messages in IndexedDB. `startQueueRetry()` flushes queued messages when a peer
+      reconnects (`peer:connect` event). Status transitions: `sending` → queue → `sent`.
+- [x] **DHT UI in App.tsx** — "Discovered peers" panel shows spinner while discovering, lists
+      peers with a "Chat" button to initiate session directly from a discovered peer's circuit addr.
+- [x] **Exports** — `packages/core/src/index.ts` exports `discovery` and `queue` modules.
 
-### 4. Test & Verify\n - [x] pnpm build && pnpm --filter @kant/app dev.\n - [x] Add ratchet.test.ts with X3DH + ratchet roundtrip.
+## Phase 2: Group Chat — Pending
+- [ ] Group key agreement (Sender Keys / MLS lite)
+- [ ] Group membership management
+- [ ] Group message routing over relay
+- [ ] Group UI
 
-### 5. Stretch
-- [ ] Integrate with messages.ts for E2E ratcheted encryption.
-
-*Next: User approval → execute step-by-step, update TODO on completion.*
+## Phase 3: Hardening — Pending
+- [ ] Key rotation / pre-key replenishment
+- [ ] Message ordering guarantees
+- [ ] Skipped message keys cache
+- [ ] Forward secrecy audit

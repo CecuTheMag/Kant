@@ -8,8 +8,11 @@ import {
   ed25519ToX25519,
   fetchPreKeyBundle, buildPrivateBundle, ReceiptHandler, MessageStatus,
   addContact, getContacts, deleteContact, generateQR, parseQR,
-  saveMessage, getConversation, getAllConversations
+  saveMessage, getConversation,
+  startDiscovery, getKnownPeers,
+  enqueue, dequeue, startQueueRetry,
 } from '@kant/core';
+import type { DiscoveredPeer } from '@kant/core';
 import { QRCodeSVG } from 'qrcode.react';
 import type { Libp2p } from 'libp2p';
 import type { RatchetState, StoredKeypair } from '@kant/core';
@@ -47,22 +50,30 @@ export default function App() {
   const [qrSvg, setQrSvg] = useState<string>('');
   const [showQr, setShowQr] = useState(false);
   const [qrScanFile, setQrScanFile] = useState<File | null>(null);
+  const [discoveredPeers, setDiscoveredPeers] = useState<DiscoveredPeer[]>([]);
+  const [discovering, setDiscovering] = useState(false);
 
   const nodeRef = useRef<Libp2p | null>(null);
   const ratchetRef = useRef<RatchetState | null>(null);
   const identityRef = useRef<StoredKeypair | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // peerId → contactPubkeyHex for queue retry
+  const peerToContactRef = useRef<Map<string, string>>(new Map());
+  // contactPubkeyHex → circuit addr for sending
+  const contactAddrRef = useRef<Map<string, string>>(new Map());
+  const stopDiscoveryRef = useRef<(() => void) | null>(null);
+  const stopQueueRef = useRef<(() => void) | null>(null);
 
   const addLog = useCallback((msg: string) => {
-    setLog(p => [...p.slice(-20), `${new Date().toLocaleTimeString()} ${msg}`]); // keep recent
+    setLog(p => [...p.slice(-20), `${new Date().toLocaleTimeString()} ${msg}`]);
   }, []);
 
-  const addMessage = useCallback((from: 'me' | 'them', text: string, status: MessageStatus = 'sent') => {
-    const id = crypto.randomUUID();
-    const msg: PlainMessage = { id, from, text, ts: Date.now(), status };
+  const addMessage = useCallback((from: 'me' | 'them', text: string, status: MessageStatus = 'sent', id?: string): string => {
+    const msgId = id ?? crypto.randomUUID();
+    const msg: PlainMessage = { id: msgId, from, text, ts: Date.now(), status };
     setMessages(p => [...p, msg]);
-    return id;
+    return msgId;
   }, []);
 
   useEffect(() => {
@@ -73,28 +84,27 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load contacts & conversations on unlock
-useEffect(() => {
+  // Load contacts on unlock
+  useEffect(() => {
     if (!identityRef.current) return;
     getContacts().then(setContacts);
   }, [identityRef.current]);
 
+  // Load & decrypt conversation when contact selected
   useEffect(() => {
     if (!selectedContact || !identityRef.current) return;
     getConversation(selectedContact.publicKeyHex, identityRef.current.privateKey).then(conv => {
-      if (conv) {
-        setMessages(conv.messages.map(m => ({
-          id: m.id,
-          from: m.fromMe ? 'me' : 'them',
-          text: ' [decrypted] ' + m.id.slice(0,4), // placeholder
-          ts: m.timestamp,
-          status: m.status
-        } as PlainMessage)));
-      }
+      if (!conv) return;
+      setMessages(conv.messages.map(m => ({
+        id: m.id,
+        from: m.fromMe ? 'me' : 'them',
+        text: (m as any).text ?? '',   // decryptText result is attached as .text by getConversation
+        ts: m.timestamp,
+        status: m.status,
+      } as PlainMessage)));
     });
   }, [selectedContact]);
 
-  // Handle setup/unlock (unchanged)
   async function handleSetup() {
     if (password.length < 6) { setPwError('Password min 6 chars'); return; }
     if (password !== confirmPassword) { setPwError('Passwords mismatch'); return; }
@@ -122,8 +132,7 @@ useEffect(() => {
     if (!hex || hex.length !== 64) return;
     const nick = prompt('Nickname (optional):') || undefined;
     await addContact(hex, nick);
-    const updated = await getContacts();
-    setContacts(updated);
+    setContacts(await getContacts());
   }
 
   async function handleGenerateQr() {
@@ -146,13 +155,9 @@ useEffect(() => {
       canvas.width = img.width;
       canvas.height = img.height;
       ctx?.drawImage(img, 0, 0);
-      const url = canvas.toDataURL();
-      // Decode QR
-      // Note: qrcode lib for browser decode
-      // For MVP, assume pasted text or external scanner
-      const decoded = prompt('Paste QR decoded text here:'); // Simple
+      const decoded = prompt('Paste QR decoded text here:');
       if (decoded) {
-        const parsed = parseQR(decoded || '');
+        const parsed = parseQR(decoded);
         if (parsed) {
           addContact(parsed.publicKeyHex, parsed.nickname);
           getContacts().then(setContacts);
@@ -165,8 +170,7 @@ useEffect(() => {
 
   async function handleDeleteContact(contact: Contact) {
     await deleteContact(contact.publicKeyHex);
-    const updated = await getContacts();
-    setContacts(updated);
+    setContacts(await getContacts());
     if (selectedContact?.publicKeyHex === contact.publicKeyHex) {
       setSelectedContact(null);
       setMessages([]);
@@ -180,45 +184,55 @@ useEffect(() => {
       setMessages(conv?.messages.map(m => ({
         id: m.id,
         from: m.fromMe ? 'me' : 'them',
-              text: m.text || '',
+        text: (m as any).text ?? '',
         ts: m.timestamp,
-        status: m.status
-      })) || []);
+        status: m.status,
+      })) ?? []);
     }
   }
 
-  // P2P handlers (updated for contacts)
+  // ── P2P ──
   async function handleStartNode() {
     if (!identityRef.current) return;
     setStatus('starting');
     try {
-        const node = await createNode(
-  async (fromPeer: string, raw: string): Promise<void> => {
+      const receiptHandler: ReceiptHandler = (fromPeer, receipt) => {
+        addLog(`✓ receipt ${receipt.status} from ${fromPeer.slice(0, 12)}`);
+        setMessages(p => p.map(m => m.id === receipt.msgId ? { ...m, status: receipt.status } : m));
+      };
+
+      const node = await createNode(
+        async (fromPeer: string, raw: string): Promise<void> => {
           addLog(`← from ${fromPeer.slice(0, 12)}…`);
           if (ratchetRef.current) {
             try {
               const msg: any = JSON.parse(raw);
-              msg.header.dhPublic = new Uint8Array(Object.values(msg.header.dhPublic));
-              msg.ciphertext = new Uint8Array(Object.values(msg.ciphertext));
-              msg.nonce = new Uint8Array(Object.values(msg.nonce));
-              const plaintext = await ratchetDecrypt(ratchetRef.current, msg);
+              const encMsg = {
+                header: {
+                  dhPublic: new Uint8Array(Object.values(msg.header.dhPublic)),
+                  msgNum: msg.header.msgNum,
+                  prevChainLen: msg.header.prevChainLen,
+                },
+                ciphertext: new Uint8Array(Object.values(msg.ciphertext)),
+                nonce: new Uint8Array(Object.values(msg.nonce)),
+                ephemeralPublicKey: new Uint8Array(Object.values(msg.header.dhPublic)),
+              };
+              const plaintext = await ratchetDecrypt(ratchetRef.current, encMsg);
               addMessage('them', plaintext, 'delivered');
-              // Send receipt
               if (selectedContact && nodeRef.current) {
-                sendReceipt(nodeRef.current!, selectedContact.publicKeyHex /* approx */, {msgId: 'temp', status: 'delivered'});
+                const addr = contactAddrRef.current.get(selectedContact.publicKeyHex);
+                if (addr) sendReceipt(nodeRef.current, addr, { msgId: 'temp', status: 'delivered' });
               }
             } catch (e) {
               addLog(`Decrypt fail: ${e}`);
             }
           } else {
-            // X3DH etc unchanged
             try {
               const handshake = JSON.parse(raw);
               if (handshake.type === 'x3dh-init' && identityRef.current) {
                 const privateBundle = await buildPrivateBundle(identityRef.current);
                 const sharedSecret = await x3dhReceive(
                   privateBundle,
-                  new Uint8Array(Object.values(handshake.aliceIdentityPublic)),
                   new Uint8Array(Object.values(handshake.ephemeralPublic))
                 );
                 ratchetRef.current = await initReceiverRatchet(sharedSecret, privateBundle.signedPreKeypair);
@@ -227,11 +241,14 @@ useEffect(() => {
             } catch {}
           }
         },
+        receiptHandler,
         relayAddr,
         identityRef.current
       );
+
       nodeRef.current = node;
-      addLog(`Node: ${node.peerId.toString().slice(0,20)}`);
+      addLog(`Node: ${node.peerId.toString().slice(0, 20)}`);
+
       node.addEventListener('self:peer:update', () => {
         const addrs = node.getMultiaddrs().map(a => a.toString());
         const circuit = addrs.find(a => a.includes('/p2p-circuit'));
@@ -240,6 +257,32 @@ useEffect(() => {
           addLog('Circuit ready');
         }
       });
+
+      // Start peer discovery
+      setDiscovering(true);
+      stopDiscoveryRef.current?.();
+      stopDiscoveryRef.current = startDiscovery(node, (peer) => {
+        addLog(`🔍 peer: ${peer.peerId.slice(0, 16)}…`);
+        setDiscoveredPeers(p => {
+          if (p.find(x => x.peerId === peer.peerId)) return p;
+          return [...p, peer];
+        });
+      });
+
+      // Start queue retry
+      stopQueueRef.current?.();
+      stopQueueRef.current = startQueueRetry(
+        node,
+        peerToContactRef.current,
+        async (wirePayload, peerAddr) => {
+          await sendPing(node, peerAddr, wirePayload);
+        },
+        (msgId) => {
+          setMessages(p => p.map(m => m.id === msgId ? { ...m, status: 'sent' } : m));
+          addLog(`📤 queued msg delivered: ${msgId.slice(0, 8)}`);
+        }
+      );
+
       setStatus('started');
     } catch (e: any) {
       addLog(`Start: ${e.message}`);
@@ -254,18 +297,35 @@ useEffect(() => {
       await connectToRelay(nodeRef.current, relayAddr);
       addLog('Relay connected');
       setStatus('connected');
+      // Refresh discovered peers from store after connecting
+      setTimeout(() => {
+        if (nodeRef.current) {
+          const known = getKnownPeers(nodeRef.current);
+          if (known.length > 0) setDiscoveredPeers(p => {
+            const merged = [...p];
+            for (const k of known) {
+              if (!merged.find(x => x.peerId === k.peerId)) merged.push(k);
+            }
+            return merged;
+          });
+        }
+        setDiscovering(false);
+      }, 3000);
     } catch (e: any) {
       addLog(`Relay: ${e.message}`);
       setStatus('started');
     }
   }
 
-  async function handleInitSession() {
+  async function handleInitSession(peerCircuitAddr?: string) {
     if (!nodeRef.current || !selectedContact || !identityRef.current) return;
+    const addr = peerCircuitAddr ?? prompt('Enter peer circuit multiaddr:');
+    if (!addr) return;
+    contactAddrRef.current.set(selectedContact.publicKeyHex, addr);
     try {
       const kp = identityRef.current;
       const myX25519 = await ed25519ToX25519(kp.publicKey, kp.privateKey);
-      const bobBundle = await fetchPreKeyBundle(nodeRef.current, selectedContact.publicKeyHex /* TODO: need circuit addr - prompt? */);
+      const bobBundle = await fetchPreKeyBundle(nodeRef.current, addr);
       const { sharedSecret, ephemeralPublic } = await x3dhSend(myX25519, bobBundle);
       ratchetRef.current = await initSenderRatchet(sharedSecret, bobBundle.signedPreKey);
       const handshake = JSON.stringify({
@@ -273,7 +333,7 @@ useEffect(() => {
         aliceIdentityPublic: Array.from(myX25519.publicKey),
         ephemeralPublic: Array.from(ephemeralPublic)
       });
-      await sendPing(nodeRef.current, 'peer-addr-placeholder', handshake); // TODO: integrate contact circuit
+      await sendPing(nodeRef.current, addr, handshake);
       addLog('Session ready');
       setStatus('chatting');
     } catch (e: any) {
@@ -282,42 +342,58 @@ useEffect(() => {
   }
 
   async function handleSend() {
-    if (!nodeRef.current || !selectedContact || !ratchetRef.current || !input.trim() || !identityRef.current) return;
+    if (!selectedContact || !ratchetRef.current || !input.trim() || !identityRef.current) return;
     const text = input.trim();
     setInput('');
     const id = addMessage('me', text, 'sending');
+    const peerAddr = contactAddrRef.current.get(selectedContact.publicKeyHex) ?? '';
+
     try {
       const encrypted = await ratchetEncrypt(ratchetRef.current, text);
       const wire = JSON.stringify({
         header: {
           dhPublic: Array.from(encrypted.header.dhPublic),
           msgNum: encrypted.header.msgNum,
-          prevChainLen: encrypted.header.prevChainLen
+          prevChainLen: encrypted.header.prevChainLen,
         },
         ciphertext: Array.from(encrypted.ciphertext),
-        nonce: Array.from(encrypted.nonce)
+        nonce: Array.from(encrypted.nonce),
       });
-      await sendPing(nodeRef.current, 'peer-addr', wire); // TODO
-      // Update status to sent
-      setMessages(p => p.map(m => m.id === id ? {...m, status: 'sent'} : m));
-      await saveMessage(selectedContact!.publicKeyHex, identityRef.current!.privateKey, {
-        id: id,
+
+      if (nodeRef.current && peerAddr) {
+        await sendPing(nodeRef.current, peerAddr, wire);
+        setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sent' } : m));
+      } else {
+        // Offline: queue for retry
+        await enqueue({ id, contactPubkeyHex: selectedContact.publicKeyHex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
+        addLog(`📥 queued (peer offline)`);
+      }
+
+      await saveMessage(selectedContact.publicKeyHex, identityRef.current.privateKey, {
+        id,
         fromMe: true,
         text,
         timestamp: Date.now(),
-        status: 'sent'
+        status: nodeRef.current && peerAddr ? 'sent' : 'sending',
       } as any);
     } catch (e: any) {
-      addLog(`Send: ${e.message}`);
-      setMessages(p => p.map(m => m.id === id ? {...m, status: 'sending'} : m));
+      addLog(`Send fail: ${e.message} — queuing`);
+      if (selectedContact && peerAddr) {
+        const encrypted2 = await ratchetEncrypt(ratchetRef.current!, text);
+        const wire2 = JSON.stringify({
+          header: { dhPublic: Array.from(encrypted2.header.dhPublic), msgNum: encrypted2.header.msgNum, prevChainLen: encrypted2.header.prevChainLen },
+          ciphertext: Array.from(encrypted2.ciphertext),
+          nonce: Array.from(encrypted2.nonce),
+        });
+        await enqueue({ id, contactPubkeyHex: selectedContact.publicKeyHex, peerCircuitAddr: peerAddr, wirePayload: wire2, timestamp: Date.now() });
+      }
+      setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sending' } : m));
     }
   }
 
-  // Screens (setup/unlock unchanged, app refactored)
   if (screen === 'loading') return <div className="flex items-center justify-center h-screen text-gray-500">Loading…</div>;
 
   if (screen === 'setup' || screen === 'unlock') {
-    // Unchanged UI for brevity - copy from original
     const isSetup = screen === 'setup';
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -335,14 +411,13 @@ useEffect(() => {
     );
   }
 
-  // Main app
   return (
     <div className="flex h-screen bg-gray-100 font-sans text-sm">
       {/* Sidebar */}
       <div className="w-80 bg-white border-r flex flex-col p-4 gap-3">
         <div>
           <h1 className="text-xl font-bold">Kant</h1>
-          <p className="text-xs text-gray-400 break-all">{identity?.publicKeyHex.slice(0,32)}…</p>
+          <p className="text-xs text-gray-400 break-all">{identity?.publicKeyHex.slice(0, 32)}…</p>
         </div>
 
         {/* Node controls */}
@@ -357,6 +432,30 @@ useEffect(() => {
           {circuitAddr && <div className="text-xs bg-gray-50 p-2 rounded break-all">{circuitAddr}</div>}
         </div>
 
+        {/* Discovered peers */}
+        {(discovering || discoveredPeers.length > 0) && (
+          <div>
+            <div className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">
+              {discovering && <span className="animate-spin">⟳</span>}
+              Discovered peers ({discoveredPeers.length})
+            </div>
+            <div className="space-y-1 max-h-28 overflow-y-auto">
+              {discoveredPeers.map(p => (
+                <div key={p.peerId} className="text-xs bg-gray-50 p-1.5 rounded flex justify-between items-center">
+                  <span className="text-gray-600 truncate">{p.peerId.slice(0, 20)}…</span>
+                  <button
+                    onClick={() => selectedContact && handleInitSession(p.multiaddrs[0])}
+                    disabled={!selectedContact || status === 'chatting'}
+                    className="ml-1 px-1.5 py-0.5 bg-purple-500 text-white rounded text-xs disabled:opacity-40 shrink-0"
+                  >
+                    Chat
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Contacts */}
         <div className="flex-1">
           <div className="flex gap-2 mb-2">
@@ -368,8 +467,8 @@ useEffect(() => {
             {contacts.map(c => (
               <div key={c.publicKeyHex} className={`p-2 rounded cursor-pointer hover:bg-gray-100 flex justify-between ${selectedContact?.publicKeyHex === c.publicKeyHex ? 'bg-blue-100' : ''}`} onClick={() => handleSelectContact(c)}>
                 <div>
-                  <div className="font-medium text-sm">{c.nickname || c.publicKeyHex.slice(0,8)}</div>
-                  <div className="text-xs text-gray-500">{c.publicKeyHex.slice(0,12)}…</div>
+                  <div className="font-medium text-sm">{c.nickname || c.publicKeyHex.slice(0, 8)}</div>
+                  <div className="text-xs text-gray-500">{c.publicKeyHex.slice(0, 12)}…</div>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); handleDeleteContact(c); }} className="text-red-500 text-xs">×</button>
               </div>
@@ -379,7 +478,7 @@ useEffect(() => {
 
         {showQr && (
           <div className="bg-white border p-2 rounded">
-<QRCodeSVG value={`${identity?.publicKeyHex || ''}|`} size={128} />
+            <QRCodeSVG value={`${identity?.publicKeyHex || ''}|`} size={128} />
             <button onClick={() => setShowQr(false)} className="text-xs text-blue-600 mt-1">Close</button>
           </div>
         )}
@@ -392,8 +491,8 @@ useEffect(() => {
         </div>
 
         {selectedContact && (
-          <button onClick={handleInitSession} disabled={status !== 'connected' && status !== 'chatting'} className="w-full px-3 py-1.5 bg-purple-600 text-white rounded disabled:opacity-40">
-            Chat with {selectedContact.nickname || selectedContact.publicKeyHex.slice(0,8)}
+          <button onClick={() => handleInitSession()} disabled={status !== 'connected' && status !== 'chatting'} className="w-full px-3 py-1.5 bg-purple-600 text-white rounded disabled:opacity-40">
+            Chat with {selectedContact.nickname || selectedContact.publicKeyHex.slice(0, 8)}
           </button>
         )}
       </div>
@@ -401,7 +500,7 @@ useEffect(() => {
       {/* Chat */}
       <div className="flex-1 flex flex-col">
         <div className="border-b px-4 py-3 bg-white font-medium">
-          {selectedContact ? `${selectedContact.nickname || selectedContact.publicKeyHex.slice(0,8)} — ${status === 'chatting' ? '🔒 Encrypted' : 'Connect first'}` : 'Select contact'}
+          {selectedContact ? `${selectedContact.nickname || selectedContact.publicKeyHex.slice(0, 8)} — ${status === 'chatting' ? '🔒 Encrypted' : 'Connect first'}` : 'Select contact'}
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {messages.map((m) => (
@@ -409,7 +508,7 @@ useEffect(() => {
               <div className={`max-w-xs px-3 py-2 rounded-2xl text-sm ${m.from === 'me' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
                 <div>{m.text}</div>
                 <div className="text-xs opacity-70 mt-1 flex items-center gap-1">
-                  {m.from === 'them' ? '' : statusIcon(m.status)}
+                  {m.from === 'me' ? statusIcon(m.status) : ''}
                   <span>{new Date(m.ts).toLocaleTimeString()}</span>
                 </div>
               </div>
@@ -420,7 +519,7 @@ useEffect(() => {
         <div className="border-t bg-white p-3 flex gap-2">
           <input
             className="flex-1 border rounded-full px-4 py-2 text-sm outline-none"
-            placeholder={status === 'chatting' ? 'Message…' : 'Select contact & init'}
+            placeholder={status === 'chatting' ? 'Message…' : 'Select contact & init session'}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSend()}
@@ -444,4 +543,3 @@ function statusIcon(status: MessageStatus): string {
     default: return '';
   }
 }
-

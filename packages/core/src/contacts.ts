@@ -52,12 +52,10 @@ async function dbDelete(db: IDBDatabase, key: string): Promise<void> {
 /** Add or update a contact */
 export async function addContact(publicKeyHex: string, nickname?: string): Promise<void> {
   await sodium.ready;
+  // Validate it's already a hex string (64 hex chars = 32-byte Ed25519 pubkey)
+  if (!/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) throw new Error('Invalid public key hex');
   const db = await openDB();
-  await dbPut(db, {
-    publicKeyHex: sodium.to_hex(publicKeyHex), // ensure hex
-    nickname,
-    addedAt: Date.now()
-  });
+  await dbPut(db, { publicKeyHex, nickname, addedAt: Date.now() });
   db.close();
 }
 

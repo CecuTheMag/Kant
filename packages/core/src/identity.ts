@@ -29,15 +29,10 @@ function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (_e) => {
       const db = req.result;
-      if (!db.objectStoreNames.contains('contacts')) {
-        db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
-      }
-      if (!db.objectStoreNames.contains('messages')) {
-        db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
-      }
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE);
-      }
+      if (!db.objectStoreNames.contains('contacts')) db.createObjectStore('contacts', { keyPath: 'publicKeyHex' });
+      if (!db.objectStoreNames.contains('messages')) db.createObjectStore('messages', { keyPath: 'publicKeyHex' });
+      if (!db.objectStoreNames.contains('prekeys')) db.createObjectStore('prekeys');
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);

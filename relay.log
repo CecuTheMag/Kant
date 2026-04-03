@@ -1,6 +1,5 @@
 Kant relay running. Multiaddrs:
-  /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWLoSy6GpDbuLi6D6T9kBuwReNt4jUg39LGLafEEEt4Hvd
-  /ip4/172.16.20.23/tcp/3000/ws/p2p/12D3KooWLoSy6GpDbuLi6D6T9kBuwReNt4jUg39LGLafEEEt4Hvd
-  /ip4/10.0.0.3/tcp/3000/ws/p2p/12D3KooWLoSy6GpDbuLi6D6T9kBuwReNt4jUg39LGLafEEEt4Hvd
-  /ip4/172.17.0.1/tcp/3000/ws/p2p/12D3KooWLoSy6GpDbuLi6D6T9kBuwReNt4jUg39LGLafEEEt4Hvd
-Peer ID: 12D3KooWLoSy6GpDbuLi6D6T9kBuwReNt4jUg39LGLafEEEt4Hvd
+  /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWEVvKHnNB1dJy5CGWE53qfvUSdoaxNnvjUNg4fiKUnFQJ
+  /ip4/172.16.20.247/tcp/3000/ws/p2p/12D3KooWEVvKHnNB1dJy5CGWE53qfvUSdoaxNnvjUNg4fiKUnFQJ
+  /ip4/172.17.0.1/tcp/3000/ws/p2p/12D3KooWEVvKHnNB1dJy5CGWE53qfvUSdoaxNnvjUNg4fiKUnFQJ
+Peer ID: 12D3KooWEVvKHnNB1dJy5CGWE53qfvUSdoaxNnvjUNg4fiKUnFQJ
