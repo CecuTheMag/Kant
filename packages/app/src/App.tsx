@@ -76,6 +76,12 @@ export default function App() {
     return msgId;
   }, []);
 
+  const handleCopyKey = useCallback(async () => {
+    if (!identity?.publicKeyHex) return;
+    await navigator.clipboard.writeText(identity.publicKeyHex);
+    addLog('📋 Full public key (64 chars) copied');
+  }, [identity, addLog]);
+
   useEffect(() => {
     hasIdentity().then(exists => setScreen(exists ? 'unlock' : 'setup'));
   }, []);
@@ -98,7 +104,7 @@ export default function App() {
       setMessages(conv.messages.map(m => ({
         id: m.id,
         from: m.fromMe ? 'me' : 'them',
-        text: (m as any).text ?? '',   // decryptText result is attached as .text by getConversation
+        text: (m as any).text ?? '',
         ts: m.timestamp,
         status: m.status,
       } as PlainMessage)));
@@ -417,7 +423,16 @@ export default function App() {
       <div className="w-80 bg-white border-r flex flex-col p-4 gap-3">
         <div>
           <h1 className="text-xl font-bold">Kant</h1>
-          <p className="text-xs text-gray-400 break-all">{identity?.publicKeyHex.slice(0, 32)}…</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-gray-400 break-all flex-1 min-w-0">{identity?.publicKeyHex?.slice(0, 32)}…</p>
+            <button 
+              onClick={handleCopyKey}
+              className="text-xs text-blue-600 hover:text-blue-500 p-1 rounded bg-blue-50 hover:bg-blue-100 shrink-0"
+              title="Copy full 64-char public key"
+            >
+              📋
+            </button>
+          </div>
         </div>
 
         {/* Node controls */}
