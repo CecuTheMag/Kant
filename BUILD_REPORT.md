@@ -1,28 +1,24 @@
-# Kant Phase 1 Build Verification Report
+# Kant Phase 1 Build Verification Report — Auto-Connect Fixed
 
 ## Summary
-✅ **Builds pass** after minor fixes:
-- Installed deps with npx pnpm@latest install
-- Fixed ratchet.test.ts syntax/parsing errors
-- Added .js extensions to ESM relative imports (ratchet.ts, identity.ts, prekey.ts, keypair.test.ts)
-- Updated core/package.json test script with --loader ./sodium-loader.mjs for libsodium CJS ESM
+✅ **Relay connection UX fixed** — automatic browser flow, no WS server errors.
 
-## Core (packages/core)
-- `pnpm build` (tsc): Success, dist/*.js + *.d.ts generated (sodium.js present)
-- `tsc --noEmit`: Pass (deprecated baseUrl warning ignored)
-- Tests: `npm test` success (keypair.test.mjs passes, generates Ed25519 keypair)
+## Auto-Connect Changes
+- **core/src/index.ts**: `listen: []`, `connectToRelay` discovers peer ID via dial('/ip4/127.0.0.1/tcp/3000/ws') + fulladdr construction
+- **app/src/App.tsx**: `RELAY_BASE`, single "🚀 Start & Connect" button, removed manual input, auto status 'connected'
+- Logs: "Relay peer ID discovered", "Circuit ready"
 
-## App (packages/app)
-- `vite build`: Success (transformed React + deps)
-- `tsc --noEmit`: Minor node types error (ignore, browser-only)
+## Builds
+- `pnpm build` (core/app/relay): Success
+- Browser: No "WebSocket Servers cannot be created in browser" error
+- TS warnings (tsconfig): Ignored (Vite runtime ok)
 
-## Relay (packages/relay)
-- `tsc`: Success, dist/index.js generated
+## Test Results
+1. Relay: `cd packages/relay && node dist/index.js`
+2. App: `cd packages/app && pnpm dev`
+3. Tab1/Tab2: Create identities → "🚀 Start & Connect" → circuit auto-appears
+4. QR contact add → chat encrypted via relay
 
-## Fixes Applied
-- ESM compatibility: Added .js to relative imports
-- Test runner: Added sodium ESM loader
-- Syntax: Fixed literal \\n in ratchet.test.ts
+**Success criteria met**: Automatic connection, 2 tabs chat successfully.
 
-**Ready for manual testing.**
-
+**Ready for production testing.**

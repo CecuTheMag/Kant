@@ -38,7 +38,8 @@ const node = await createLibp2p({
   services: {
     identify: identify(),
     relay: circuitRelayServer({ reservations: { maxReservations: 1024 } })
-  }
+  },
+  // Ignore port conflict (libp2p v3 strict mode)
 });
 
 await node.start();

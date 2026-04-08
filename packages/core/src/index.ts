@@ -73,10 +73,10 @@ import { registerPrekeyHandler } from './prekey.js';
 
 export type ReceiptHandler = (fromPeerId: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string}) => void;
 
-export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandler, relayAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
+export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandler, relayBaseAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
   const node = await createLibp2p({
     addresses: {
-      listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
+      listen: []
     },
     transports: [
       webSockets(),
@@ -86,6 +86,7 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     streamMuxers: [yamux()],
     services: { identify: identify() }
   });
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await node.handle(PING_PROTOCOL, async (stream: any, connection: any) => {
@@ -106,12 +107,32 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
   }, { runOnLimitedConnection: true });
 
   await node.start();
+  
+  if (relayBaseAddr) {
+    await connectToRelay(node, relayBaseAddr);
+  }
+  
   if (identity) await registerPrekeyHandler(node, identity);
   return node;
 }
 
-export async function connectToRelay(node: Libp2p, relayMultiaddr: string): Promise<void> {
-  await node.dial(multiaddr(relayMultiaddr));
+export async function connectToRelay(node: Libp2p, relayBaseAddr?: string): Promise<void> {
+  console.log('connectToRelay called with:', relayBaseAddr);
+  if (!relayBaseAddr) return;
+  
+  const baseMa = multiaddr(relayBaseAddr);
+  const conn = await node.dial(baseMa);
+  console.log('Base dial conn:', !!conn);
+  if (!conn) throw new Error('Failed to dial relay base at ' + relayBaseAddr);
+  
+  const relayPeerId = conn.remotePeer.toString();
+  console.log('Relay peer ID discovered:', relayPeerId);
+  
+  const fullRelay = `${baseMa.toString()}/p2p/${relayPeerId}`;
+  await node.dial(multiaddr(fullRelay));
+  
+  // Wait for identify to propagate circuit addresses
+  await new Promise(resolve => setTimeout(resolve, 1000));
 }
 
 export async function sendReceipt(node: Libp2p, peerMultiaddr: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex?: string}): Promise<void> {

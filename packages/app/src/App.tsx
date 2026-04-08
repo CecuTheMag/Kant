@@ -19,7 +19,7 @@ import type { RatchetState, StoredKeypair } from '@kant/core';
 import type { Contact } from '@kant/core';
 import './index.css';
 
-const DEFAULT_RELAY = '/ip4/127.0.0.1/tcp/3000/ws/p2p/';
+const RELAY_BASE = '/ip4/127.0.0.1/tcp/3000/ws';
 
 type Screen = 'loading' | 'setup' | 'unlock' | 'app';
 
@@ -39,8 +39,7 @@ export default function App() {
   const [identity, setIdentity] = useState<StoredKeypair | null>(null);
 
   // P2P & Messenger state
-  const [relayAddr, setRelayAddr] = useState(DEFAULT_RELAY);
-  const [status, setStatus] = useState<'idle' | 'started' | 'connected' | 'chatting' | 'starting' | 'connecting'>('idle');
+  const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'chatting'>('idle');
   const [circuitAddr, setCircuitAddr] = useState('');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -200,7 +199,7 @@ export default function App() {
   // ── P2P ──
   async function handleStartNode() {
     if (!identityRef.current) return;
-    setStatus('starting');
+  setStatus('connecting');
     try {
       const receiptHandler: ReceiptHandler = (fromPeer, receipt) => {
         addLog(`✓ receipt ${receipt.status} from ${fromPeer.slice(0, 12)}`);
@@ -248,7 +247,7 @@ export default function App() {
           }
         },
         receiptHandler,
-        relayAddr,
+        RELAY_BASE,
         identityRef.current
       );
 
@@ -289,39 +288,15 @@ export default function App() {
         }
       );
 
-      setStatus('started');
+      setStatus('connected');
+      addLog('🚀 Node auto-connected to relay');
     } catch (e: any) {
-      addLog(`Start: ${e.message}`);
+      addLog(`Connect fail: ${e.message}`);
       setStatus('idle');
     }
   }
 
-  async function handleConnect() {
-    if (!nodeRef.current) return;
-    setStatus('connecting');
-    try {
-      await connectToRelay(nodeRef.current, relayAddr);
-      addLog('Relay connected');
-      setStatus('connected');
-      // Refresh discovered peers from store after connecting
-      setTimeout(() => {
-        if (nodeRef.current) {
-          const known = getKnownPeers(nodeRef.current);
-          if (known.length > 0) setDiscoveredPeers(p => {
-            const merged = [...p];
-            for (const k of known) {
-              if (!merged.find(x => x.peerId === k.peerId)) merged.push(k);
-            }
-            return merged;
-          });
-        }
-        setDiscovering(false);
-      }, 3000);
-    } catch (e: any) {
-      addLog(`Relay: ${e.message}`);
-      setStatus('started');
-    }
-  }
+
 
   async function handleInitSession(peerCircuitAddr?: string) {
     if (!nodeRef.current || !selectedContact || !identityRef.current) return;
@@ -440,9 +415,8 @@ export default function App() {
           <button onClick={handleStartNode} disabled={status !== 'idle'} className="w-full px-3 py-1.5 bg-blue-600 text-white rounded disabled:opacity-40 text-xs">
             Start Node
           </button>
-          <input className="w-full border rounded px-2 py-1 text-xs" value={relayAddr} onChange={e => setRelayAddr(e.target.value)} placeholder="Relay" />
-          <button onClick={handleConnect} disabled={status !== 'started'} className="w-full px-3 py-1.5 bg-green-600 text-white rounded disabled:opacity-40">
-            Connect Relay
+          <button onClick={handleStartNode} disabled={status !== 'idle'} className="w-full px-3 py-1.5 bg-emerald-600 text-white rounded font-medium text-sm">
+            {status === 'connecting' ? 'Connecting...' : '🚀 Start & Connect Relay'}
           </button>
           {circuitAddr && <div className="text-xs bg-gray-50 p-2 rounded break-all">{circuitAddr}</div>}
         </div>
