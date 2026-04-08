@@ -116,23 +116,20 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
   return node;
 }
 
-export async function connectToRelay(node: Libp2p, relayBaseAddr?: string): Promise<void> {
-  console.log('connectToRelay called with:', relayBaseAddr);
-  if (!relayBaseAddr) return;
-  
-  const baseMa = multiaddr(relayBaseAddr);
-  const conn = await node.dial(baseMa);
-  console.log('Base dial conn:', !!conn);
-  if (!conn) throw new Error('Failed to dial relay base at ' + relayBaseAddr);
-  
-  const relayPeerId = conn.remotePeer.toString();
-  console.log('Relay peer ID discovered:', relayPeerId);
-  
-  const fullRelay = `${baseMa.toString()}/p2p/${relayPeerId}`;
-  await node.dial(multiaddr(fullRelay));
-  
-  // Wait for identify to propagate circuit addresses
-  await new Promise(resolve => setTimeout(resolve, 1000));
+export async function getRelayInfo(): Promise<{ peerId: string; multiaddr: string } | null> {
+  try {
+    const res = await fetch('http://127.0.0.1:3001/relay-info');
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+export async function connectToRelay(node: Libp2p, relayAddr: string): Promise<void> {
+  console.log('Connecting to relay:', relayAddr);
+  await node.dial(multiaddr(relayAddr));
+  await new Promise(r => setTimeout(r, 1500)); // Wait for identify
 }
 
 export async function sendReceipt(node: Libp2p, peerMultiaddr: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex?: string}): Promise<void> {

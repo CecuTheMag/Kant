@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   hasIdentity, createIdentity, unlockIdentity,
-  createNode, connectToRelay, sendPing, sendReceipt,
+  createNode, connectToRelay, getRelayInfo, sendPing, sendReceipt,
   ratchetEncrypt, ratchetDecrypt,
   initSenderRatchet, initReceiverRatchet,
   x3dhSend, x3dhReceive,
@@ -19,7 +19,7 @@ import type { RatchetState, StoredKeypair } from '@kant/core';
 import type { Contact } from '@kant/core';
 import './index.css';
 
-const RELAY_BASE = '/ip4/127.0.0.1/tcp/3000/ws';
+// RELAY_BASE removed - use getRelayInfo()
 
 type Screen = 'loading' | 'setup' | 'unlock' | 'app';
 
@@ -206,6 +206,12 @@ export default function App() {
         setMessages(p => p.map(m => m.id === receipt.msgId ? { ...m, status: receipt.status } : m));
       };
 
+      const relayInfo = await getRelayInfo();
+      if (!relayInfo) throw new Error('Relay not running on port 3001 - start relay first');
+      
+      addLog(`Relay FULL multiaddr: ${relayInfo.multiaddr}`);
+      addLog(`Relay peer ID: ${relayInfo.peerId}`);
+      
       const node = await createNode(
         async (fromPeer: string, raw: string): Promise<void> => {
           addLog(`← from ${fromPeer.slice(0, 12)}…`);
@@ -247,7 +253,7 @@ export default function App() {
           }
         },
         receiptHandler,
-        RELAY_BASE,
+        relayInfo.multiaddr,
         identityRef.current
       );
 

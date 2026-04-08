@@ -1,6 +1,24 @@
-Kant relay running. Multiaddrs:
-  /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWEcbtFRbep4imRUSVNipUPQ6eoPYsqYpaQok5ZVWKEXQZ
-  /ip4/192.168.88.210/tcp/3000/ws/p2p/12D3KooWEcbtFRbep4imRUSVNipUPQ6eoPYsqYpaQok5ZVWKEXQZ
-  /ip4/172.18.0.1/tcp/3000/ws/p2p/12D3KooWEcbtFRbep4imRUSVNipUPQ6eoPYsqYpaQok5ZVWKEXQZ
-  /ip4/172.17.0.1/tcp/3000/ws/p2p/12D3KooWEcbtFRbep4imRUSVNipUPQ6eoPYsqYpaQok5ZVWKEXQZ
-Peer ID: 12D3KooWEcbtFRbep4imRUSVNipUPQ6eoPYsqYpaQok5ZVWKEXQZ
+file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/transport-manager.js:239
+        throw new UnsupportedListenAddressesError(`Some configured addresses failed to be listened on, you may need to remove one or more listen addresses from your configuration or set \`transportManager.faultTolerance\` to NO_FATAL:\n${[...listenStats.errors.entries()].map(([addr, err]) => {
+              ^
+
+UnsupportedListenAddressesError: Some configured addresses failed to be listened on, you may need to remove one or more listen addresses from your configuration or set `transportManager.faultTolerance` to NO_FATAL:
+
+  /ip4/0.0.0.0/tcp/3000/ws: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
+      at Server.setupListenHandle [as _listen2] (node:net:1811:16)
+      at listenInCluster (node:net:1859:12)
+      at doListen (node:net:2008:7)
+      at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+
+    at DefaultTransportManager.listen (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/transport-manager.js:239:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async DefaultTransportManager.afterStart (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/transport-manager.js:54:9)
+    at async file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/components.js:23:13
+    at async Promise.all (index 0)
+    at async Proxy._invokeStartableMethod (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/components.js:20:9)
+    at async Proxy.afterStart (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/components.js:34:9)
+    at async Libp2p.start (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/libp2p.js:188:13)
+    at async createLibp2p (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/index.js:54:9)
+    at async file:///home/magcecu/Documents/GitHub/Kant/packages/relay/dist/index.js:28:14
+
+Node.js v18.19.1
