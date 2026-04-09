@@ -25,18 +25,19 @@ import { yamux } from '@libp2p/yamux';
 import { circuitRelayServer } from '@libp2p/circuit-relay-v2';
 import { identify } from '@libp2p/identify';
 import { createServer } from 'http';
+const RELAY_PORT = parseInt(process.env.RELAY_PORT ?? '3000');
+const RELAY_INFO_PORT = parseInt(process.env.RELAY_INFO_PORT ?? '3001');
 const node = await createLibp2p({
     addresses: {
-        listen: ['/ip4/0.0.0.0/tcp/3000/ws']
+        listen: [`/ip4/0.0.0.0/tcp/${RELAY_PORT}/ws`]
     },
     transports: [webSockets()],
     connectionEncrypters: [noise()],
     streamMuxers: [yamux()],
     services: {
         identify: identify(),
-        relay: circuitRelayServer({ reservations: { maxReservations: 1024 } })
-    },
-    // Ignore port conflict (libp2p v3 strict mode)
+        relay: circuitRelayServer({ reservations: { maxReservations: 1024, defaultDurationLimit: 0 } })
+    }
 });
 await node.start();
 const addrs = node.getMultiaddrs().map(a => a.toString());
@@ -44,9 +45,8 @@ console.log('Kant relay running. Multiaddrs:');
 addrs.forEach(a => console.log(' ', a));
 console.log('Peer ID:', node.peerId.toString());
 const peerId = node.peerId.toString();
-const fullRelayAddr = `/ip4/127.0.0.1/tcp/3000/ws/p2p/${peerId}`;
+const fullRelayAddr = `/ip4/127.0.0.1/tcp/${RELAY_PORT}/ws/p2p/${peerId}`;
 console.log('Full relay addr:', fullRelayAddr);
-// HTTP server for browsers to fetch relay info
 const httpServer = createServer((req, res) => {
     if (req.url === '/relay-info') {
         res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
@@ -57,5 +57,6 @@ const httpServer = createServer((req, res) => {
         res.end();
     }
 });
-httpServer.listen(3001, '127.0.0.1');
-console.log('HTTP info server: http://127.0.0.1:3001/relay-info');
+httpServer.listen(RELAY_INFO_PORT, '127.0.0.1', () => {
+    console.log(`HTTP info server: http://127.0.0.1:${RELAY_INFO_PORT}/relay-info`);
+});

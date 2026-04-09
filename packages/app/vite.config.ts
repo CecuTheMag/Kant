@@ -15,6 +15,7 @@ export default defineConfig({
     include: ['libsodium-wrappers-sumo', 'libsodium-sumo'],
   },
   define: {
-    global: 'globalThis'
+    global: 'globalThis',
+    'import.meta.env.VITE_RELAY_HTTP_PORT': JSON.stringify(process.env.VITE_RELAY_HTTP_PORT ?? '3001'),
   }
 });

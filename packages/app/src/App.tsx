@@ -38,6 +38,13 @@ export default function App() {
   const [pwError, setPwError] = useState('');
   const [identity, setIdentity] = useState<StoredKeypair | null>(null);
 
+  // Instance / relay port
+  const [relayHttpPort, setRelayHttpPort] = useState<number>(() => {
+    const env = (import.meta as any).env?.VITE_RELAY_HTTP_PORT;
+    return env ? parseInt(env) : 3001;
+  });
+  const instanceNum = (relayHttpPort - 3001) / 2 + 1;
+
   // P2P & Messenger state
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected' | 'chatting'>('idle');
   const [circuitAddr, setCircuitAddr] = useState('');
@@ -206,8 +213,8 @@ export default function App() {
         setMessages(p => p.map(m => m.id === receipt.msgId ? { ...m, status: receipt.status } : m));
       };
 
-      const relayInfo = await getRelayInfo();
-      if (!relayInfo) throw new Error('Relay not running on port 3001 - start relay first');
+      const relayInfo = await getRelayInfo(relayHttpPort);
+      if (!relayInfo) throw new Error(`Relay not running on port ${relayHttpPort} — run ./start.sh ${instanceNum}`);
       
       addLog(`Relay FULL multiaddr: ${relayInfo.multiaddr}`);
       addLog(`Relay peer ID: ${relayInfo.peerId}`);
@@ -260,14 +267,22 @@ export default function App() {
       nodeRef.current = node;
       addLog(`Node: ${node.peerId.toString().slice(0, 20)}`);
 
-      node.addEventListener('self:peer:update', () => {
-        const addrs = node.getMultiaddrs().map(a => a.toString());
-        const circuit = addrs.find(a => a.includes('/p2p-circuit'));
+      // Poll for circuit address — assigned asynchronously after relay reservation
+      const pollCircuit = (attempts = 0) => {
+        const addrs = node.getMultiaddrs().map((a: any) => a.toString());
+        console.log('[circuit poll] all addrs:', addrs);
+        const circuit = addrs.find((a: string) => a.includes('/p2p-circuit'));
         if (circuit) {
           setCircuitAddr(circuit);
-          addLog('Circuit ready');
+          addLog(`✅ Circuit: ${circuit.slice(0, 60)}…`);
+        } else if (attempts < 15) {
+          addLog(attempts === 0 ? 'Waiting for circuit…' : `⟳ circuit (${attempts})`);
+          setTimeout(() => pollCircuit(attempts + 1), 1000);
+        } else {
+          addLog('⚠️ No circuit addr after 15s — check relay');
         }
-      });
+      };
+      setTimeout(() => pollCircuit(), 1500);
 
       // Start peer discovery
       setDiscovering(true);
@@ -306,12 +321,25 @@ export default function App() {
 
   async function handleInitSession(peerCircuitAddr?: string) {
     if (!nodeRef.current || !selectedContact || !identityRef.current) return;
-    const addr = peerCircuitAddr ?? prompt('Enter peer circuit multiaddr:');
-    if (!addr) return;
+    const addr = peerCircuitAddr ?? prompt('Enter peer circuit multiaddr (e.g. /ip4/.../p2p/RELAY/p2p-circuit/p2p/PEER):');
+    if (!addr || !addr.includes('/p2p-circuit')) {
+      addLog('\u274c Invalid: must include /p2p-circuit');
+      return;
+    }
+    console.log('[initSession] addr:', addr);
     contactAddrRef.current.set(selectedContact.publicKeyHex, addr);
     try {
+      // If peer is on a different relay, dial that relay first
+      const relayPart = addr.split('/p2p-circuit')[0];
+      if (relayPart && !nodeRef.current.getConnections().find((c: any) => addr.startsWith(relayPart))) {
+        addLog('Dialing peer relay\u2026');
+        console.log('[initSession] dialing relay part:', relayPart);
+        await nodeRef.current.dial((await import('@multiformats/multiaddr')).multiaddr(relayPart));
+        await new Promise(r => setTimeout(r, 1000));
+      }
       const kp = identityRef.current;
       const myX25519 = await ed25519ToX25519(kp.publicKey, kp.privateKey);
+      addLog('Fetching prekey bundle\u2026');
       const bobBundle = await fetchPreKeyBundle(nodeRef.current, addr);
       const { sharedSecret, ephemeralPublic } = await x3dhSend(myX25519, bobBundle);
       ratchetRef.current = await initSenderRatchet(sharedSecret, bobBundle.signedPreKey);
@@ -321,10 +349,11 @@ export default function App() {
         ephemeralPublic: Array.from(ephemeralPublic)
       });
       await sendPing(nodeRef.current, addr, handshake);
-      addLog('Session ready');
+      addLog('\ud83d\udd12 Session ready');
       setStatus('chatting');
     } catch (e: any) {
-      addLog(`Session: ${e.message}`);
+      addLog(`Session fail: ${e.message}`);
+      console.error('[initSession]', e);
     }
   }
 
@@ -416,15 +445,43 @@ export default function App() {
           </div>
         </div>
 
+        {/* Instance selector */}
+        <div>
+          <label className="text-xs text-gray-500">Instance:</label>
+          <select
+            value={instanceNum}
+            onChange={e => {
+              const n = parseInt(e.target.value);
+              setRelayHttpPort(3000 + (n - 1) * 2 + 1);
+            }}
+            disabled={status !== 'idle'}
+            className="w-full border rounded px-2 py-1 text-xs mt-0.5 disabled:opacity-50"
+          >
+            <option value={1}>Instance 1 (relay :3000 / http :3001)</option>
+            <option value={2}>Instance 2 (relay :3002 / http :3003)</option>
+            <option value={3}>Instance 3 (relay :3004 / http :3005)</option>
+          </select>
+        </div>
+
         {/* Node controls */}
         <div className="space-y-2">
-          <button onClick={handleStartNode} disabled={status !== 'idle'} className="w-full px-3 py-1.5 bg-blue-600 text-white rounded disabled:opacity-40 text-xs">
-            Start Node
+          <button onClick={handleStartNode} disabled={status !== 'idle'} className="w-full px-3 py-1.5 bg-emerald-600 text-white rounded font-medium text-sm disabled:opacity-40">
+            {status === 'connecting' ? 'Connecting…' : '🚀 Start & Connect'}
           </button>
-          <button onClick={handleStartNode} disabled={status !== 'idle'} className="w-full px-3 py-1.5 bg-emerald-600 text-white rounded font-medium text-sm">
-            {status === 'connecting' ? 'Connecting...' : '🚀 Start & Connect Relay'}
-          </button>
-          {circuitAddr && <div className="text-xs bg-gray-50 p-2 rounded break-all">{circuitAddr}</div>}
+          {circuitAddr && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-blue-700">Your circuit addr:</span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(circuitAddr); addLog('\ud83d\udccb Circuit addr copied'); }}
+                  className="text-xs text-blue-600 hover:text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded"
+                >
+                  Copy
+                </button>
+              </div>
+              <p className="text-xs text-blue-600 break-all">{circuitAddr}</p>
+            </div>
+          )}
         </div>
 
         {/* Discovered peers */}

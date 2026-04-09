@@ -1,0 +1,7 @@
+Kant relay running. Multiaddrs:
+  /ip4/127.0.0.1/tcp/3002/ws/p2p/12D3KooWS7pzqxWKi4JLYtCaHfefjp7oVGH6QoT4gXUDdRAWj26L
+  /ip4/192.168.88.179/tcp/3002/ws/p2p/12D3KooWS7pzqxWKi4JLYtCaHfefjp7oVGH6QoT4gXUDdRAWj26L
+  /ip4/172.17.0.1/tcp/3002/ws/p2p/12D3KooWS7pzqxWKi4JLYtCaHfefjp7oVGH6QoT4gXUDdRAWj26L
+Peer ID: 12D3KooWS7pzqxWKi4JLYtCaHfefjp7oVGH6QoT4gXUDdRAWj26L
+Full relay addr: /ip4/127.0.0.1/tcp/3002/ws/p2p/12D3KooWS7pzqxWKi4JLYtCaHfefjp7oVGH6QoT4gXUDdRAWj26L
+HTTP info server: http://127.0.0.1:3003/relay-info

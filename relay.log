@@ -5,13 +5,13 @@ file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_
 UnsupportedListenAddressesError: Some configured addresses failed to be listened on, you may need to remove one or more listen addresses from your configuration or set `transportManager.faultTolerance` to NO_FATAL:
 
   /ip4/0.0.0.0/tcp/3000/ws: Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
-      at Server.setupListenHandle [as _listen2] (node:net:1811:16)
-      at listenInCluster (node:net:1859:12)
-      at doListen (node:net:2008:7)
-      at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+      at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+      at listenInCluster (node:net:1997:12)
+      at node:net:2206:7
+      at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
 
     at DefaultTransportManager.listen (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/transport-manager.js:239:15)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
     at async DefaultTransportManager.afterStart (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/transport-manager.js:54:9)
     at async file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/components.js:23:13
     at async Promise.all (index 0)
@@ -21,4 +21,4 @@ UnsupportedListenAddressesError: Some configured addresses failed to be listened
     at async createLibp2p (file:///home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libp2p@3.1.7/node_modules/libp2p/dist/src/index.js:54:9)
     at async file:///home/magcecu/Documents/GitHub/Kant/packages/relay/dist/index.js:28:14
 
-Node.js v18.19.1
+Node.js v22.22.2

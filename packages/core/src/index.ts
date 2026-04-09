@@ -73,10 +73,14 @@ import { registerPrekeyHandler } from './prekey.js';
 
 export type ReceiptHandler = (fromPeerId: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string}) => void;
 
-export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandler, relayBaseAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
+export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandler, relayAddr?: string, identity?: StoredKeypair): Promise<Libp2p> {
+  console.log('[createNode] Starting, relay:', relayAddr);
+
   const node = await createLibp2p({
     addresses: {
-      listen: []
+      // Passing the relay addr as a listen address triggers the circuit relay
+      // transport to make a reservation and announce a /p2p-circuit address.
+      listen: relayAddr ? [`${relayAddr}/p2p-circuit`] : []
     },
     transports: [
       webSockets(),
@@ -84,11 +88,11 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     ],
     connectionEncrypters: [noise()],
     streamMuxers: [yamux()],
-    services: { identify: identify() }
+    services: { identify: identify() },
+    connectionGater: { denyDialMultiaddr: () => false }
   });
 
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await node.handle(PING_PROTOCOL, async (stream: any, connection: any) => {
     const message = await readAll(stream);
     onPing?.(connection.remotePeer.toString(), message);
@@ -96,34 +100,35 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     await stream.close();
   }, { runOnLimitedConnection: true });
 
-  // Receipt protocol handler
   await node.handle(RECEIPT_PROTOCOL, async (stream: any, connection: any) => {
     const receiptJson = await readAll(stream);
     try {
-    const receipt = JSON.parse(receiptJson) as {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string};
+      const receipt = JSON.parse(receiptJson) as {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string};
       onReceipt?.(connection.remotePeer.toString(), receipt);
     } catch {}
     await stream.close();
   }, { runOnLimitedConnection: true });
 
   await node.start();
-  
-  if (relayBaseAddr) {
-    await connectToRelay(node, relayBaseAddr);
-  }
-  
+  console.log('[createNode] Started, peerId:', node.peerId.toString());
+
   if (identity) await registerPrekeyHandler(node, identity);
   return node;
 }
 
-export async function getRelayInfo(): Promise<{ peerId: string; multiaddr: string } | null> {
-  try {
-    const res = await fetch('http://127.0.0.1:3001/relay-info');
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+export async function getRelayInfo(httpPort?: number): Promise<{ peerId: string; multiaddr: string } | null> {
+  const envPort = (import.meta as any).env?.VITE_RELAY_HTTP_PORT;
+  const ports = httpPort ? [httpPort] : envPort ? [parseInt(envPort)] : [3001, 3003, 3005];
+  for (const port of ports) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/relay-info`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      console.log(`[getRelayInfo] Found relay on port ${port}:`, data.multiaddr);
+      return data;
+    } catch {}
   }
+  return null;
 }
 
 export async function connectToRelay(node: Libp2p, relayAddr: string): Promise<void> {

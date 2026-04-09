@@ -1,51 +1,44 @@
 #!/usr/bin/env bash
 set -e
 
+INSTANCE=${1:-1}
+BASE_PORT=$((3000 + (INSTANCE - 1) * 2))
+RELAY_PORT=$BASE_PORT
+RELAY_INFO_PORT=$((BASE_PORT + 1))
+APP_PORT=$((5172 + INSTANCE))
+
 ROOT=$(cd "$(dirname "$0")" && pwd)
+echo "==> Instance $INSTANCE | relay=$RELAY_PORT http=$RELAY_INFO_PORT app=$APP_PORT"
 
 echo "==> Installing dependencies..."
 cd "$ROOT"
 npx pnpm install --frozen-lockfile 2>/dev/null || npx pnpm install
 
-find_port() {
-  for p in {3000..3010}; do
-    if ! lsof -ti:$p | grep -q .; then
-      echo $p
-      return
-    fi
-  done
-  echo "No free port 3000-3010" >&2
-  exit 1
-}
-
-RELAY_PORT=$(find_port)
-RELAY_INFO_PORT=$((RELAY_PORT + 1))
-
-echo "==> Using ports: relay=$RELAY_PORT http=$RELAY_INFO_PORT"
-
 echo "==> Building relay..."
 cd "$ROOT/packages/relay"
-npx tsc
+RELAY_PORT=$RELAY_PORT RELAY_INFO_PORT=$RELAY_INFO_PORT npx tsc
 
-echo "==> Killing old relay/http on $RELAY_PORT, $RELAY_INFO_PORT..."
-lsof -ti:$RELAY_PORT,$RELAY_INFO_PORT | xargs -r kill -9
+echo "==> Killing old processes on $RELAY_PORT, $RELAY_INFO_PORT..."
+lsof -ti:$RELAY_PORT,$RELAY_INFO_PORT | xargs -r kill -9 2>/dev/null || true
 
-echo "==> Starting relay (logs -> $ROOT/relay.log)..."
+echo "==> Starting relay..."
 cd "$ROOT"
-node packages/relay/dist/index.js > relay.log 2>&1 &
+RELAY_PORT=$RELAY_PORT RELAY_INFO_PORT=$RELAY_INFO_PORT \
+  node packages/relay/dist/index.js > "relay-$INSTANCE.log" 2>&1 &
 RELAY_PID=$!
 
-sleep 3
+sleep 2
 echo ""
-echo "--- Relay output ---"
-cat relay.log
+echo "--- Relay output (instance $INSTANCE) ---"
+cat "relay-$INSTANCE.log" 2>/dev/null || echo "Starting..."
 echo "--------------------"
 echo "Relay PID: $RELAY_PID | http://127.0.0.1:$RELAY_INFO_PORT/relay-info"
 
 trap "echo 'Stopping relay (PID $RELAY_PID)...'; kill $RELAY_PID 2>/dev/null" EXIT INT TERM
 
-echo "==> Starting app at http://localhost:5173 (auto-ports)"
-echo "    Open two tabs for multi-instance test."
+echo ""
+echo "==> Starting app at http://localhost:$APP_PORT"
+echo "    Instance $INSTANCE — connects to relay on port $RELAY_INFO_PORT"
 echo ""
 cd "$ROOT/packages/app"
-npx vite
+VITE_RELAY_HTTP_PORT=$RELAY_INFO_PORT npx vite --port $APP_PORT
