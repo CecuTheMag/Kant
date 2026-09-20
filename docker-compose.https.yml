@@ -1,0 +1,85 @@
+# Kant Relay — HTTPS (public internet, domain required)
+#
+# Prerequisites:
+#   1. A domain pointed at this server's public IP (e.g. relay.yourdomain.com)
+#   2. Ports 80 and 443 open in your firewall / router
+#      - 80/443 → Caddy (TLS termination + HTTP API proxy)
+#      - Caddy proxies the libp2p WebSocket stream to relay:3000 internally
+#
+# Usage:
+#   RELAY_DOMAIN=relay.yourdomain.com docker compose -f docker-compose.https.yml up -d
+#
+# Peers connect to:
+#   https://relay.yourdomain.com   (Caddy proxies → relay:3001)
+#
+# Caddy automatically obtains and renews a Let's Encrypt certificate.
+# The relay seed in the relay-data volume keeps the PeerID stable — back it up.
+
+services:
+  push-proxy:
+    build:
+      context: packages/push-proxy
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./.kant-secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
+      - push-proxy-data:/data
+    environment:
+      PUSH_PROXY_BIND: "0.0.0.0"
+      PUSH_PROXY_PORT: "4001"
+      PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:?Set PUSH_PROXY_SECRET}"
+      FIREBASE_PROJECT_ID: "${FIREBASE_PROJECT_ID:?Set FIREBASE_PROJECT_ID}"
+      FIREBASE_SERVICE_ACCOUNT_FILE: "/run/secrets/firebase-service-account.json"
+      PUSH_PROXY_DATA_FILE: "/data/tokens.json"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+
+  relay:
+    build:
+      context: .
+      dockerfile: packages/relay/Dockerfile
+    restart: unless-stopped
+    # Port 3000 is intentionally private; Caddy proxies WSS to it internally.
+    volumes:
+      - relay-data:/data
+    environment:
+      RELAY_PORT: "3000"
+      RELAY_INFO_PORT: "3001"
+      RELAY_HTTP_BIND: "0.0.0.0"
+      RELAY_PUBLIC_HOST: "${RELAY_DOMAIN:?Set RELAY_DOMAIN to your domain}"
+      RELAY_PUBLIC_PORT: "443"
+      RELAY_SECURE: "true"
+      RELAY_DATA_DIR: "/data"
+      # Web Push (optional — desktop PWA offline notifications).
+      # Generate keys: npx web-push generate-vapid-keys
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
+      VAPID_SUBJECT: "${VAPID_SUBJECT:-mailto:admin@kant.local}"
+      # FCM / Android push (optional).
+      # Point at the hosted push proxy — no Firebase credentials needed here.
+      PUSH_PROXY_URL: "${PUSH_PROXY_URL:-}"
+      PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:-}"
+
+  caddy:
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      CADDY_EMAIL: "${CADDY_EMAIL:-admin@example.com}"
+      RELAY_DOMAIN: "${RELAY_DOMAIN:?Set RELAY_DOMAIN to your domain}"
+    depends_on:
+      - relay
+      - push-proxy
+
+volumes:
+  relay-data:
+  push-proxy-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,101 @@
+{"level":30,"time":"2026-09-02T20:31:34.480Z","service":"kant-relay","event":"seed.loaded","path":"/tmp/kant-relay-local-data/relay-seed-3000.bin","msg":"Loaded relay seed"}
+{"level":40,"time":"2026-09-02T20:31:34.544Z","service":"kant-relay","event":"config.public_host_loopback","host":"127.0.0.1","msg":"remote peers will not be able to connect"}
+{"level":30,"time":"2026-09-02T20:31:34.578Z","service":"kant-relay","event":"relay.started","peerId":"12D3KooWD76KaYjhp3HVVKTZh2ras5V6skMmx719n2YSh1TzaYpm","multiaddrs":["/ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWD76KaYjhp3HVVKTZh2ras5V6skMmx719n2YSh1TzaYpm"],"msg":"Kant relay running"}
+{"level":30,"time":"2026-09-02T20:31:34.578Z","service":"kant-relay","event":"relay.address","addr":"/ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWD76KaYjhp3HVVKTZh2ras5V6skMmx719n2YSh1TzaYpm","msg":"Full relay addr"}
+{"level":30,"time":"2026-09-02T20:31:34.579Z","service":"kant-relay","event":"http.started","bind":"0.0.0.0","port":3001,"endpoints":["/relay-info","/healthz","/readyz","/metrics"],"msg":"HTTP info server started"}
+{"level":30,"time":"2026-09-02T20:31:38.732Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:31:41.530Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWNK6e1LUACxjmqoNzr1z7c7LnjuMRV42pf1we4osVcLwS","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:31:42.600Z","service":"kant-relay","event":"registry.register","keyHex":"b9a886dbffc8","publicKeyHex":"0e27cc152922","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:31:42.600Z","service":"kant-relay","event":"registry.register","keyHex":"0e27cc152922","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:31:44.579Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWPLon","expires":"2026-09-02T22:31:38.779Z","duration":7194200,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:31:44.579Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWNK6e","expires":"2026-09-02T22:31:41.577Z","duration":7196998,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:31:54.579Z","service":"kant-relay","event":"reservation.refreshed","peerId":"12D3KooWPLon","expires":"2026-09-02T22:31:38.778Z","msg":"reservation refreshed"}
+{"level":30,"time":"2026-09-02T20:31:54.579Z","service":"kant-relay","event":"reservation.refreshed","peerId":"12D3KooWNK6e","expires":"2026-09-02T22:31:41.576Z","msg":"reservation refreshed"}
+{"level":30,"time":"2026-09-02T20:32:18.804Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:32:20.877Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:33:00.920Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:33:02.951Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:33:03.990Z","service":"kant-relay","event":"registry.register","keyHex":"c8f452a17772","publicKeyHex":"66fca8ebc003","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:33:03.990Z","service":"kant-relay","event":"registry.register","keyHex":"66fca8ebc003","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:33:09.843Z","service":"kant-relay","event":"seed.loaded","path":"/tmp/kant-relay-local-data/relay-seed-3000.bin","msg":"Loaded relay seed"}
+{"level":40,"time":"2026-09-02T20:33:09.926Z","service":"kant-relay","event":"config.public_host_loopback","host":"127.0.0.1","msg":"remote peers will not be able to connect"}
+{"level":30,"time":"2026-09-02T20:33:09.958Z","service":"kant-relay","event":"relay.started","peerId":"12D3KooWD76KaYjhp3HVVKTZh2ras5V6skMmx719n2YSh1TzaYpm","multiaddrs":["/ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWD76KaYjhp3HVVKTZh2ras5V6skMmx719n2YSh1TzaYpm"],"msg":"Kant relay running"}
+{"level":30,"time":"2026-09-02T20:33:09.958Z","service":"kant-relay","event":"relay.address","addr":"/ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWD76KaYjhp3HVVKTZh2ras5V6skMmx719n2YSh1TzaYpm","msg":"Full relay addr"}
+{"level":30,"time":"2026-09-02T20:33:09.960Z","service":"kant-relay","event":"http.started","bind":"0.0.0.0","port":3001,"endpoints":["/relay-info","/healthz","/readyz","/metrics"],"msg":"HTTP info server started"}
+{"level":30,"time":"2026-09-02T20:33:10.181Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:10.684Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:11.187Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:11.688Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:12.191Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:12.695Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:13.199Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:13.702Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:14.206Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:14.710Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:15.213Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:15.715Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:16.217Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:16.719Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:17.222Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:17.724Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:18.227Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:18.729Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:19.231Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:19.732Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:20.235Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:20.738Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:20.993Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWNK6e1LUACxjmqoNzr1z7c7LnjuMRV42pf1we4osVcLwS","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:33:21.241Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:21.745Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:22.247Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:22.749Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:23.251Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:23.753Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:24.254Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:24.756Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:25.259Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:25.762Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:26.263Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:26.765Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:27.269Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:27.771Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:28.273Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:28.775Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:29.278Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:29.779Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:30.281Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:30.783Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:31.286Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:31.597Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWNK6e1LUACxjmqoNzr1z7c7LnjuMRV42pf1we4osVcLwS","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:33:31.789Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:32.292Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:32.794Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:33.295Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:33.635Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWNK6e1LUACxjmqoNzr1z7c7LnjuMRV42pf1we4osVcLwS","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:33:33.798Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:34.301Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:34.669Z","service":"kant-relay","event":"registry.register","keyHex":"b9a886dbffc8","publicKeyHex":"8c952566de0f","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:33:34.669Z","service":"kant-relay","event":"registry.register","keyHex":"8c952566de0f","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:33:34.804Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:35.025Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:33:35.307Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:35.809Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:36.059Z","service":"kant-relay","event":"registry.register","keyHex":"c8f452a17772","publicKeyHex":"87633ffd5b4b","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:33:36.060Z","service":"kant-relay","event":"registry.register","keyHex":"87633ffd5b4b","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:33:36.312Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:36.814Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:37.318Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:37.820Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:38.322Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:38.824Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:39.327Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:39.835Z","service":"kant-relay","event":"admin.reservation.list","count":0,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:39.959Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWNK6e","expires":"2026-09-02T22:33:33.650Z","duration":7193691,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:33:39.959Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWPLon","expires":"2026-09-02T22:33:35.050Z","duration":7195091,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:33:40.343Z","service":"kant-relay","event":"admin.reservation.list","count":2,"msg":"admin: listed reservations"}
+{"level":30,"time":"2026-09-02T20:33:40.552Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWPLonhKZqpP7gS9kmRCapX6bhb8ygZvMqgsLPaG4sRefJ","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:33:40.552Z","service":"kant-relay","event":"registry.removed","keyHex":"87633ffd5b4b","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:33:40.565Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWNK6e1LUACxjmqoNzr1z7c7LnjuMRV42pf1we4osVcLwS","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:33:40.565Z","service":"kant-relay","event":"registry.removed","keyHex":"8c952566de0f","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:33:40.679Z","service":"kant-relay","event":"shutdown.start","signal":"SIGTERM","msg":"received SIGTERM"}
+{"level":30,"time":"2026-09-02T20:33:40.681Z","service":"kant-relay","event":"shutdown.complete","msg":"server closed"}

@@ -1,0 +1,64 @@
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-runner-run-1d5386d5a713 Creating 
+ Container kant-test-lab-runner-run-1d5386d5a713 Created 
+
+> @kant/test-lab@ test:ui /workspace/tests/lab
+> playwright test
+
+
+Running 4 tests using 2 workers
+
+  ✓  2 ui/smoke.spec.mjs:4:3 › Kant UI smoke › renders a usable authentication surface (1.2s)
+  ✓  3 ui/smoke.spec.mjs:18:3 › Kant UI smoke › validates identity setup before touching the network (1.0s)
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 12:01:20 PM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+  ✓  4 ui/smoke.spec.mjs:30:3 › Kant UI smoke › has no horizontal overflow on mobile width (607ms)
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 12:01:20 PM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[browser] [createNode] Started, peerId: 12D3KooWJWExeTDii1R7kGjQbh3XWmrLqkE1dsyG8ySnFwuLai4K
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 12:01:20 PM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [createNode] Started, peerId: 12D3KooWFcNRhFSe8X1VAcbm29XoZck7Lq882FaNrA5HWiNHD7fA
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 12:01:20 PM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [kant] 12:02:00 PM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[browser] [kant] 12:02:00 PM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 12:02:02 PM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[browser] [createNode] Started, peerId: 12D3KooWJWExeTDii1R7kGjQbh3XWmrLqkE1dsyG8ySnFwuLai4K
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 12:02:02 PM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 12:02:02 PM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[browser] [createNode] Started, peerId: 12D3KooWFcNRhFSe8X1VAcbm29XoZck7Lq882FaNrA5HWiNHD7fA
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 12:02:02 PM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [kant] 12:02:03 PM PING out → 12D3KooWJWEx… 361B [kant-presence] ok
+[browser] [kant] PING out → 12D3KooWJWEx… 361B [kant-presence] ok
+[browser] [kant] 12:02:03 PM PING in ← 12D3KooWFcNR… 361B [kant-presence]
+[browser] [kant] PING in ← 12D3KooWFcNR… 361B [kant-presence]
+[browser] [kant] 12:02:03 PM PING out → 12D3KooWJWEx… 506B [x3dh-init] ok
+[browser] [kant] PING out → 12D3KooWJWEx… 506B [x3dh-init] ok
+[browser] [kant] 12:02:03 PM PING in ← 12D3KooWFcNR… 506B [x3dh-init]
+[browser] [kant] PING in ← 12D3KooWFcNR… 506B [x3dh-init]
+[browser] [kant] 12:02:03 PM 🔒 Session ready: Alice transport…
+[browser] [kant] 12:02:03 PM PING in ← 12D3KooWFcNR… 561B [ciphertext]
+[browser] [kant] PING in ← 12D3KooWFcNR… 561B [ciphertext]
+[browser] [kant] 12:02:03 PM PING out → 12D3KooWFcNR… 509B [x3dh-init] ok
+[browser] [kant] PING out → 12D3KooWFcNR… 509B [x3dh-init] ok
+[browser] [kant] 12:02:03 PM PING in ← 12D3KooWJWEx… 509B [x3dh-init]
+[browser] [kant] PING in ← 12D3KooWJWEx… 509B [x3dh-init]
+[browser] [kant] 12:02:03 PM 🔁 Desync detected — rebuilding session with 5613717c5e58…
+[browser] [kant] 12:02:04 PM 🔒 Session ready: Bob transport…
+[browser] [kant] 12:02:04 PM PING in ← 12D3KooWJWEx… 568B [ciphertext]
+[browser] [kant] PING in ← 12D3KooWJWEx… 568B [ciphertext]
+[browser] [kant] 12:02:04 PM PING in ← 12D3KooWJWEx… 537B [ciphertext]
+[browser] [kant] PING in ← 12D3KooWJWEx… 537B [ciphertext]
+  ✓  1 ui/transport-e2e.spec.mjs:47:1 › two real clients establish a session and deliver a message through the relay (48.5s)
+
+  4 passed (49.3s)

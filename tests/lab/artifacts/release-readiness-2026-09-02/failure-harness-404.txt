@@ -1,0 +1,21 @@
+Final churn suite local harness failure — 2026-09-02
+
+Test:
+  group key delivery survives relay restart during distribution
+
+Failure:
+  AssertionError [ERR_ASSERTION]: Relay restart accepted
+  404 !== 202
+  at tests/lab/tests/e2e-groups-churn.test.mjs:124:12
+
+Root cause:
+  The local relay launcher set KANT_RELAY_LAB_CONTROL_TOKEN. That name is
+  consumed by the test runner and Docker Compose, while the relay process
+  itself reads RELAY_LAB_CONTROL_TOKEN. The restart endpoint is deliberately
+  absent when the process variable is unset, so HTTP 404 was correct.
+
+Resolution/evidence:
+  The focused case was rerun with RELAY_LAB_CONTROL_TOKEN set on the relay and
+  KANT_RELAY_LAB_CONTROL_TOKEN set on the runner. It passed in 82.7 seconds.
+  See relay-final-churn.log for the failed-attempt relay log and
+  relay-final-restart.log for the corrected restart/recovery relay log.

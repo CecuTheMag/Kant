@@ -1,0 +1,42 @@
+{
+  "name": "@kant/app",
+  "version": "0.2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:electron": "ELECTRON=1 tsc && ELECTRON=1 vite build",
+    "preview": "vite preview",
+    "build:android": "pnpm build && cap sync android && cap build android",
+    "build:android:debug": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug",
+    "open:android": "cap open android",
+    "cap:sync": "cap sync"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@kant/core": "file:../core",
+    "@multiformats/multiaddr": "13.0.1",
+    "@types/qrcode.react": "^3.0.0",
+    "libp2p": "3.1.7",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "5.9.3",
+    "vite": "5.4.21"
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "description": "Kant — encrypted P2P messenger"
+}

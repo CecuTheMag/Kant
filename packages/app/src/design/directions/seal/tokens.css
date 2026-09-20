@@ -1,0 +1,302 @@
+/* ==================================================================== *
+ * DIRECTION B — "SEAL"
+ *
+ * Thesis: the opposite bet from Instrument. Encryption should feel calm and personal, not
+ * technical. Private correspondence, not a console. The cryptography is fully present — it is
+ * just expressed as a physical object instead of a number.
+ *
+ * Where Instrument shows you the machinery, Seal gives you one thing to look at and trust:
+ * a wax seal derived from the key. Intact means verified. Absent means not yet. Broken means
+ * the key changed. You cannot misread a broken seal the way you can misread a red X, which is
+ * the exact failure people report with Signal's ceremony.
+ *
+ * Light is the default here. The shipping app is dark-only; making light first-class is part
+ * of the argument that this is correspondence rather than a terminal.
+ *
+ * Anti-cliché note: the obvious move for a serif-and-paper direction is cream + terracotta.
+ * That look is everywhere. The page here stays near-monochrome ink on cool paper, and the only
+ * warm colour in the product is the wax itself — which is earned, because the wax colour is
+ * derived from the contact's key and carries meaning.
+ * ==================================================================== */
+
+[data-dir='seal'] {
+  /* ---------------------------------------------------------------- *
+   * LAYER 1 — PRIMITIVES
+   * ---------------------------------------------------------------- */
+
+  /* Paper: cool-neutral, not cream. Deliberately avoids the #F4F1EA default. */
+  --p-0:  #ffffff;
+  --p-1:  #f8f8f6;
+  --p-2:  #f1f1ee;
+  --p-3:  #e8e8e4;
+  --p-4:  #dcdcd6;
+  --p-5:  #c6c6bf;
+
+  /* Ink */
+  --i-1:  #16181c;
+  --i-2:  #2b2f36;
+  --i-3:  #4d525b;
+  --i-4:  #5f656e;   /* darkened — 4.36:1 was under the body-text floor */
+  --i-5:  #6c727b;   /* darkened from #949aa3 — was 2.67:1, a real failure on captions */
+
+  /* Indigo — the one page accent. Restrained, closer to fountain-pen ink than to a brand blue. */
+  --ind-1: #eceef5;
+  --ind-5: #4a5a89;
+  --ind-6: #3a4a76;
+  --ind-7: #2c3a60;
+
+  /* Botanical green — sealed and intact. */
+  --grn-1: #e6efe8;
+  --grn-6: #3f7d5a;
+  --grn-7: #305f45;
+
+  /* Wax. The only warm colour in the product, and it is never decorative: the hue of a
+     contact's seal is derived from their key, and this red is reserved for a broken one. */
+  --wax-1: #f6e7e3;
+  --wax-6: #b3452f;
+  --wax-7: #8d3423;
+
+  --amb-1: #f7eedb;
+  --amb-6: #9a6b18;
+
+  /* Type. Newsreader carries message text and display; Public Sans carries interface chrome.
+     Reading someone's words in a serif is the single strongest signal that this is
+     correspondence and not a feed. */
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Space — 4px base, but the scale runs larger than Instrument's. Density is the argument. */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 20px;
+  --s-6: 24px; --s-7: 32px; --s-8: 40px; --s-9: 56px; --s-10: 72px; --s-11: 96px;
+
+  /* Radius — soft. This direction is allowed to be gentle. */
+  --r-1: 6px; --r-2: 10px; --r-3: 14px; --r-4: 20px; --r-5: 28px; --r-full: 999px;
+
+  /* Motion — spring, and it has personality here. Part of the calm. */
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 460ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --e-1: 0 1px 2px rgba(22, 24, 28, 0.06);
+  --e-2: 0 4px 20px rgba(22, 24, 28, 0.08);
+  --e-3: 0 24px 60px rgba(22, 24, 28, 0.16);
+
+  --z-sticky: 10; --z-overlay: 30; --z-modal: 40;
+
+  /* ---------------------------------------------------------------- *
+   * LAYER 2 — SEMANTIC (light)
+   * ---------------------------------------------------------------- */
+
+  --bg-page:    var(--p-1);
+  --bg-sheet:   var(--p-0);
+  --bg-sunk:    var(--p-2);
+  --bg-hover:   rgba(22, 24, 28, 0.035);
+  --bg-active:  rgba(22, 24, 28, 0.06);
+
+  --rule:        var(--p-3);
+  --rule-strong: var(--p-4);
+
+  --fg-strong:   var(--i-1);
+  --fg-body:     var(--i-2);
+  --fg-muted:    var(--i-4);
+  --fg-faint:    var(--i-5);
+  --fg-on-ink:   var(--p-0);
+
+  --accent:      var(--ind-6);
+  --accent-soft: var(--ind-1);
+
+  --seal-intact: var(--grn-6);
+  --seal-intact-soft: var(--grn-1);
+  --seal-none:   var(--i-5);
+  --seal-broken: var(--wax-6);
+  --seal-broken-soft: var(--wax-1);
+  --seal-partial: var(--amb-6);
+
+  --bubble-them: var(--p-2);
+  --bubble-me:   var(--ind-7);
+
+  --focus-ring: var(--ind-6);
+
+  /* ---------------------------------------------------------------- *
+   * LAYER 3 — COMPONENT
+   * ---------------------------------------------------------------- */
+
+  --measure: 62ch;      /* reading width for message text */
+  --column: 760px;      /* the correspondence column */
+  --bar-h: 60px;
+}
+
+/* ---------------------------------------------------------------- *
+ * Dark. Not an inversion — a different paper. Warm-shifted so it reads
+ * as low lamplight rather than as a terminal.
+ * ---------------------------------------------------------------- */
+
+[data-dir='seal'][data-theme='dark'] {
+  --p-0: #17171a;
+  --p-1: #131316;
+  --p-2: #1d1d21;
+  --p-3: #292930;
+  --p-4: #37373f;
+  --p-5: #4a4a53;
+
+  --i-1: #f2f1ee;
+  --i-2: #ddddd8;
+  --i-3: #b3b3ad;
+  --i-4: #8d8d88;
+  --i-5: #6d6d69;
+
+  --ind-1: #1c2033;
+  --ind-5: #8fa3d8;
+  --ind-6: #93a7dd;
+  --ind-7: #2a3455;
+
+  --grn-1: #16261d;
+  --grn-6: #62b688;
+
+  --wax-1: #2c1712;
+  --wax-6: #e07a62;
+
+  --amb-1: #2a2110;
+  --amb-6: #d9a84a;
+
+  --bg-page: var(--p-1);
+  --bg-sheet: var(--p-0);
+  --bg-sunk: var(--p-2);
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --bg-active: rgba(255, 255, 255, 0.07);
+
+  --fg-on-ink: #10121a;
+  --bubble-them: var(--p-2);
+  --bubble-me: #3d4a72;
+
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --e-2: 0 4px 20px rgba(0, 0, 0, 0.45);
+  --e-3: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ==================================================================== *
+ * Base
+ * ==================================================================== */
+
+[data-dir='seal'] {
+  font-family: var(--font-ui);
+  background: var(--bg-page);
+  color: var(--fg-body);
+  font-size: 15px;
+  line-height: 1.6;
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-dir='seal'].docs { height: auto; overflow: visible; background: transparent; }
+
+[data-dir='seal'] :focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+[data-dir='seal'] ::selection { background: var(--accent-soft); color: var(--fg-strong); }
+
+[data-dir='seal'] *::-webkit-scrollbar { width: 10px; }
+[data-dir='seal'] *::-webkit-scrollbar-track { background: transparent; }
+[data-dir='seal'] *::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: var(--r-full);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Type scale — serif for anything a person wrote, sans for anything the app says. */
+[data-dir='seal'] .d-hero {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--fg-strong);
+}
+[data-dir='seal'] .d-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--fg-strong);
+}
+[data-dir='seal'] .d-sub {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--fg-strong);
+}
+[data-dir='seal'] .d-read {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--fg-body);
+}
+[data-dir='seal'] .u-body { font-size: 14.5px; color: var(--fg-body); }
+[data-dir='seal'] .u-small { font-size: 13px; color: var(--fg-muted); }
+[data-dir='seal'] .u-caption { font-size: 12px; color: var(--fg-faint); }
+[data-dir='seal'] .u-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+[data-dir='seal'] .mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* ==================================================================== *
+ * Motion
+ * ==================================================================== */
+
+@keyframes seal-rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+@keyframes seal-fade { from { opacity: 0 } to { opacity: 1 } }
+/* The stamp. Comes down hard, settles — a seal being pressed into wax. */
+@keyframes seal-stamp {
+  0%   { opacity: 0; transform: scale(2.4) rotate(-14deg) }
+  55%  { opacity: 1; transform: scale(0.92) rotate(2deg) }
+  75%  { transform: scale(1.04) rotate(-1deg) }
+  100% { opacity: 1; transform: scale(1) rotate(0) }
+}
+/* The break. The two halves separate and drop slightly. */
+@keyframes seal-crack-l { to { transform: translate(-3px, 2px) rotate(-4deg) } }
+@keyframes seal-crack-r { to { transform: translate(3px, 3px) rotate(5deg) } }
+@keyframes seal-spin { to { transform: rotate(360deg) } }
+
+[data-dir='seal'] .kant-spinner { animation: seal-spin 0.8s linear infinite; flex-shrink: 0; }
+[data-dir='seal'] .anim-rise { animation: seal-rise var(--dur-base) var(--ease-soft) both; }
+[data-dir='seal'] .anim-fade { animation: seal-fade var(--dur-fast) ease both; }
+[data-dir='seal'] .anim-stamp { animation: seal-stamp var(--dur-slow) var(--ease-spring) both; }
+
+/* Staggered entrance for the envelope stack — one orchestrated moment on load, rather than
+   micro-animations scattered through the product. */
+[data-dir='seal'] .stagger > * { animation: seal-rise var(--dur-base) var(--ease-soft) both; }
+[data-dir='seal'] .stagger > *:nth-child(1) { animation-delay: 0ms }
+[data-dir='seal'] .stagger > *:nth-child(2) { animation-delay: 40ms }
+[data-dir='seal'] .stagger > *:nth-child(3) { animation-delay: 80ms }
+[data-dir='seal'] .stagger > *:nth-child(4) { animation-delay: 120ms }
+[data-dir='seal'] .stagger > *:nth-child(5) { animation-delay: 160ms }
+[data-dir='seal'] .stagger > *:nth-child(6) { animation-delay: 200ms }
+[data-dir='seal'] .stagger > *:nth-child(7) { animation-delay: 240ms }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dir='seal'] *,
+  [data-dir='seal'] *::before,
+  [data-dir='seal'] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

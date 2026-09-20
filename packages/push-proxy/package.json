@@ -1,0 +1,20 @@
+{
+  "name": "@kant/push-proxy",
+  "version": "0.1.0",
+  "description": "Kant push notification proxy — holds Firebase credentials, relays wake pings from relay operators",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "pino": "9.14.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "ts-node": "^10.9.2",
+    "typescript": "5.9.3"
+  }
+}

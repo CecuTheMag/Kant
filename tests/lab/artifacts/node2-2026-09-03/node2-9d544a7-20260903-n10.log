@@ -1,0 +1,359 @@
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-runner-run-e2f31514e6a9 Creating 
+ Container kant-test-lab-runner-run-e2f31514e6a9 Created 
+
+=== Starting 10-member scale test (nominal) ===
+[10-member] Initial heap: 70 MB
+[createBrowserGroup] Launching browser with 10 contexts...
+[createBrowserGroup] Initial heap: 53 MB
+[createBrowserGroup] Creating 10 contexts...
+[Member1] Created new identity: dbf2d3053522f0f9...
+[Member1] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member1] [createNode] Started, peerId: 12D3KooWQcxD7YuoDgXz5zTZck8WEQnMww9oKW9vh8y4pTyvvxir
+[Member1] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member1] [kant] 11:27:36 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] Created new identity: 8f3166a92e0d18f6...
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Started, peerId: 12D3KooWKTLAEqSkGHFDZgRZgPWxM8YiZMAqWPdM9bNBuY1U11wE
+[Member0] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member0] [kant] 11:27:36 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member1] [kant] 11:27:37 AM 👥 Group handler ready
+[Member3] Created new identity: 53638eaa05c450f5...
+[Member2] Created new identity: 678764d4dbb066ea...
+[Member3] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member2] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member3] [createNode] Started, peerId: 12D3KooWFRt4ExR89EuVE5Sb4eg65hbdUAk28KTvyCQxvteVt88A
+[Member3] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member3] [kant] 11:27:38 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member2] [createNode] Started, peerId: 12D3KooWGnVuRgvLo27e4FS2RfRjtR5HvaJ4o6A3NGPEqnZx6rDm
+[Member2] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member2] [kant] 11:27:38 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member4] Created new identity: c9f36515eb59800e...
+[Member4] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member4] [createNode] Started, peerId: 12D3KooWPQhNk9ruVCY2Dwq6DjzswCwGzKLc2xow8PbybNJASX2r
+[Member4] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member4] [kant] 11:27:40 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member5] Created new identity: c634face770f5cd6...
+[Member5] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member5] [createNode] Started, peerId: 12D3KooWPA5kNBmYkZqCNv59pccNxtrYqxeP8Zz4rxqGHv5JoPDC
+[Member5] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member5] [kant] 11:27:41 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member4] [kant] 11:27:41 AM 👥 Group handler ready
+[Member5] [kant] 11:27:42 AM 👥 Group handler ready
+[Member6] Created new identity: 865ded2d0fc8b5a2...
+[Member6] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member6] [createNode] Started, peerId: 12D3KooWJrssNmMcFGtx2aUUnNdUiaUub3fc9ZRWC5BLH48PYKK9
+[Member6] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member6] [kant] 11:27:43 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member7] Created new identity: d6ce4d0727e7ac85...
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] [createNode] Started, peerId: 12D3KooWQGssPsZ8VEbFwrL5E6Lw5VZqLKBiWrHNTdoxndHwBALF
+[Member7] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member7] [kant] 11:27:43 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member6] [kant] 11:27:44 AM 👥 Group handler ready
+[Member7] [kant] 11:27:50 AM 👥 Group handler ready
+[Member9] Created new identity: 41cf7759777e828b...
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Started, peerId: 12D3KooWEFG9r4Wkzjwkd4ohnZpgxkLPYAbob928H7mY4B45hn4z
+[Member9] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member9] [kant] 11:27:54 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member8] Created new identity: d754e675c2401c14...
+[createBrowserGroup] Injecting owner-centered contacts for 10 members...
+[createBrowserGroup] All contacts injected.
+[Member8] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member8] [createNode] Started, peerId: 12D3KooWQJvujanHYryq95B49HQDzis9h7s5VvbkmYFoczxxZGK7
+[Member8] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member8] [kant] 11:27:56 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member8] [kant] 11:27:57 AM 👥 Group handler ready
+[createBrowserGroup] Owner contacts hydrated in app state.
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Started, peerId: 12D3KooWKTLAEqSkGHFDZgRZgPWxM8YiZMAqWPdM9bNBuY1U11wE
+[Member0] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member0] [kant] 11:28:05 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [kant] 11:28:06 AM 👥 Group handler ready
+[Member0] [kant] 11:28:06 AM PING out → 12D3KooWQGss… 521B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWQGss… 521B [x3dh-init] ok
+[Member7] [kant] 11:28:06 AM PING in ← 12D3KooWKTLA… 521B [x3dh-init]
+[Member7] [kant] PING in ← 12D3KooWKTLA… 521B [x3dh-init]
+[Member7] [kant] 11:28:06 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member7] [kant] 11:28:06 AM 🔑 Re-sending x3dh-init to 8f3166a92e0d… (tiebreak winner)
+[Member0] [kant] 11:28:06 AM PING out → 12D3KooWPA5k… 523B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWPA5k… 523B [x3dh-init] ok
+[Member5] [kant] 11:28:06 AM PING in ← 12D3KooWKTLA… 523B [x3dh-init]
+[Member5] [kant] PING in ← 12D3KooWKTLA… 523B [x3dh-init]
+[Member5] [kant] 11:28:06 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member5] [kant] 11:28:06 AM 🔑 Re-sending x3dh-init to 8f3166a92e0d… (tiebreak winner)
+[Member0] [kant] 11:28:06 AM PING out → 12D3KooWQJvu… 516B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWQJvu… 516B [x3dh-init] ok
+[Member8] [kant] 11:28:06 AM PING in ← 12D3KooWKTLA… 516B [x3dh-init]
+[Member8] [kant] PING in ← 12D3KooWKTLA… 516B [x3dh-init]
+[Member8] [kant] 11:28:06 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member8] [kant] 11:28:06 AM 🔑 Re-sending x3dh-init to 8f3166a92e0d… (tiebreak winner)
+[Member0] [kant] 11:28:06 AM PING out → 12D3KooWJrss… 520B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWJrss… 520B [x3dh-init] ok
+[Member6] [kant] 11:28:06 AM PING in ← 12D3KooWKTLA… 520B [x3dh-init]
+[Member6] [kant] PING in ← 12D3KooWKTLA… 520B [x3dh-init]
+[Member6] [kant] 11:28:06 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member0] [kant] 11:28:06 AM PING out → 12D3KooWPQhN… 517B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWPQhN… 517B [x3dh-init] ok
+[Member4] [kant] 11:28:06 AM PING in ← 12D3KooWKTLA… 517B [x3dh-init]
+[Member4] [kant] PING in ← 12D3KooWKTLA… 517B [x3dh-init]
+[Member4] [kant] 11:28:06 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member4] [kant] 11:28:06 AM 🔑 Re-sending x3dh-init to 8f3166a92e0d… (tiebreak winner)
+[Member0] [kant] 11:28:06 AM 🔒 Session ready: Member6…
+[Member0] [kant] 11:28:06 AM 🔒 Session ready: Member7…
+[Member5] [kant] 11:28:06 AM onion FORWARD → 12D3KooWJrss… [ping] 566B
+[Member5] [kant] onion FORWARD → 12D3KooWJrss… [ping] 566B
+[Member0] [kant] 11:28:06 AM PING out → 12D3KooWQcxD… 519B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWQcxD… 519B [x3dh-init] ok
+[Member1] [kant] 11:28:06 AM PING in ← 12D3KooWKTLA… 519B [x3dh-init]
+[Member1] [kant] PING in ← 12D3KooWKTLA… 519B [x3dh-init]
+[Member1] [kant] 11:28:06 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member1] [kant] 11:28:06 AM 🔑 Re-sending x3dh-init to 8f3166a92e0d… (tiebreak winner)
+[Member0] [kant] 11:28:06 AM 🔒 Session ready: Member5…
+[Member6] [kant] 11:28:06 AM onion FORWARD → 12D3KooWPA5k… [ping] 566B
+[Member6] [kant] onion FORWARD → 12D3KooWPA5k… [ping] 566B
+[Member0] [kant] 11:28:06 AM 🔒 Session ready: Member8…
+[Member0] [kant] 11:28:06 AM 🔒 Session ready: Member4…
+[Member0] [kant] 11:28:06 AM 🔒 Session ready: Member1…
+[Member0] [kant] 11:28:07 AM PING out → 12D3KooWJrss… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWJrss… 361B [kant-presence] ok
+[Member6] [kant] 11:28:07 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member6] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:28:08 AM PING out → 12D3KooWPA5k… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWPA5k… 361B [kant-presence] ok
+[Member5] [kant] 11:28:08 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member5] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:28:09 AM PING out → 12D3KooWPQhN… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWPQhN… 361B [kant-presence] ok
+[Member4] [kant] 11:28:09 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member4] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:28:11 AM PING out → 12D3KooWQGss… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWQGss… 361B [kant-presence] ok
+[Member7] [kant] 11:28:11 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member7] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:28:13 AM PING out → 12D3KooWQJvu… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWQJvu… 361B [kant-presence] ok
+[Member8] [kant] 11:28:13 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member8] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:28:16 AM PING out → 12D3KooWQcxD… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWQcxD… 361B [kant-presence] ok
+[Member1] [kant] 11:28:16 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member1] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member3] [kant] 11:28:18 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member2] [kant] 11:28:18 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member2] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member3] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member3] [createNode] Started, peerId: 12D3KooWFRt4ExR89EuVE5Sb4eg65hbdUAk28KTvyCQxvteVt88A
+[Member3] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member3] [kant] 11:28:21 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member2] [createNode] Started, peerId: 12D3KooWGnVuRgvLo27e4FS2RfRjtR5HvaJ4o6A3NGPEqnZx6rDm
+[Member2] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member2] [kant] 11:28:21 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member3] [kant] 11:28:22 AM 👥 Group handler ready
+[Member9] [kant] 11:28:34 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member0] [kant] 11:28:35 AM PING out → 12D3KooWFRt4… 521B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWFRt4… 521B [x3dh-init] ok
+[Member3] [kant] 11:28:35 AM PING in ← 12D3KooWKTLA… 521B [x3dh-init]
+[Member3] [kant] PING in ← 12D3KooWKTLA… 521B [x3dh-init]
+[Member3] [kant] 11:28:35 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member0] [kant] 11:28:35 AM 🔒 Session ready: Member3…
+[Member5] [kant] 11:28:35 AM onion FORWARD → 12D3KooWFRt4… [ping] 564B
+[Member5] [kant] onion FORWARD → 12D3KooWFRt4… [ping] 564B
+[Member3] [kant] 11:28:35 AM PING in ← 12D3KooWPA5k… 564B [ciphertext]
+[Member3] [kant] PING in ← 12D3KooWPA5k… 564B [ciphertext]
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Started, peerId: 12D3KooWEFG9r4Wkzjwkd4ohnZpgxkLPYAbob928H7mY4B45hn4z
+[Member9] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member9] [kant] 11:28:36 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member9] [kant] 11:28:37 AM 👥 Group handler ready
+[createBrowserGroup] Recovering Member2 circuit with one reload.
+[Member2] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member2] [createNode] Started, peerId: 12D3KooWGnVuRgvLo27e4FS2RfRjtR5HvaJ4o6A3NGPEqnZx6rDm
+[Member2] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member2] [kant] 11:28:54 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [kant] 11:28:55 AM PING out → 12D3KooWEFG9… 518B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWEFG9… 518B [x3dh-init] ok
+[Member9] [kant] 11:28:55 AM PING in ← 12D3KooWKTLA… 518B [x3dh-init]
+[Member9] [kant] PING in ← 12D3KooWKTLA… 518B [x3dh-init]
+[Member9] [kant] 11:28:55 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member0] [kant] 11:28:55 AM 🔒 Session ready: Member9…
+[Member5] [kant] 11:28:55 AM onion FORWARD → 12D3KooWEFG9… [ping] 561B
+[Member5] [kant] onion FORWARD → 12D3KooWEFG9… [ping] 561B
+[Member2] [kant] 11:28:55 AM 👥 Group handler ready
+[Member5] [kant] 11:29:18 AM onion FORWARD → 12D3KooWQGss… [ping] 21B
+[Member5] [kant] onion FORWARD → 12D3KooWQGss… [ping] 21B
+[Member0] [kant] 11:29:25 AM PING out → 12D3KooWEFG9… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWEFG9… 361B [kant-presence] ok
+[Member9] [kant] 11:29:25 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member9] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:29:25 AM PING out → 12D3KooWGnVu… 513B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWGnVu… 513B [x3dh-init] ok
+[Member2] [kant] 11:29:25 AM PING in ← 12D3KooWKTLA… 513B [x3dh-init]
+[Member2] [kant] PING in ← 12D3KooWKTLA… 513B [x3dh-init]
+[Member2] [kant] 11:29:25 AM ← 12D3KooWKTLA… [x3dh-init]
+[Member0] [kant] 11:29:25 AM 🔒 Session ready: Member2…
+[Member5] [kant] 11:29:25 AM onion FORWARD → 12D3KooWGnVu… [ping] 565B
+[Member5] [kant] onion FORWARD → 12D3KooWGnVu… [ping] 565B
+[createBrowserGroup] All circuits and owner sessions ready for 9 live members.
+[createBrowserGroup] Final heap: 91 MB (+38 MB)
+[10-member] All 10 identities created
+[Member2] [kant] 11:29:25 AM PING in ← 12D3KooWPA5k… 565B [ciphertext]
+[Member2] [kant] PING in ← 12D3KooWPA5k… 565B [ciphertext]
+[Member0] [kant] 11:29:25 AM PING out → 12D3KooWFRt4… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWFRt4… 361B [kant-presence] ok
+[Member3] [kant] 11:29:25 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member3] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:29:26 AM PING out → 12D3KooWGnVu… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWGnVu… 361B [kant-presence] ok
+[Member2] [kant] 11:29:26 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member2] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:29:26 AM 👥 Created group: scale-test-10
+[10-member] Group created: scale-test-10
+[Member9] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member9] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member9] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWEFG9… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWEFG9… 355B [group-presence]
+[Member3] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member3] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member3] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWFRt4… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWFRt4… 355B [group-presence]
+[Member2] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member2] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member2] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWGnVu… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWGnVu… 355B [group-presence]
+[Member6] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member6] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member6] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWJrss… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWJrss… 355B [group-presence]
+[Member5] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member5] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member5] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWPA5k… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWPA5k… 355B [group-presence]
+[Member4] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member4] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member4] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWPQhN… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWPQhN… 355B [group-presence]
+[Member7] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member7] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member7] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWQGss… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWQGss… 355B [group-presence]
+[Member8] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member8] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member8] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWQJvu… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWQJvu… 355B [group-presence]
+[Member1] [kant] 11:29:26 AM 👥 Joined group: scale-test-10
+[Member1] [kant] 11:29:26 AM PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member1] [kant] PING out → 12D3KooWKTLA… 355B [group-presence] ok
+[Member0] [kant] 11:29:26 AM PING in ← 12D3KooWQcxD… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWQcxD… 355B [group-presence]
+[10-member] All 10 members see the group
+[Member0] [kant] 11:29:26 AM PING out → 12D3KooWJrss… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWJrss… 361B [kant-presence] ok
+[Member6] [kant] 11:29:26 AM PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member6] [kant] PING in ← 12D3KooWKTLA… 361B [kant-presence]
+[Member0] [kant] 11:29:27 AM 📨 group-send: scale-test-10 node=true ident=true sel=true len=26
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWEFG9… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWEFG9… 688B [group-msg] ok
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWFRt4… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWFRt4… 688B [group-msg] ok
+[Member9] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member9] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWGnVu… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWGnVu… 688B [group-msg] ok
+[Member3] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member3] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWJrss… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWJrss… 688B [group-msg] ok
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWPQhN… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWPQhN… 688B [group-msg] ok
+[Member2] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member2] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member4] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member4] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member6] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member6] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWQJvu… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWQJvu… 688B [group-msg] ok
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWPA5k… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWPA5k… 688B [group-msg] ok
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWQcxD… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWQcxD… 688B [group-msg] ok
+[Member8] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member8] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member0] [kant] 11:29:27 AM PING out → 12D3KooWQGss… 688B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWQGss… 688B [group-msg] ok
+[Member5] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member5] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member1] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member1] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member7] [kant] 11:29:27 AM PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member7] [kant] PING in ← 12D3KooWKTLA… 688B [group-msg]
+[Member3] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member3] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member9] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member9] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWEFG9… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWEFG9… 200B [group-read]
+[Member2] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member2] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member6] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member6] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member0] [kant] 11:29:27 AM ← 12D3KooWEFG9… [group-read]
+[Member5] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member5] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member8] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member8] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member4] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member4] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWFRt4… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWFRt4… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWFRt4… [group-read]
+[Member7] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member7] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWGnVu… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWGnVu… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWGnVu… [group-read]
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWJrss… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWJrss… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWJrss… [group-read]
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWPA5k… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWPA5k… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWPA5k… [group-read]
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWQJvu… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWQJvu… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWQJvu… [group-read]
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWPQhN… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWPQhN… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWPQhN… [group-read]
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWQGss… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWQGss… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWQGss… [group-read]
+[Member0] [kant] 11:29:27 AM PING in ← 12D3KooWQcxD… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWQcxD… 200B [group-read]
+[Member0] [kant] 11:29:27 AM ← 12D3KooWQcxD… [group-read]
+[Member1] [kant] 11:29:27 AM PING out → 12D3KooWKTLA… 200B [group-read] ok
+[Member1] [kant] PING out → 12D3KooWKTLA… 200B [group-read] ok
+[10-member] First message delivered to all 10 members
+[10-member] Final heap: 80 MB (+10 MB)
+✓ 10-member nominal test passed
+[createBrowserGroup] Closing browser...
+[createBrowserGroup] Cleanup heap: 85 MB (freed ~4 MB)
+✔ group key delivery: 10 members under nominal conditions (114545.774458ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 115794.791119

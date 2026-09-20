@@ -1,0 +1,7 @@
+packages:
+  - 'packages/*'
+  - 'tests/lab'
+
+peerDependencyRules:
+  allowedVersions:
+    "@libp2p/interface": "3"

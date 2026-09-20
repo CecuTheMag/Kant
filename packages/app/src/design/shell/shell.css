@@ -1,0 +1,333 @@
+/* ------------------------------------------------------------------ *
+ * Review harness chrome.
+ *
+ * Deliberately neutral and slightly "outside" the product — grey, small, unbranded — so it
+ * never gets confused with either design direction. It is scaffolding for the review, not
+ * part of the proposal.
+ * ------------------------------------------------------------------ */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  background: #101012;
+  color: #d7d7db;
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+.shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(255,255,255,0.035), transparent 70%),
+    #101012;
+}
+
+/* ---------- top bar ---------- */
+
+.shell-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 52px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(16,16,18,0.9);
+  backdrop-filter: blur(16px);
+  position: relative;
+  z-index: 10;
+}
+
+.shell-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.shell-brand b {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #f2f2f5;
+}
+
+.shell-brand span {
+  font-size: 11px;
+  color: #6f6f78;
+  font-variant-numeric: tabular-nums;
+}
+
+.shell-spacer { flex: 1; }
+
+/* segmented control */
+.seg {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+}
+
+.seg button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #8b8b95;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease, background 0.12s ease;
+  min-height: 28px;
+}
+
+.seg button:hover { color: #d7d7db; }
+
+.seg button[aria-pressed='true'] {
+  background: rgba(255,255,255,0.1);
+  color: #f2f2f5;
+}
+
+.seg button:focus-visible {
+  outline: 2px solid #6ea8ff;
+  outline-offset: 1px;
+}
+
+.seg-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5c5c66;
+  margin-right: 8px;
+  font-weight: 600;
+}
+
+.seg-group { display: flex; align-items: center; }
+
+/* direction toggle gets a little more presence than the rest */
+.seg.seg-dir button[aria-pressed='true'] { background: #2c2c33; color: #fff; }
+
+/* ---------- stage ---------- */
+
+.shell-stage {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0;
+}
+
+.shell-stage.framed { padding: 28px 20px 40px; }
+
+/* full-bleed: the app fills the stage (desktop review) */
+.frame-full {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+/* device frames */
+.frame {
+  position: relative;
+  flex-shrink: 0;
+  background: #000;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+
+.frame.phone { border-radius: 34px; padding: 0; }
+
+.frame-inner {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.frame-iframe {
+  display: block;
+  border: 0;
+  background: #000;
+}
+
+.frame-caption {
+  text-align: center;
+  font-size: 11px;
+  color: #5c5c66;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.frame-wrap { display: flex; flex-direction: column; align-items: center; }
+
+/* ---------- docs pages (design system / states) ---------- */
+
+.docs {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 28px 96px;
+}
+
+.docs h1 {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #f4f4f7;
+  margin-bottom: 8px;
+}
+
+.docs .lede {
+  font-size: 15px;
+  color: #8b8b95;
+  max-width: 68ch;
+  margin-bottom: 40px;
+}
+
+.docs h2 {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6f6f78;
+  margin: 44px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.docs h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d7d7db;
+  margin: 24px 0 10px;
+}
+
+.docs p { color: #9a9aa4; max-width: 72ch; margin-bottom: 12px; }
+.docs code {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #c9c9d1;
+}
+
+.docs a { color: #6ea8ff; }
+
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.panel {
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.panel-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6f6f78;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+table.spec {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+table.spec th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6f6f78;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+table.spec td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.055);
+  color: #b4b4bd;
+  vertical-align: middle;
+}
+
+table.spec td.mono, table.spec td code {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+}
+
+.pass { color: #4ade80; font-weight: 600; }
+.fail { color: #f87171; font-weight: 600; }
+.warn { color: #fbbf24; font-weight: 600; }
+
+/* states explorer */
+.state-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.state-card {
+  appearance: none;
+  text-align: left;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 12px 13px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease, transform 0.12s ease;
+}
+
+.state-card:hover {
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+}
+
+.state-card:focus-visible { outline: 2px solid #6ea8ff; outline-offset: 2px; }
+.state-card[aria-pressed='true'] { border-color: #6ea8ff; background: rgba(110,168,255,0.1); }
+
+.state-card b { display: block; font-size: 13px; font-weight: 600; color: #e8e8ec; margin-bottom: 3px; }
+.state-card span { display: block; font-size: 11.5px; color: #82828c; line-height: 1.4; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* the harness collapses hard on small screens — it is a desktop review tool */
+@media (max-width: 860px) {
+  .shell-bar { gap: 10px; overflow-x: auto; }
+  .seg-label { display: none; }
+}

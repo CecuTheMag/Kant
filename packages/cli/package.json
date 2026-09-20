@@ -1,0 +1,25 @@
+{
+  "name": "@kant/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "bin": {
+    "kant": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@kant/core": "file:../core",
+    "@multiformats/multiaddr": "13.0.1",
+    "blessed": "^0.1.81",
+    "libp2p": "3.1.7",
+    "libsodium-wrappers-sumo": "0.8.2"
+  },
+  "devDependencies": {
+    "@types/blessed": "^0.1.25",
+    "@types/node": "^22.7.4",
+    "typescript": "5.9.3"
+  }
+}

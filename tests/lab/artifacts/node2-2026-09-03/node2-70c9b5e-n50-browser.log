@@ -1,0 +1,648 @@
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-runner-run-99454545b1ac Creating 
+ Container kant-test-lab-runner-run-99454545b1ac Created 
+
+=== Starting 10-member scale test (nominal) ===
+[10-member] Initial heap: 64 MB
+[createBrowserGroup] Launching browser with 10 contexts...
+[createBrowserGroup] Initial heap: 65 MB
+[createBrowserGroup] Creating 10 contexts...
+[Member1] Created new identity: 81cbd6c0c616f7e1...
+[Member1] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] Created new identity: a3258086a80345e9...
+[Member1] [createNode] Started, peerId: 12D3KooWJZ339x1FrCEQ1Zi2BYf4w6fGioy8wuE9ygFZ2cPsFaeB
+[Member1] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member1] [kant] 11:45:07 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Started, peerId: 12D3KooWLoDnofyhbwTyvzrdgjaHrXmioVXMaaLpZcJpJZEEkARe
+[Member0] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member0] [kant] 11:45:07 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member1] [kant] 11:45:08 AM 👥 Group handler ready
+[Member0] [kant] 11:45:08 AM 👥 Group handler ready
+[Member3] Created new identity: 57dcc9184990ec24...
+[Member3] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member2] Created new identity: 58c71c471585759c...
+[Member2] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member3] [createNode] Started, peerId: 12D3KooWFjLuHmuAkM2TKXq9cUxocuaaHSAFzv64QBPMDHpSP3Yb
+[Member3] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member3] [kant] 11:45:09 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member2] [createNode] Started, peerId: 12D3KooWFnv96wURuck8dbK6UDSY5up1oSzJKsBw7JsUDyF3qMWz
+[Member2] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member2] [kant] 11:45:09 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member3] [kant] 11:45:10 AM 👥 Group handler ready
+[Member2] [kant] 11:45:10 AM 👥 Group handler ready
+[Member5] Created new identity: c10ce414f2a42f41...
+[Member5] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member4] Created new identity: ab52efcfd0ab1351...
+[Member4] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member5] [createNode] Started, peerId: 12D3KooWNoxFm4nZi4FmByer8shD2Zy7Zy96qLSGKUHGqGro9Np1
+[Member5] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member5] [kant] 11:45:11 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member4] [createNode] Started, peerId: 12D3KooWMM9EaCPM3yQiDSW4rTSqXreLyb6LmZMyVE5dopRdGUje
+[Member4] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member4] [kant] 11:45:11 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member5] [kant] 11:45:12 AM 👥 Group handler ready
+[Member4] [kant] 11:45:12 AM 👥 Group handler ready
+[Member6] Created new identity: f3072309f1917949...
+[Member6] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member6] [createNode] Started, peerId: 12D3KooWSB3YvfJ7pBEvRnLELpZrzVW9u3g3YgKh8UEUSHfuvSsA
+[Member6] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member6] [kant] 11:45:13 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member7] Created new identity: 1b827e12e1a87fd4...
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] [createNode] Started, peerId: 12D3KooWBfkasiFEoawBAZ7X5HxbEm8z3dRatcWcxNonzm7uxzA7
+[Member7] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member7] [kant] 11:45:14 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member6] [kant] 11:45:14 AM 👥 Group handler ready
+[Member8] Created new identity: 31ec5c86788f6e1e...
+[Member8] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member8] [createNode] Started, peerId: 12D3KooWDBFBhR8pSbSefHeWbUUdEKvZcp2RsS8GcsygovvDpSjb
+[Member8] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member8] [kant] 11:45:16 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member9] Created new identity: 4eac94b16d888513...
+[createBrowserGroup] Injecting owner-centered contacts for 10 members...
+[createBrowserGroup] All contacts injected.
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Started, peerId: 12D3KooWF7Ubnfg6GuUHxKWDHiuwohi5iE563pPTJHBAUGRgThgB
+[Member9] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member9] [kant] 11:45:16 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member9] [kant] 11:45:17 AM 👥 Group handler ready
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[createBrowserGroup] Owner contacts hydrated in app state.
+[Member0] [createNode] Started, peerId: 12D3KooWLoDnofyhbwTyvzrdgjaHrXmioVXMaaLpZcJpJZEEkARe
+[Member0] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member0] [kant] 11:45:18 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member7] [kant] 11:45:54 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member8] [kant] 11:45:56 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] [createNode] Started, peerId: 12D3KooWBfkasiFEoawBAZ7X5HxbEm8z3dRatcWcxNonzm7uxzA7
+[Member7] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member7] [kant] 11:45:56 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member8] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member8] [createNode] Started, peerId: 12D3KooWDBFBhR8pSbSefHeWbUUdEKvZcp2RsS8GcsygovvDpSjb
+[Member8] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member8] [kant] 11:45:58 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [kant] 11:45:58 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member8] [kant] 11:45:59 AM 👥 Group handler ready
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Started, peerId: 12D3KooWLoDnofyhbwTyvzrdgjaHrXmioVXMaaLpZcJpJZEEkARe
+[Member0] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member0] [kant] 11:46:00 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [kant] 11:46:01 AM 👥 Group handler ready
+[Member0] [kant] 11:46:01 AM PING out → 12D3KooWDBFB… 513B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWDBFB… 513B [x3dh-init] ok
+[Member0] [kant] 11:46:01 AM PING out → 12D3KooWFjLu… 511B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWFjLu… 511B [x3dh-init] ok
+[Member3] [kant] 11:46:01 AM PING in ← 12D3KooWLoDn… 511B [x3dh-init]
+[Member3] [kant] PING in ← 12D3KooWLoDn… 511B [x3dh-init]
+[Member3] [kant] 11:46:01 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member8] [kant] 11:46:01 AM PING in ← 12D3KooWLoDn… 513B [x3dh-init]
+[Member8] [kant] PING in ← 12D3KooWLoDn… 513B [x3dh-init]
+[Member8] [kant] 11:46:01 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member0] [kant] 11:46:01 AM PING out → 12D3KooWSB3Y… 514B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWSB3Y… 514B [x3dh-init] ok
+[Member0] [kant] 11:46:01 AM PING out → 12D3KooWNoxF… 510B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWNoxF… 510B [x3dh-init] ok
+[Member6] [kant] 11:46:01 AM PING in ← 12D3KooWLoDn… 514B [x3dh-init]
+[Member6] [kant] PING in ← 12D3KooWLoDn… 514B [x3dh-init]
+[Member6] [kant] 11:46:01 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member6] [kant] 11:46:01 AM 🔑 Re-sending x3dh-init to a3258086a803… (tiebreak winner)
+[Member5] [kant] 11:46:01 AM PING in ← 12D3KooWLoDn… 510B [x3dh-init]
+[Member5] [kant] PING in ← 12D3KooWLoDn… 510B [x3dh-init]
+[Member5] [kant] 11:46:01 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member5] [kant] 11:46:01 AM 🔑 Re-sending x3dh-init to a3258086a803… (tiebreak winner)
+[Member0] [kant] 11:46:01 AM PING out → 12D3KooWMM9E… 511B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWMM9E… 511B [x3dh-init] ok
+[Member4] [kant] 11:46:01 AM PING in ← 12D3KooWLoDn… 511B [x3dh-init]
+[Member4] [kant] PING in ← 12D3KooWLoDn… 511B [x3dh-init]
+[Member4] [kant] 11:46:01 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member4] [kant] 11:46:01 AM 🔑 Re-sending x3dh-init to a3258086a803… (tiebreak winner)
+[Member0] [kant] 11:46:01 AM 🔒 Session ready: Member3…
+[Member0] [kant] 11:46:01 AM 🔒 Session ready: Member6…
+[Member0] [kant] 11:46:01 AM 🔒 Session ready: Member5…
+[Member0] [kant] 11:46:01 AM 🔒 Session ready: Member4…
+[Member0] [kant] 11:46:01 AM PING out → 12D3KooWDBFB… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWDBFB… 361B [kant-presence] ok
+[Member8] [kant] 11:46:01 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member8] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:46:02 AM PING out → 12D3KooWFnv9… 507B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWFnv9… 507B [x3dh-init] ok
+[Member2] [kant] 11:46:02 AM PING in ← 12D3KooWLoDn… 507B [x3dh-init]
+[Member2] [kant] PING in ← 12D3KooWLoDn… 507B [x3dh-init]
+[Member2] [kant] 11:46:02 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member0] [kant] 11:46:02 AM 🔒 Session ready: Member2…
+[Member9] [kant] 11:46:02 AM onion FORWARD → 12D3KooWFnv9… [ping] 568B
+[Member9] [kant] onion FORWARD → 12D3KooWFnv9… [ping] 568B
+[Member2] [kant] 11:46:02 AM PING in ← 12D3KooWF7Ub… 568B [ciphertext]
+[Member2] [kant] PING in ← 12D3KooWF7Ub… 568B [ciphertext]
+[Member0] [kant] 11:46:02 AM PING out → 12D3KooWJZ33… 510B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWJZ33… 510B [x3dh-init] ok
+[Member1] [kant] 11:46:02 AM PING in ← 12D3KooWLoDn… 510B [x3dh-init]
+[Member1] [kant] PING in ← 12D3KooWLoDn… 510B [x3dh-init]
+[Member1] [kant] 11:46:02 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member0] [kant] 11:46:02 AM 🔒 Session ready: Member1…
+[Member9] [kant] 11:46:02 AM onion FORWARD → 12D3KooWJZ33… [ping] 560B
+[Member9] [kant] onion FORWARD → 12D3KooWJZ33… [ping] 560B
+[Member0] [kant] 11:46:03 AM PING out → 12D3KooWFjLu… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWFjLu… 361B [kant-presence] ok
+[Member3] [kant] 11:46:03 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member3] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[createBrowserGroup] Recovering Member7 circuit with one reload.
+[Member0] [kant] 11:46:04 AM 🔒 Session ready: Member8…
+[Member9] [kant] 11:46:04 AM onion FORWARD → 12D3KooWDBFB… [ping] 558B
+[Member9] [kant] onion FORWARD → 12D3KooWDBFB… [ping] 558B
+[Member0] [kant] 11:46:04 AM PING out → 12D3KooWF7Ub… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWF7Ub… 361B [kant-presence] ok
+[Member8] [kant] 11:46:04 AM PING in ← 12D3KooWF7Ub… 558B [ciphertext]
+[Member8] [kant] PING in ← 12D3KooWF7Ub… 558B [ciphertext]
+[Member9] [kant] 11:46:04 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member9] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:46:04 AM PING out → 12D3KooWF7Ub… 511B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWF7Ub… 511B [x3dh-init] ok
+[Member9] [kant] 11:46:04 AM PING in ← 12D3KooWLoDn… 511B [x3dh-init]
+[Member9] [kant] PING in ← 12D3KooWLoDn… 511B [x3dh-init]
+[Member9] [kant] 11:46:04 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member0] [kant] 11:46:04 AM 🔒 Session ready: Member9…
+[Member8] [kant] 11:46:04 AM onion FORWARD → 12D3KooWF7Ub… [ping] 560B
+[Member8] [kant] onion FORWARD → 12D3KooWF7Ub… [ping] 560B
+[Member9] [kant] 11:46:04 AM PING in ← 12D3KooWDBFB… 560B [ciphertext]
+[Member9] [kant] PING in ← 12D3KooWDBFB… 560B [ciphertext]
+[Member0] [kant] 11:46:04 AM PING out → 12D3KooWFnv9… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWFnv9… 361B [kant-presence] ok
+[Member2] [kant] 11:46:04 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member2] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] [createNode] Started, peerId: 12D3KooWBfkasiFEoawBAZ7X5HxbEm8z3dRatcWcxNonzm7uxzA7
+[Member7] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member7] [kant] 11:46:05 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [kant] 11:46:06 AM PING out → 12D3KooWJZ33… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWJZ33… 361B [kant-presence] ok
+[Member1] [kant] 11:46:06 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member1] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:46:07 AM PING out → 12D3KooWMM9E… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWMM9E… 361B [kant-presence] ok
+[Member4] [kant] 11:46:07 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member4] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:46:09 AM PING out → 12D3KooWNoxF… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWNoxF… 361B [kant-presence] ok
+[Member5] [kant] 11:46:09 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member5] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:46:12 AM PING out → 12D3KooWSB3Y… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWSB3Y… 361B [kant-presence] ok
+[Member6] [kant] 11:46:12 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member6] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member9] [kant] 11:46:42 AM onion FORWARD → 12D3KooWDBFB… [ping] 21B
+[Member9] [kant] onion FORWARD → 12D3KooWDBFB… [ping] 21B
+[Member8] [kant] 11:46:42 AM PING in ← 12D3KooWF7Ub… 21B [kant-cover]
+[Member8] [kant] PING in ← 12D3KooWF7Ub… 21B [kant-cover]
+[Member7] [kant] 11:46:45 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] [createNode] Started, peerId: 12D3KooWBfkasiFEoawBAZ7X5HxbEm8z3dRatcWcxNonzm7uxzA7
+[Member7] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member7] [kant] 11:46:47 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member7] [kant] 11:46:48 AM 👥 Group handler ready
+[Member0] [kant] 11:47:10 AM PING out → 12D3KooWBfka… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWBfka… 361B [kant-presence] ok
+[Member7] [kant] 11:47:10 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member7] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:47:10 AM PING out → 12D3KooWBfka… 506B [x3dh-init] ok
+[Member0] [kant] PING out → 12D3KooWBfka… 506B [x3dh-init] ok
+[Member7] [kant] 11:47:10 AM PING in ← 12D3KooWLoDn… 506B [x3dh-init]
+[Member7] [kant] PING in ← 12D3KooWLoDn… 506B [x3dh-init]
+[Member7] [kant] 11:47:10 AM ← 12D3KooWLoDn… [x3dh-init]
+[Member0] [kant] 11:47:10 AM 🔒 Session ready: Member7…
+[Member9] [kant] 11:47:10 AM onion FORWARD → 12D3KooWBfka… [ping] 569B
+[Member9] [kant] onion FORWARD → 12D3KooWBfka… [ping] 569B
+[Member7] [kant] 11:47:10 AM PING in ← 12D3KooWF7Ub… 569B [ciphertext]
+[Member7] [kant] PING in ← 12D3KooWF7Ub… 569B [ciphertext]
+[createBrowserGroup] All circuits and owner sessions ready for 9 live members.
+[createBrowserGroup] Final heap: 63 MB (+-2 MB)
+[10-member] All 10 identities created
+[Member0] [kant] 11:47:10 AM PING out → 12D3KooWDBFB… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWDBFB… 361B [kant-presence] ok
+[Member8] [kant] 11:47:10 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member8] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:47:11 AM PING out → 12D3KooWF7Ub… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWF7Ub… 361B [kant-presence] ok
+[Member9] [kant] 11:47:11 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member9] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:47:11 AM 👥 Created group: scale-test-10
+[10-member] Group created: scale-test-10
+[Member7] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member7] [kant] 11:47:11 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member7] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:11 AM PING in ← 12D3KooWBfka… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWBfka… 355B [group-presence]
+[Member8] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member8] [kant] 11:47:11 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member8] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:11 AM PING in ← 12D3KooWDBFB… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWDBFB… 355B [group-presence]
+[Member9] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member9] [kant] 11:47:11 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member9] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:11 AM PING in ← 12D3KooWF7Ub… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWF7Ub… 355B [group-presence]
+[Member3] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member3] [kant] 11:47:11 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member3] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:11 AM PING in ← 12D3KooWFjLu… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWFjLu… 355B [group-presence]
+[Member2] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member2] [kant] 11:47:11 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member2] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:11 AM PING in ← 12D3KooWFnv9… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWFnv9… 355B [group-presence]
+[Member1] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member1] [kant] 11:47:11 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member1] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:11 AM PING in ← 12D3KooWJZ33… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWJZ33… 355B [group-presence]
+[Member4] [kant] 11:47:11 AM 👥 Joined group: scale-test-10
+[Member4] [kant] 11:47:12 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member4] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:12 AM PING in ← 12D3KooWMM9E… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWMM9E… 355B [group-presence]
+[Member5] [kant] 11:47:12 AM 👥 Joined group: scale-test-10
+[Member5] [kant] 11:47:12 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member5] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:12 AM PING in ← 12D3KooWNoxF… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWNoxF… 355B [group-presence]
+[Member6] [kant] 11:47:12 AM 👥 Joined group: scale-test-10
+[Member6] [kant] 11:47:12 AM PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member6] [kant] PING out → 12D3KooWLoDn… 355B [group-presence] ok
+[Member0] [kant] 11:47:12 AM PING in ← 12D3KooWSB3Y… 355B [group-presence]
+[Member0] [kant] PING in ← 12D3KooWSB3Y… 355B [group-presence]
+[10-member] All 10 members see the group
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWFjLu… 361B [kant-presence] ok
+[Member0] [kant] PING out → 12D3KooWFjLu… 361B [kant-presence] ok
+[Member3] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member3] [kant] PING in ← 12D3KooWLoDn… 361B [kant-presence]
+[Member0] [kant] 11:47:12 AM 📨 group-send: scale-test-10 node=true ident=true sel=true len=26
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWBfka… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWBfka… 692B [group-msg] ok
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWDBFB… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWDBFB… 692B [group-msg] ok
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWF7Ub… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWF7Ub… 692B [group-msg] ok
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWFjLu… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWFjLu… 692B [group-msg] ok
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWFnv9… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWFnv9… 692B [group-msg] ok
+[Member8] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member8] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWMM9E… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWMM9E… 692B [group-msg] ok
+[Member7] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member7] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member9] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member9] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member3] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member3] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member2] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member2] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member4] [kant] 11:47:12 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member4] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member0] [kant] 11:47:12 AM PING out → 12D3KooWNoxF… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWNoxF… 692B [group-msg] ok
+[Member0] [kant] 11:47:13 AM PING out → 12D3KooWJZ33… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWJZ33… 692B [group-msg] ok
+[Member1] [kant] 11:47:13 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member1] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member0] [kant] 11:47:13 AM PING out → 12D3KooWSB3Y… 692B [group-msg] ok
+[Member0] [kant] PING out → 12D3KooWSB3Y… 692B [group-msg] ok
+[Member5] [kant] 11:47:13 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member5] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member6] [kant] 11:47:13 AM PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member6] [kant] PING in ← 12D3KooWLoDn… 692B [group-msg]
+[Member8] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member8] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member9] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member9] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member7] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member7] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member2] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member2] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member3] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member3] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWDBFB… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWDBFB… 200B [group-read]
+[Member4] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member4] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member1] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member1] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member0] [kant] 11:47:13 AM ← 12D3KooWDBFB… [group-read]
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWF7Ub… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWF7Ub… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWF7Ub… [group-read]
+[Member5] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member5] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWBfka… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWBfka… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWBfka… [group-read]
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWFnv9… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWFnv9… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWFnv9… [group-read]
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWFjLu… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWFjLu… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWFjLu… [group-read]
+[Member6] [kant] 11:47:13 AM PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member6] [kant] PING out → 12D3KooWLoDn… 200B [group-read] ok
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWMM9E… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWMM9E… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWMM9E… [group-read]
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWJZ33… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWJZ33… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWJZ33… [group-read]
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWNoxF… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWNoxF… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWNoxF… [group-read]
+[10-member] First message delivered to all 10 members
+[10-member] Final heap: 72 MB (+8 MB)
+✓ 10-member nominal test passed
+[createBrowserGroup] Closing browser...
+[Member0] [kant] 11:47:13 AM PING in ← 12D3KooWSB3Y… 200B [group-read]
+[Member0] [kant] PING in ← 12D3KooWSB3Y… 200B [group-read]
+[Member0] [kant] 11:47:13 AM ← 12D3KooWSB3Y… [group-read]
+[createBrowserGroup] Cleanup heap: 73 MB (freed ~1 MB)
+
+=== Starting 50-member scale test (nominal) ===
+[50-member] Initial heap: 73 MB
+[createBrowserGroup] Launching browser with 50 contexts...
+✔ group key delivery: 10 members under nominal conditions (128206.114657ms)
+[createBrowserGroup] Initial heap: 74 MB
+[createBrowserGroup] Creating 50 contexts...
+[Member1] Created new identity: dcd0c48ee25c54ce...
+[Member0] Created new identity: 8533c47d261f7891...
+[Member1] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Started, peerId: 12D3KooWJnLBAbVbcw2HYYDkbX2K5vmG1KBXghoKbWTR2GPV24dx
+[Member0] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member0] [kant] 11:47:15 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member1] [createNode] Started, peerId: 12D3KooWQgLVpFtubedQbuUQ8ZBLFirLdWDupGwaipF2DeargiZb
+[Member1] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member1] [kant] 11:47:15 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member0] [kant] 11:47:16 AM 👥 Group handler ready
+[Member3] Created new identity: fd48682f5af70841...
+[Member2] Created new identity: 93cf701ff983cc05...
+[Member3] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member2] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member3] [createNode] Started, peerId: 12D3KooWSs5MTDZn1TGPKi8zDP4dQo3WLAN69tTWAQ4tamoDRRs4
+[Member3] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member3] [kant] 11:47:17 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member2] [createNode] Started, peerId: 12D3KooWKmMZQiFUCChC5m3mKx5o7mgduphdYXqg7ksRHesxzG6Y
+[Member2] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member2] [kant] 11:47:17 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member3] [kant] 11:47:18 AM 👥 Group handler ready
+[Member2] [kant] 11:47:18 AM 👥 Group handler ready
+[Member4] Created new identity: fa6e17e06f55796a...
+[Member5] Created new identity: f76bc3d33a6bf88c...
+[Member4] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member5] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member4] [createNode] Started, peerId: 12D3KooWSfwTegnydvaLSL6QmUCAm9N99DTVCyKnY7vApZEgyiCC
+[Member4] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member4] [kant] 11:47:19 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member5] [createNode] Started, peerId: 12D3KooWSUCBH79mBpp8ncnjEpYWhDCWbS7vUUZTC2CKwkMoax2m
+[Member5] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member5] [kant] 11:47:19 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member4] [kant] 11:47:20 AM 👥 Group handler ready
+[Member5] [kant] 11:47:20 AM 👥 Group handler ready
+[Member6] Created new identity: d1b7803f8435a024...
+[Member6] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] Created new identity: 8956f3b211998276...
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member6] [createNode] Started, peerId: 12D3KooWPw1fdUACg57JkWmtccj29vg6SGfxUR3uZ5eFaixHU7qM
+[Member6] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member6] [kant] 11:47:21 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member7] [createNode] Started, peerId: 12D3KooWK4UvZ3nC3fNYqKzxrDLer6buJAHZ91egHqa2RopdRFJV
+[Member7] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member7] [kant] 11:47:21 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member6] [kant] 11:47:22 AM 👥 Group handler ready
+[Member7] [kant] 11:47:22 AM 👥 Group handler ready
+[Member9] Created new identity: 94345a7dbe0bd44f...
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member8] Created new identity: a9597d25834ceab7...
+[Member8] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Started, peerId: 12D3KooWKntovJAhQeSnBAffpsSTqbrFXoPNpVv4NvMyuDQLuQMd
+[Member9] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member9] [kant] 11:47:23 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member8] [createNode] Started, peerId: 12D3KooWMDSDNaZiQjB9sDszwfJpQAPM2rvebeUXo38P8v5Cb566
+[Member8] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member8] [kant] 11:47:23 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member8] [kant] 11:47:24 AM 👥 Group handler ready
+[Member10] Created new identity: 3ed9394fea3d54df...
+[Member11] Created new identity: ef07eace06822c6b...
+[Member10] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member11] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member10] [createNode] Started, peerId: 12D3KooWE3hZRzCrewYCRPgYSEh7cJ1DGkAp7HDX1F7rxrjJB9uq
+[Member10] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member10] [kant] 11:47:25 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member11] [createNode] Started, peerId: 12D3KooWRuScNHbcW4JcmzQspivj4FZ1qbULWJZV93j5TPa9fRm1
+[Member11] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member11] [kant] 11:47:25 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member11] [kant] 11:47:27 AM 👥 Group handler ready
+[Member12] Created new identity: d6c972d04b5296d3...
+[Member12] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member13] Created new identity: 9b90b15d78e1ca7c...
+[Member13] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member12] [createNode] Started, peerId: 12D3KooWQGoaVJyeLk9hS2oSMnPUCDAqd4ttn3iDjdzGBbr6J8E7
+[Member12] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member12] [kant] 11:47:27 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member13] [createNode] Started, peerId: 12D3KooWLHdL38uUJ3kmyWgoykGB6DN4154KoZx4NRvt5vDu2q7y
+[Member13] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member13] [kant] 11:47:28 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member12] [kant] 11:47:28 AM 👥 Group handler ready
+[Member13] [kant] 11:47:29 AM 👥 Group handler ready
+[Member15] Created new identity: 37867ce8e8ac5650...
+[Member15] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member14] Created new identity: 56f7de4c87954544...
+[Member14] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member15] [createNode] Started, peerId: 12D3KooWDZ7XvcAGhmwLUteXaGpANfrMvP3ZmtoeqDdNuW5aw4pr
+[Member15] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member15] [kant] 11:47:30 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member14] [createNode] Started, peerId: 12D3KooWFfrSsT1i337Wvod2ExDedu7bn45i1YRrgHwDythABfno
+[Member14] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member14] [kant] 11:47:30 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member15] [kant] 11:47:31 AM 👥 Group handler ready
+[Member17] Created new identity: 59ed4d3c20510485...
+[Member17] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member16] Created new identity: 9b57ce40b9dd4386...
+[Member16] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member17] [createNode] Started, peerId: 12D3KooWFsQKnfdJzRSy9R9nzWbmkXCSmThBSPPmWKDJPW5G9cDL
+[Member17] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member17] [kant] 11:47:32 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member16] [createNode] Started, peerId: 12D3KooWLGm1yxREXFaWeLuPi6jGLi8vF68Meyk6XFnJAQHTdpsL
+[Member16] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member16] [kant] 11:47:32 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member17] [kant] 11:47:33 AM 👥 Group handler ready
+[Member16] [kant] 11:47:33 AM 👥 Group handler ready
+[Member18] Created new identity: 60ea6a00c17d1060...
+[Member18] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member18] [createNode] Started, peerId: 12D3KooWGLgdC3r5rT9aXz4wy1rgMWJJFis1YjjnU2PX8RDet2qb
+[Member18] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member18] [kant] 11:47:34 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member19] Created new identity: e89acca9460a5f43...
+[Member19] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member19] [createNode] Started, peerId: 12D3KooWRUMfEtGDbpPtKJ3fDL2hWdJK77ymEbHSCDTiBdpy3va6
+[Member19] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member19] [kant] 11:47:34 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member21] Created new identity: 535267ced9286ed9...
+[Member20] Created new identity: 7afce398e83fa386...
+[Member20] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member21] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member21] [createNode] Started, peerId: 12D3KooWFRctS2Xc1vtT59q7seLHNVmgv83GWu129MCRYGaJzMsr
+[Member21] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member21] [kant] 11:47:39 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member20] [createNode] Started, peerId: 12D3KooWJ6TZgYirFkBKUZKBvUzEGNEQWUa78v1REppFJpTxqSx3
+[Member20] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member20] [kant] 11:47:39 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member21] [kant] 11:47:40 AM 👥 Group handler ready
+[Member20] [kant] 11:47:40 AM 👥 Group handler ready
+[Member22] Created new identity: 6027ddea7f40c175...
+[Member22] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member22] [createNode] Started, peerId: 12D3KooWGHiZo7S1q24HaPDs5HPwRRrJBqkguLgBTQ8c8mgzjJLE
+[Member22] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member22] [kant] 11:47:52 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member23] Created new identity: 1b44d6a1d0f52197...
+[Member23] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member22] [kant] 11:47:53 AM 👥 Group handler ready
+[Member23] [createNode] Started, peerId: 12D3KooWBep4JJpu7cLqrWsbBzqyggfqkMGU9BvdGCz9zFz9ZZ5d
+[Member23] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member23] [kant] 11:47:53 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member23] [kant] 11:47:54 AM 👥 Group handler ready
+[Member1] [kant] 11:47:55 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member1] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member1] [createNode] Started, peerId: 12D3KooWQgLVpFtubedQbuUQ8ZBLFirLdWDupGwaipF2DeargiZb
+[Member1] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member1] [kant] 11:48:00 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member9] [kant] 11:48:03 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member10] [kant] 11:48:05 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member10] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Started, peerId: 12D3KooWKntovJAhQeSnBAffpsSTqbrFXoPNpVv4NvMyuDQLuQMd
+[Member9] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member9] [kant] 11:48:09 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member10] [createNode] Started, peerId: 12D3KooWE3hZRzCrewYCRPgYSEh7cJ1DGkAp7HDX1F7rxrjJB9uq
+[Member10] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member10] [kant] 11:48:09 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member25] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member25] Created new identity: f944df8cd2d96fb9...
+[Member25] [createNode] Started, peerId: 12D3KooWSbQbbu8N7Hno2DrrtmaYAUx7t8FgvC9snfc5v8dSVVsZ
+[Member25] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member25] [kant] 11:48:09 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member14] [kant] 11:48:10 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member10] [kant] 11:48:10 AM 👥 Group handler ready
+[Member24] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member25] [kant] 11:48:10 AM 👥 Group handler ready
+[Member24] Created new identity: 439f890cd5260b2a...
+[Member14] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member24] [createNode] Started, peerId: 12D3KooWENLaW7AKiQuSQnFXdx3tgLqXhh1fkkCoE6VK1qLSnCvk
+[Member24] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member24] [kant] 11:48:12 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member14] [createNode] Started, peerId: 12D3KooWFfrSsT1i337Wvod2ExDedu7bn45i1YRrgHwDythABfno
+[Member14] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member14] [kant] 11:48:13 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member18] [kant] 11:48:14 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member14] [kant] 11:48:14 AM 👥 Group handler ready
+[Member19] [kant] 11:48:14 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member19] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member19] [createNode] Started, peerId: 12D3KooWRUMfEtGDbpPtKJ3fDL2hWdJK77ymEbHSCDTiBdpy3va6
+[Member19] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member19] [kant] 11:48:16 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member18] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member19] [kant] 11:48:17 AM 👥 Group handler ready
+[Member18] [createNode] Started, peerId: 12D3KooWGLgdC3r5rT9aXz4wy1rgMWJJFis1YjjnU2PX8RDet2qb
+[Member18] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member18] [kant] 11:48:18 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member18] [kant] 11:48:19 AM 👥 Group handler ready
+[Member27] Created new identity: 33b9e446b6e8e7ac...
+[Member27] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member27] [createNode] Started, peerId: 12D3KooWDJHN7z3819L2FWfYTL6k6NtQecLYzK7cyu6iVJihuiTV
+[Member27] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member27] [kant] 11:48:36 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member26] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member26] Created new identity: ccf0e1335a15f778...
+[Member26] [createNode] Started, peerId: 12D3KooWPcNNfeDAj982w2mKkQuFgA6vzBbW6UczieJ9rZN4ir2E
+[Member26] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member26] [kant] 11:48:39 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member1] [kant] 11:48:40 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member1] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member1] [createNode] Started, peerId: 12D3KooWQgLVpFtubedQbuUQ8ZBLFirLdWDupGwaipF2DeargiZb
+[Member1] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member1] [kant] 11:48:42 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member9] [kant] 11:48:49 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Started, peerId: 12D3KooWKntovJAhQeSnBAffpsSTqbrFXoPNpVv4NvMyuDQLuQMd
+[Member9] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member9] [kant] 11:48:51 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member24] [kant] 11:48:52 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Member24] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member24] [createNode] Started, peerId: 12D3KooWENLaW7AKiQuSQnFXdx3tgLqXhh1fkkCoE6VK1qLSnCvk
+[Member24] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member24] [kant] 11:48:54 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member24] [kant] 11:48:55 AM 👥 Group handler ready
+[Member28] Created new identity: 8e34f1c0e1bd5820...
+[Member28] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member28] [createNode] Started, peerId: 12D3KooWKPUtMEsp5Jjc7m3UWwHNNHvV9KKcXHJ7jSLJS8SBXM3a
+[Member28] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member28] [kant] 11:48:57 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member29] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member29] Created new identity: 471e2647abf263d8...
+[Member29] [createNode] Started, peerId: 12D3KooWEbynBL9sYaSKjt6sjurJiruZa5JKB3ixnc3PLFezN5M7
+[Member29] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Member29] [kant] 11:48:59 AM 🚀 Relay dialed; waiting for circuit reservation
+[Member29] [kant] 11:49:00 AM 👥 Group handler ready
+[Member9] [kant] 11:49:07 AM ⚠️ Lost relay — reconnecting...
+[Member1] [kant] 11:49:07 AM ⚠️ Lost relay — reconnecting...
+[Member27] [kant] 11:49:11 AM ⚠️ Lost relay — reconnecting...
+[Member26] [kant] 11:49:13 AM ⚠️ Lost relay — reconnecting...
+[Member1] [kant] 11:49:17 AM ❌ Reconnect failed
+[Member9] [kant] 11:49:17 AM ❌ Reconnect failed
+[Member28] [kant] 11:49:19 AM ⚠️ Lost relay — reconnecting...
+[Member27] [kant] 11:49:22 AM ❌ Reconnect failed
+[Member31] Created new identity: 79afa7c764c02987...
+[Member30] Created new identity: 8b3993a46747c3ee...
+[Member26] [kant] 11:49:23 AM ❌ Reconnect failed
+[Member27] [kant] 11:49:24 AM 🔄 Reservation absent after 45 seconds — restarting node to re-reserve
+[Member1] [kant] 11:49:29 AM 🔄 Reservation absent after 45 seconds — restarting node to re-reserve
+[Member28] [kant] 11:49:29 AM ❌ Reconnect failed
+[Member26] [kant] 11:49:30 AM 🔄 Reservation absent after 45 seconds — restarting node to re-reserve
+[Member9] [kant] 11:49:39 AM 🔄 Reservation absent after 45 seconds — restarting node to re-reserve
+[Member27] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member1] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member26] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member30] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member31] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member1] [createNode] Started, peerId: 12D3KooWQgLVpFtubedQbuUQ8ZBLFirLdWDupGwaipF2DeargiZb
+[Member26] [createNode] Started, peerId: 12D3KooWPcNNfeDAj982w2mKkQuFgA6vzBbW6UczieJ9rZN4ir2E
+[Member27] [createNode] Started, peerId: 12D3KooWDJHN7z3819L2FWfYTL6k6NtQecLYzK7cyu6iVJihuiTV
+[Member12] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member18] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member10] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member29] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member13] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member21] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member31] [createNode] Started, peerId: 12D3KooWJ1NrJBsxZdPBW6iiumk7zPjhJTGeH9cVCWmUmEG1f7dX
+[Member30] [createNode] Started, peerId: 12D3KooWKBqm2imaBaE77LFRuvEP6Ydnx257NQai2ZRs88sjSxr8
+[Member2] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member7] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member6] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member8] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member14] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member22] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member15] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member23] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member11] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member19] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member0] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member3] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member20] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member25] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member5] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member4] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member9] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member24] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member16] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Member17] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+

@@ -1,0 +1,13 @@
+{
+  "name": "@kant/test-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-global-webcrypto --test --test-concurrency=1 tests/*.test.mjs",
+    "test:e2e": "node --experimental-global-webcrypto --test --test-concurrency=1 tests/e2e-*.test.mjs",
+    "test:ui": "playwright test"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.5"
+  }
+}

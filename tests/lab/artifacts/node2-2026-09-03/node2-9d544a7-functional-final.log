@@ -1,0 +1,1068 @@
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-runner-run-c5b3a9be0476 Creating 
+ Container kant-test-lab-runner-run-c5b3a9be0476 Created 
+[Alice] [kant] 11:32:25 AM 🔑 Ephemeral routing key: 934238f4fe000068…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWLBiYyHhvWScsXtPFPiDKBBbXRAksxiN5WDA2ZdmmYsqx
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:32:26 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:32:28 AM 🔑 Ephemeral routing key: 706103de418a56bb…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWM5yzou1tNe3uYzQ5abpbKxFKPFDf9Q5T3QsFnZe78Jhg
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:32:28 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:32:29 AM 👥 Group handler ready
+[Alice] [kant] 11:33:06 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 11:33:08 AM 🔑 Ephemeral routing key: ef783bb37ecabc42…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWLBiYyHhvWScsXtPFPiDKBBbXRAksxiN5WDA2ZdmmYsqx
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:33:08 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:33:09 AM 👥 Group handler ready
+[Alice] [kant] 11:33:09 AM PING out → 12D3KooWM5yz… 361B [kant-presence] ok
+[Alice] [kant] PING out → 12D3KooWM5yz… 361B [kant-presence] ok
+[Bob] [kant] 11:33:09 AM PING in ← 12D3KooWLBiY… 361B [kant-presence]
+[Bob] [kant] PING in ← 12D3KooWLBiY… 361B [kant-presence]
+[Alice] [kant] 11:33:09 AM PING out → 12D3KooWM5yz… 515B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWM5yz… 515B [x3dh-init] ok
+[Bob] [kant] 11:33:09 AM PING in ← 12D3KooWLBiY… 515B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWLBiY… 515B [x3dh-init]
+[Bob] [kant] 11:33:09 AM ← 12D3KooWLBiY… [x3dh-init]
+[Bob] [kant] 11:33:09 AM 🔑 Re-sending x3dh-init to 9a0d1d1742e7… (tiebreak winner)
+[Alice] [kant] 11:33:09 AM dial → 12D3KooWM5yz… [ping] 566B ok
+[Alice] [kant] dial → 12D3KooWM5yz… [ping] 566B ok
+[Alice] [kant] 11:33:09 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 11:33:09 AM PING in ← 12D3KooWLBiY… 566B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWLBiY… 566B [ciphertext]
+[Bob] [kant] 11:33:09 AM 🔁 Desync detected — rebuilding session with 9a0d1d1742e7…
+[Bob] [kant] 11:33:09 AM PING out → 12D3KooWLBiY… 513B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWLBiY… 513B [x3dh-init] ok
+[Alice] [kant] 11:33:09 AM PING in ← 12D3KooWM5yz… 513B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWM5yz… 513B [x3dh-init]
+[Alice] [kant] 11:33:09 AM ← 12D3KooWM5yz… [x3dh-init]
+[Bob] [kant] 11:33:09 AM dial → 12D3KooWLBiY… [ping] 561B ok
+[Bob] [kant] dial → 12D3KooWLBiY… [ping] 561B ok
+[Bob] [kant] 11:33:09 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:33:09 AM PING in ← 12D3KooWM5yz… 561B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWM5yz… 561B [ciphertext]
+[Alice] [kant] 11:33:09 AM dial → 12D3KooWM5yz… [ping] 588B ok
+[Alice] [kant] dial → 12D3KooWM5yz… [ping] 588B ok
+[Bob] [kant] 11:33:09 AM PING in ← 12D3KooWLBiY… 588B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWLBiY… 588B [ciphertext]
+sourceLen=1048576 recvLen=1048576
+sourceHash=631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769
+recvHash=631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769
+sealed-open-threw (expected): incorrect key pair for the given ciphertext
+sealed-open-result: false
+✔ a 1 MiB file arrives intact and its sealed key cannot be opened by a third party (46539.908913ms)
+[Alice] [kant] 11:33:12 AM 🔑 Ephemeral routing key: 8dde355cbb1aa294…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWHQuAPJQ8HCtE4kiSvAXRfU8PZX25dMQAnH5Kz6tQJLFX
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:33:12 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:33:14 AM 🔑 Ephemeral routing key: d5d70781d603102c…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWGRiW5JtwzL5trCKs1Ti3Vwbek4Uyveh6MJKwNDw4Yz8f
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:33:14 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:33:52 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:33:54 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 11:33:54 AM 🔑 Ephemeral routing key: ce72af9187f6b7fa…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWHQuAPJQ8HCtE4kiSvAXRfU8PZX25dMQAnH5Kz6tQJLFX
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:33:54 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:33:56 AM 🔑 Ephemeral routing key: 1abce6c9b3b8ba6b…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWGRiW5JtwzL5trCKs1Ti3Vwbek4Uyveh6MJKwNDw4Yz8f
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:33:56 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:33:57 AM 👥 Group handler ready
+[Alice] [kant] 11:34:34 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 11:34:36 AM 🔑 Ephemeral routing key: 05a4e2af93401e14…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWHQuAPJQ8HCtE4kiSvAXRfU8PZX25dMQAnH5Kz6tQJLFX
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:34:37 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:34:38 AM 👥 Group handler ready
+[Alice] [kant] 11:34:38 AM PING out → 12D3KooWGRiW… 361B [kant-presence] ok
+[Alice] [kant] PING out → 12D3KooWGRiW… 361B [kant-presence] ok
+[Bob] [kant] 11:34:38 AM PING in ← 12D3KooWHQuA… 361B [kant-presence]
+[Bob] [kant] PING in ← 12D3KooWHQuA… 361B [kant-presence]
+[Alice] [kant] 11:34:38 AM PING out → 12D3KooWGRiW… 510B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWGRiW… 510B [x3dh-init] ok
+[Bob] [kant] 11:34:38 AM PING in ← 12D3KooWHQuA… 510B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWHQuA… 510B [x3dh-init]
+[Bob] [kant] 11:34:38 AM ← 12D3KooWHQuA… [x3dh-init]
+[Alice] [kant] 11:34:38 AM dial → 12D3KooWGRiW… [ping] 568B ok
+[Alice] [kant] dial → 12D3KooWGRiW… [ping] 568B ok
+[Alice] [kant] 11:34:38 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 11:34:38 AM PING in ← 12D3KooWHQuA… 568B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWHQuA… 568B [ciphertext]
+[Alice] [kant] 11:34:38 AM 👥 Created group: churn-restart-group
+[Alice] [kant] 11:34:38 AM → fetchPreKeyBundle 623470d80ea4 @ /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWGRiW5JtwzL5trCKs1Ti3Vwbek4Uyveh6MJKwNDw4Yz8f
+[Bob] [kant] 11:34:38 AM 👥 Joined group: churn-restart-group
+[Alice] [kant] 11:34:38 AM ✓ Key sent to 1 member(s)
+[Bob] [kant] 11:34:38 AM PING out → 12D3KooWHQuA… 355B [group-presence] ok
+[Bob] [kant] PING out → 12D3KooWHQuA… 355B [group-presence] ok
+[Alice] [kant] 11:34:38 AM PING in ← 12D3KooWGRiW… 355B [group-presence]
+[Alice] [kant] PING in ← 12D3KooWGRiW… 355B [group-presence]
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWHQuAPJQ8HCtE4kiSvAXRfU8PZX25dMQAnH5Kz6tQJLFX: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:34:40 AM dial → 12D3KooWHQuA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] dial → 12D3KooWHQuA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:34:40 AM dial → 12D3KooWHQuA… [ping] GAVE UP after 4 attempts
+[Bob] [kant] dial → 12D3KooWHQuA… [ping] GAVE UP after 4 attempts
+[Bob] [kant] 11:35:08 AM 🔑 Ephemeral routing key: 812c9279355e2e76…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWGRiW5JtwzL5trCKs1Ti3Vwbek4Uyveh6MJKwNDw4Yz8f
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:35:08 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:35:09 AM 🔑 Ephemeral routing key: 1cbbdbc1203b5240…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWHQuAPJQ8HCtE4kiSvAXRfU8PZX25dMQAnH5Kz6tQJLFX
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:35:09 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:35:48 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 11:35:49 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:35:50 AM 🔑 Ephemeral routing key: 2a65dafa181d91f7…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWGRiW5JtwzL5trCKs1Ti3Vwbek4Uyveh6MJKwNDw4Yz8f
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:35:50 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:35:51 AM 🔑 Ephemeral routing key: f4f855549424d692…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWHQuAPJQ8HCtE4kiSvAXRfU8PZX25dMQAnH5Kz6tQJLFX
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:35:51 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:35:52 AM 👥 Group handler ready
+[Alice] [kant] 11:35:52 AM PING out → 12D3KooWGRiW… [group-presence] FAIL: failed to connect via relay with status CONNECTION_FAILED
+[Alice] [kant] PING out → 12D3KooWGRiW… [group-presence] FAIL: failed to connect via relay with status CONNECTION_FAILED
+[Alice] [kant] 11:35:52 AM PING out → 12D3KooWGRiW… 361B [kant-presence] ok
+[Alice] [kant] PING out → 12D3KooWGRiW… 361B [kant-presence] ok
+[Bob] [kant] 11:35:52 AM PING in ← 12D3KooWHQuA… 361B [kant-presence]
+[Bob] [kant] PING in ← 12D3KooWHQuA… 361B [kant-presence]
+[Bob] [kant] 11:35:52 AM 👥 Group handler ready
+[Bob] [kant] 11:35:52 AM 📡 Found 1 group member(s) via relay
+[Bob] [kant] 11:35:52 AM PING out → 12D3KooWHQuA… 355B [group-presence] ok
+[Bob] [kant] PING out → 12D3KooWHQuA… 355B [group-presence] ok
+[Alice] [kant] 11:35:52 AM PING in ← 12D3KooWGRiW… 355B [group-presence]
+[Alice] [kant] PING in ← 12D3KooWGRiW… 355B [group-presence]
+[Bob] [kant] 11:35:52 AM PING out → 12D3KooWHQuA… 361B [kant-presence] ok
+[Bob] [kant] PING out → 12D3KooWHQuA… 361B [kant-presence] ok
+[Alice] [kant] 11:35:52 AM PING in ← 12D3KooWGRiW… 361B [kant-presence]
+[Alice] [kant] PING in ← 12D3KooWGRiW… 361B [kant-presence]
+[Alice] [kant] 11:35:52 AM 📨 group-send: churn-restart-group node=true ident=true sel=true len=19
+[Alice] [kant] 11:35:52 AM PING out → 12D3KooWGRiW… 662B [group-msg] ok
+[Alice] [kant] PING out → 12D3KooWGRiW… 662B [group-msg] ok
+[Bob] [kant] 11:35:52 AM PING in ← 12D3KooWHQuA… 662B [group-msg]
+[Bob] [kant] PING in ← 12D3KooWHQuA… 662B [group-msg]
+[Bob] [kant] 11:35:52 AM 👥 70da99ce3c76… → churn-restart-group
+[Bob] [kant] 11:35:52 AM PING out → 12D3KooWHQuA… 200B [group-read] ok
+[Bob] [kant] PING out → 12D3KooWHQuA… 200B [group-read] ok
+✔ group key delivery survives relay restart during distribution (161737.758835ms)
+[Alice] [kant] 11:35:54 AM 🔑 Ephemeral routing key: 18d8a6e9ed49c745…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWH2X8JPjw2aMj46AQo666JDFVje38wie1sbj2FzSGRDbx
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:35:54 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:35:55 AM 👥 Group handler ready
+[Bob] [kant] 11:35:56 AM 🔑 Ephemeral routing key: d7302c8da3b45679…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWSA8275EC23PR39ERr34CAvviFjVejvLZMWkAHud3hagz
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:35:56 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:35:57 AM 👥 Group handler ready
+[Bob] [kant] 11:35:58 AM PING out → 12D3KooWH2X8… 361B [kant-presence] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 361B [kant-presence] ok
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 361B [kant-presence]
+[Alice] [kant] PING in ← 12D3KooWSA82… 361B [kant-presence]
+[Bob] [kant] 11:35:58 AM PING out → 12D3KooWH2X8… 516B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 516B [x3dh-init] ok
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 516B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWSA82… 516B [x3dh-init]
+[Alice] [kant] 11:35:58 AM ← 12D3KooWSA82… [x3dh-init]
+[Bob] [kant] 11:35:58 AM dial → 12D3KooWH2X8… [ping] 557B ok
+[Bob] [kant] dial → 12D3KooWH2X8… [ping] 557B ok
+[Bob] [kant] 11:35:58 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 557B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWSA82… 557B [ciphertext]
+[Alice] [kant] 11:35:58 AM PING out → 12D3KooWSA82… 104B [x3dh-reset] ok
+[Alice] [kant] PING out → 12D3KooWSA82… 104B [x3dh-reset] ok
+[Bob] [kant] 11:35:58 AM PING in ← 12D3KooWH2X8… 104B [x3dh-reset]
+[Bob] [kant] PING in ← 12D3KooWH2X8… 104B [x3dh-reset]
+[Bob] [kant] 11:35:58 AM ← 12D3KooWH2X8… [x3dh-reset]
+[Bob] [kant] 11:35:58 AM 🔁 Resync requested by 6b1ee8299a04… — rebuilding session
+[Bob] [kant] 11:35:58 AM PING out → 12D3KooWH2X8… 519B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 519B [x3dh-init] ok
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 519B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWSA82… 519B [x3dh-init]
+[Alice] [kant] 11:35:58 AM ← 12D3KooWSA82… [x3dh-init]
+[Bob] [kant] 11:35:58 AM dial → 12D3KooWH2X8… [ping] 562B ok
+[Bob] [kant] dial → 12D3KooWH2X8… [ping] 562B ok
+[Bob] [kant] 11:35:58 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 562B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWSA82… 562B [ciphertext]
+[Alice] [kant] 11:35:58 AM 👥 Created group: churn-disconnect-group
+[Alice] [kant] 11:35:58 AM → fetchPreKeyBundle f2ca9bd63c46 @ /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWSA8275EC23PR39ERr34CAvviFjVejvLZMWkAHud3hagz
+[Bob] [kant] 11:35:58 AM 👥 Joined group: churn-disconnect-group
+[Alice] [kant] 11:35:58 AM ✓ Key sent to 1 member(s)
+[Bob] [kant] 11:35:58 AM PING out → 12D3KooWH2X8… 355B [group-presence] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 355B [group-presence] ok
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 355B [group-presence]
+[Alice] [kant] PING in ← 12D3KooWSA82… 355B [group-presence]
+[Alice] [kant] 11:35:58 AM 📨 group-send: churn-disconnect-group node=true ident=true sel=true len=17
+[Alice] [kant] 11:35:58 AM PING out → 12D3KooWSA82… 652B [group-msg] ok
+[Alice] [kant] PING out → 12D3KooWSA82… 652B [group-msg] ok
+[Bob] [kant] 11:35:58 AM PING in ← 12D3KooWH2X8… 652B [group-msg]
+[Bob] [kant] PING in ← 12D3KooWH2X8… 652B [group-msg]
+[Bob] [kant] 11:35:58 AM 👥 6b1ee8299a04… → churn-disconnect-group
+[Bob] [kant] 11:35:58 AM PING out → 12D3KooWH2X8… 200B [group-read] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 200B [group-read] ok
+[Alice] [kant] 11:35:58 AM PING in ← 12D3KooWSA82… 200B [group-read]
+[Alice] [kant] PING in ← 12D3KooWSA82… 200B [group-read]
+[Alice] [kant] 11:35:58 AM ← 12D3KooWSA82… [group-read]
+[Alice] [kant] 11:36:04 AM PING out → 12D3KooWPE57… 505B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWPE57… 505B [x3dh-init] ok
+[Alice] [kant] 11:36:04 AM 🔒 Session ready: Carol E2E…
+[Bob] [kant] 11:36:04 AM onion FORWARD → 12D3KooWPE57… [ping] 564B
+[Bob] [kant] onion FORWARD → 12D3KooWPE57… [ping] 564B
+[Alice] [kant] 11:36:10 AM PING in ← 12D3KooWPE57… 517B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWPE57… 517B [x3dh-init]
+[Alice] [kant] 11:36:10 AM ← 12D3KooWPE57… [x3dh-init]
+[Alice] [kant] 11:36:11 AM 👥 Created group: churn-three-member
+[Alice] [kant] 11:36:11 AM → fetchPreKeyBundle c73a96450fcd @ /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWPE57e7USwLcjEc9TXRbGP2yboJBmMoUeSuL2Qze2kgi5
+[Alice] [kant] 11:36:11 AM → fetchPreKeyBundle f2ca9bd63c46 @ /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWSA8275EC23PR39ERr34CAvviFjVejvLZMWkAHud3hagz
+[Alice] [kant] 11:36:11 AM PING in ← 12D3KooWPE57… 355B [group-presence]
+[Alice] [kant] PING in ← 12D3KooWPE57… 355B [group-presence]
+[Bob] [kant] 11:36:11 AM 👥 Joined group: churn-three-member
+[Alice] [kant] 11:36:11 AM ✓ Key sent to 2 member(s)
+[Bob] [kant] 11:36:11 AM PING out → 12D3KooWH2X8… 355B [group-presence] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 355B [group-presence] ok
+[Alice] [kant] 11:36:11 AM PING in ← 12D3KooWSA82… 355B [group-presence]
+[Alice] [kant] PING in ← 12D3KooWSA82… 355B [group-presence]
+[Alice] [kant] 11:36:11 AM 📨 group-send: churn-three-member node=true ident=true sel=true len=22
+[Alice] [kant] 11:36:11 AM PING out → 12D3KooWSA82… 682B [group-msg] ok
+[Alice] [kant] PING out → 12D3KooWSA82… 682B [group-msg] ok
+[Bob] [kant] 11:36:11 AM PING in ← 12D3KooWH2X8… 682B [group-msg]
+[Bob] [kant] PING in ← 12D3KooWH2X8… 682B [group-msg]
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWPE57e7USwLcjEc9TXRbGP2yboJBmMoUeSuL2Qze2kgi5: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:36:11 AM PING out → 12D3KooWPE57… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWPE57… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [groups] send to c73a96450fcd failed: InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+    at WB.dial (http://localhost:8080/assets/index-PaMGcA-W.js:65:105377)
+    at async bD.dialPeer (http://localhost:8080/assets/index-PaMGcA-W.js:51:146935)
+    at async queue.add.peerId [as fn] (http://localhost:8080/assets/index-PaMGcA-W.js:51:145828)
+    at async Wr (http://localhost:8080/assets/index-PaMGcA-W.js:51:24363)
+    at async TP.run (http://localhost:8080/assets/index-PaMGcA-W.js:51:25795)
+[Bob] [kant] 11:36:11 AM PING out → 12D3KooWH2X8… 200B [group-read] ok
+[Bob] [kant] PING out → 12D3KooWH2X8… 200B [group-read] ok
+[Alice] [kant] 11:36:11 AM PING in ← 12D3KooWSA82… 200B [group-read]
+[Alice] [kant] PING in ← 12D3KooWSA82… 200B [group-read]
+[Alice] [kant] 11:36:11 AM ← 12D3KooWSA82… [group-read]
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWPE57e7USwLcjEc9TXRbGP2yboJBmMoUeSuL2Qze2kgi5: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:36:12 AM PING out → 12D3KooWPE57… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWPE57… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [groups] send to c73a96450fcd failed: InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+    at WB.dial (http://localhost:8080/assets/index-PaMGcA-W.js:65:105377)
+    at async bD.dialPeer (http://localhost:8080/assets/index-PaMGcA-W.js:51:146935)
+    at async queue.add.peerId [as fn] (http://localhost:8080/assets/index-PaMGcA-W.js:51:145828)
+    at async Wr (http://localhost:8080/assets/index-PaMGcA-W.js:51:24363)
+    at async TP.run (http://localhost:8080/assets/index-PaMGcA-W.js:51:25795)
+✔ group key delivery survives member disconnect and reconnect (20564.732656ms)
+[Alice] [kant] 11:36:14 AM 🔑 Ephemeral routing key: 71e354a1758ef7ff…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWEwFm4GpLev7ZrBSKVkiEujSD5shmZ6bibfrc9qsowdP3
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:36:15 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:36:16 AM 👥 Group handler ready
+[Bob] [kant] 11:36:16 AM 🔑 Ephemeral routing key: e7139b03ca8594f9…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWPbhjd5GU3KnNDbosxmBoPYnLmmsDLwZmL3EPsqaLT1FK
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:36:16 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:36:56 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:36:58 AM 🔑 Ephemeral routing key: 76cd463c63ce6f0f…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWPbhjd5GU3KnNDbosxmBoPYnLmmsDLwZmL3EPsqaLT1FK
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:36:58 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:36:59 AM 👥 Group handler ready
+[Bob] [kant] 11:37:00 AM PING out → 12D3KooWEwFm… 361B [kant-presence] ok
+[Bob] [kant] PING out → 12D3KooWEwFm… 361B [kant-presence] ok
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 361B [kant-presence]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 361B [kant-presence]
+[Bob] [kant] 11:37:00 AM PING out → 12D3KooWEwFm… 506B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWEwFm… 506B [x3dh-init] ok
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 506B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 506B [x3dh-init]
+[Alice] [kant] 11:37:00 AM ← 12D3KooWPbhj… [x3dh-init]
+[Bob] [kant] 11:37:00 AM dial → 12D3KooWEwFm… [ping] 581B ok
+[Bob] [kant] dial → 12D3KooWEwFm… [ping] 581B ok
+[Bob] [kant] 11:37:00 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 581B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 581B [ciphertext]
+[Alice] [kant] 11:37:00 AM PING out → 12D3KooWPbhj… 104B [x3dh-reset] ok
+[Alice] [kant] PING out → 12D3KooWPbhj… 104B [x3dh-reset] ok
+[Bob] [kant] 11:37:00 AM PING in ← 12D3KooWEwFm… 104B [x3dh-reset]
+[Bob] [kant] PING in ← 12D3KooWEwFm… 104B [x3dh-reset]
+[Bob] [kant] 11:37:00 AM ← 12D3KooWEwFm… [x3dh-reset]
+[Bob] [kant] 11:37:00 AM 🔁 Resync requested by 4c0e41196c27… — rebuilding session
+[Alice] [kant] 11:37:00 AM PING out → 12D3KooWPbhj… 511B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWPbhj… 511B [x3dh-init] ok
+[Bob] [kant] 11:37:00 AM PING in ← 12D3KooWEwFm… 511B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWEwFm… 511B [x3dh-init]
+[Bob] [kant] 11:37:00 AM ← 12D3KooWEwFm… [x3dh-init]
+[Bob] [kant] 11:37:00 AM 🔑 Re-sending x3dh-init to 4c0e41196c27… (tiebreak winner)
+[Alice] [kant] 11:37:00 AM dial → 12D3KooWPbhj… [ping] 556B ok
+[Alice] [kant] dial → 12D3KooWPbhj… [ping] 556B ok
+[Alice] [kant] 11:37:00 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 11:37:00 AM PING in ← 12D3KooWEwFm… 556B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWEwFm… 556B [ciphertext]
+[Bob] [kant] 11:37:00 AM PING out → 12D3KooWEwFm… 511B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWEwFm… 511B [x3dh-init] ok
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 511B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 511B [x3dh-init]
+[Alice] [kant] 11:37:00 AM ← 12D3KooWPbhj… [x3dh-init]
+[Bob] [kant] 11:37:00 AM dial → 12D3KooWEwFm… [ping] 569B ok
+[Bob] [kant] dial → 12D3KooWEwFm… [ping] 569B ok
+[Bob] [kant] 11:37:00 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 569B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 569B [ciphertext]
+[Alice] [kant] 11:37:00 AM 👥 Created group: churn-concurrent-group
+[Alice] [kant] 11:37:00 AM → fetchPreKeyBundle ccc530d6e09e @ /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWPbhjd5GU3KnNDbosxmBoPYnLmmsDLwZmL3EPsqaLT1FK
+[Bob] [kant] 11:37:00 AM 👥 Joined group: churn-concurrent-group
+[Alice] [kant] 11:37:00 AM ✓ Key sent to 1 member(s)
+[Bob] [kant] 11:37:00 AM PING out → 12D3KooWEwFm… 355B [group-presence] ok
+[Bob] [kant] PING out → 12D3KooWEwFm… 355B [group-presence] ok
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 355B [group-presence]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 355B [group-presence]
+[Alice] [kant] 11:37:00 AM 📨 group-send: churn-concurrent-group node=true ident=true sel=true len=23
+[Alice] [kant] 11:37:00 AM PING out → 12D3KooWPbhj… 675B [group-msg] ok
+[Alice] [kant] PING out → 12D3KooWPbhj… 675B [group-msg] ok
+[Bob] [kant] 11:37:00 AM PING in ← 12D3KooWEwFm… 675B [group-msg]
+[Bob] [kant] PING in ← 12D3KooWEwFm… 675B [group-msg]
+[Bob] [kant] 11:37:00 AM 👥 4c0e41196c27… → churn-concurrent-group
+[Bob] [kant] 11:37:00 AM PING out → 12D3KooWEwFm… 200B [group-read] ok
+[Bob] [kant] PING out → 12D3KooWEwFm… 200B [group-read] ok
+[Alice] [kant] 11:37:00 AM PING in ← 12D3KooWPbhj… 200B [group-read]
+[Alice] [kant] PING in ← 12D3KooWPbhj… 200B [group-read]
+[Alice] [kant] 11:37:00 AM ← 12D3KooWPbhj… [group-read]
+[Alice] [kant] 11:37:00 AM 📨 group-send: churn-concurrent-group node=true ident=true sel=true len=16
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWPbhjd5GU3KnNDbosxmBoPYnLmmsDLwZmL3EPsqaLT1FK: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:37:00 AM PING out → 12D3KooWPbhj… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWPbhj… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [groups] send to ccc530d6e09e failed: InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+    at WB.dial (http://localhost:8080/assets/index-PaMGcA-W.js:65:105377)
+    at async bD.dialPeer (http://localhost:8080/assets/index-PaMGcA-W.js:51:146935)
+    at async queue.add.peerId [as fn] (http://localhost:8080/assets/index-PaMGcA-W.js:51:145828)
+    at async Wr (http://localhost:8080/assets/index-PaMGcA-W.js:51:24363)
+    at async TP.run (http://localhost:8080/assets/index-PaMGcA-W.js:51:25795)
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWPbhjd5GU3KnNDbosxmBoPYnLmmsDLwZmL3EPsqaLT1FK: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:37:01 AM PING out → 12D3KooWPbhj… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWPbhj… [group-msg] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [groups] send to ccc530d6e09e failed: InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+    at WB.dial (http://localhost:8080/assets/index-PaMGcA-W.js:65:105377)
+    at async bD.dialPeer (http://localhost:8080/assets/index-PaMGcA-W.js:51:146935)
+    at async queue.add.peerId [as fn] (http://localhost:8080/assets/index-PaMGcA-W.js:51:145828)
+    at async Wr (http://localhost:8080/assets/index-PaMGcA-W.js:51:24363)
+    at async TP.run (http://localhost:8080/assets/index-PaMGcA-W.js:51:25795)
+[Bob] [kant] 11:37:02 AM 🔑 Ephemeral routing key: 6e0a278c627c6201…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWPbhjd5GU3KnNDbosxmBoPYnLmmsDLwZmL3EPsqaLT1FK
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:37:02 AM 🚀 Relay dialed; waiting for circuit reservation
+✔ group key delivery survives concurrent member churn (49415.4713ms)
+[send-lock] dialing /ip4/127.0.0.1/tcp/3001/ws/p2p/12D3KooWKn3XSNTdHhx9i7eixADqDdkeLjujJJmobs2S3W2B9kzn/p2p-circuit/p2p/12D3KooWHWAGqEnSosYVm58gb6xtXebm8uJHbJNhHCUoR4YBckHf
+[send-lock] dial success /ip4/127.0.0.1/tcp/3001/ws/p2p/12D3KooWKn3XSNTdHhx9i7eixADqDdkeLjujJJmobs2S3W2B9kzn/p2p-circuit/p2p/12D3KooWHWAGqEnSosYVm58gb6xtXebm8uJHbJNhHCUoR4YBckHf
+[send-lock] dialing /ip4/127.0.0.1/tcp/3001/ws/p2p/12D3KooWNgjStue9LXt8DGZgN82kDQbFm5rky99B4xCvTn8newZa/p2p-circuit/p2p/12D3KooWA8HzYCCQNYrZJ9ZMBrGFfMAA4UJVLy78cSJv3VGwGL9T
+[send-lock] dial success /ip4/127.0.0.1/tcp/3001/ws/p2p/12D3KooWNgjStue9LXt8DGZgN82kDQbFm5rky99B4xCvTn8newZa/p2p-circuit/p2p/12D3KooWA8HzYCCQNYrZJ9ZMBrGFfMAA4UJVLy78cSJv3VGwGL9T
+[send-lock] dialing /ip4/127.0.0.1/tcp/3001/ws/p2p/12D3KooWKn3XSNTdHhx9i7eixADqDdkeLjujJJmobs2S3W2B9kzn/p2p-circuit/p2p/12D3KooWHWAGqEnSosYVm58gb6xtXebm8uJHbJNhHCUoR4YBckHf
+[send-lock] dial success /ip4/127.0.0.1/tcp/3001/ws/p2p/12D3KooWKn3XSNTdHhx9i7eixADqDdkeLjujJJmobs2S3W2B9kzn/p2p-circuit/p2p/12D3KooWHWAGqEnSosYVm58gb6xtXebm8uJHbJNhHCUoR4YBckHf
+✔ group key rotates after a member is removed and the removed member cannot decrypt post-rotation traffic (75.435016ms)
+[Alice] [kant] 11:37:05 AM 🔑 Ephemeral routing key: f36754cad88d4dc2…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWB9SuSzsxFPuVaNsosM1EfVbhKzVy8CEsCxXPGUtmu1W6
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:37:05 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:37:07 AM 🔑 Ephemeral routing key: 39782df47d5757a6…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWHD5DFy1aMz1o429dYkJTA6F9qRgTXAYKZD2Cge93qTAB
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:37:07 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:37:08 AM 👥 Group handler ready
+[Alice] [kant] 11:37:45 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 11:37:47 AM 🔑 Ephemeral routing key: 563eb4fa4ba840a1…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWB9SuSzsxFPuVaNsosM1EfVbhKzVy8CEsCxXPGUtmu1W6
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:37:47 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:37:48 AM 👥 Group handler ready
+[Alice] [kant] 11:37:48 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:48 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:48 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:48 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:48 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:48 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:49 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:49 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:49 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:49 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:37:50 AM PING out → 12D3KooWHD5D… 361B [kant-presence] ok
+[Alice] [kant] PING out → 12D3KooWHD5D… 361B [kant-presence] ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 361B [kant-presence]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 361B [kant-presence]
+[Alice] [kant] 11:37:50 AM PING out → 12D3KooWHD5D… 518B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWHD5D… 518B [x3dh-init] ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 518B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 518B [x3dh-init]
+[Bob] [kant] 11:37:50 AM ← 12D3KooWB9Su… [x3dh-init]
+[Bob] [kant] 11:37:50 AM 🔑 Re-sending x3dh-init to 13bf13dfdfc6… (tiebreak winner)
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 567B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 567B ok
+[Alice] [kant] 11:37:50 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 567B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 567B [ciphertext]
+[Bob] [kant] 11:37:50 AM 🔁 Desync detected — rebuilding session with 13bf13dfdfc6…
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 535B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 535B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 535B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 535B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 537B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 537B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 533B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 533B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 533B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 533B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 538B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Bob] [kant] 11:37:50 AM PING out → 12D3KooWB9Su… 511B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWB9Su… 511B [x3dh-init] ok
+[Alice] [kant] 11:37:50 AM PING in ← 12D3KooWHD5D… 511B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 511B [x3dh-init]
+[Alice] [kant] 11:37:50 AM ← 12D3KooWHD5D… [x3dh-init]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 534B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 534B ok
+[Bob] [kant] 11:37:50 AM dial → 12D3KooWB9Su… [ping] 579B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 579B ok
+[Bob] [kant] 11:37:50 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:37:50 AM PING in ← 12D3KooWHD5D… 579B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 579B [ciphertext]
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:37:50 AM PING out → 12D3KooWHD5D… 104B [x3dh-reset] ok
+[Alice] [kant] PING out → 12D3KooWHD5D… 104B [x3dh-reset] ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 104B [x3dh-reset]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 104B [x3dh-reset]
+[Bob] [kant] 11:37:50 AM ← 12D3KooWB9Su… [x3dh-reset]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 534B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 534B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 526B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 526B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 526B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 526B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 539B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 539B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 537B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 537B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Alice] [kant] 11:37:50 AM dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 538B ok
+[Bob] [kant] 11:37:50 AM PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Alice] [kant] 11:37:50 AM 📤 Flushed 10 message(s) after session setup
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:05 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 535B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 535B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 535B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 535B [ciphertext]
+[Bob] [kant] 11:38:07 AM 🔁 Desync detected — rebuilding session with 13bf13dfdfc6…
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 14b5b7e9-2032-4d
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 534B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 534B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 32fb050e-a1d0-4f
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 43e05037-4521-41
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 4b1a2208-fe1c-42
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 537B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 537B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 583b22d0-4766-4c
+[Bob] [kant] 11:38:07 AM PING out → 12D3KooWB9Su… 517B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWB9Su… 517B [x3dh-init] ok
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 526B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 526B ok
+[Alice] [kant] 11:38:07 AM PING in ← 12D3KooWHD5D… 517B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 517B [x3dh-init]
+[Alice] [kant] 11:38:07 AM ← 12D3KooWHD5D… [x3dh-init]
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 526B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 526B [ciphertext]
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 8b5174b4-a563-4a
+[Bob] [kant] 11:38:07 AM dial → 12D3KooWB9Su… [ping] 564B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 564B ok
+[Bob] [kant] 11:38:07 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:38:07 AM PING in ← 12D3KooWHD5D… 564B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 564B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 539B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 539B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 8dcb23f0-dcd7-49
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 530B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 530B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 530B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 530B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 533B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 533B ok
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg b3f44306-f8d6-4a
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 533B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 533B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 536B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 536B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 536B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 536B [ciphertext]
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 534B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 534B ok
+[Bob] [kant] PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 534B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 534B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg b69d717d-66d2-41
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 537B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 537B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Alice] [kant] 11:38:07 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg e4347e1e-eb98-46
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 536B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 536B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 536B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 536B [ciphertext]
+[Alice] [kant] 11:38:07 AM dial → 12D3KooWHD5D… [ping] 538B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 538B ok
+[Bob] [kant] 11:38:07 AM PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 538B [ciphertext]
+[Alice] [kant] 11:38:08 AM dial → 12D3KooWHD5D… [ping] 539B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 539B ok
+[Bob] [kant] 11:38:08 AM PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Alice] [kant] 11:38:08 AM dial → 12D3KooWHD5D… [ping] 534B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 534B ok
+[Bob] [kant] 11:38:08 AM PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 534B [ciphertext]
+[Alice] [kant] 11:38:08 AM dial → 12D3KooWHD5D… [ping] 539B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 539B ok
+[Bob] [kant] 11:38:08 AM PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 539B [ciphertext]
+[Alice] [kant] 11:38:08 AM dial → 12D3KooWHD5D… [ping] 532B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 532B ok
+[Bob] [kant] 11:38:08 AM PING in ← 12D3KooWB9Su… 532B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 532B [ciphertext]
+[Alice] [kant] 11:38:08 AM dial → 12D3KooWHD5D… [ping] 537B ok
+[Alice] [kant] dial → 12D3KooWHD5D… [ping] 537B ok
+[Bob] [kant] 11:38:08 AM PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWB9Su… 537B [ciphertext]
+[Alice] [kant] 11:38:08 AM 📤 Flushed 10 message(s) after session setup
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 544B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 544B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 544B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 544B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 535B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 535B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 535B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 535B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 539B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 539B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 539B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 539B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 540B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 540B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 540B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 540B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 549B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 549B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 549B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 549B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 542B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 542B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 542B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 542B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 546B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 546B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 546B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 546B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 545B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 545B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 545B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 545B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 543B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 543B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 543B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 543B [ciphertext]
+[Bob] [kant] 11:38:08 AM dial → 12D3KooWB9Su… [ping] 538B ok
+[Bob] [kant] dial → 12D3KooWB9Su… [ping] 538B ok
+[Alice] [kant] 11:38:08 AM PING in ← 12D3KooWHD5D… 538B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWHD5D… 538B [ciphertext]
+✔ two real libp2p browser nodes establish X3DH and exchange ten ordered messages each way (65432.703448ms)
+[Alice] [kant] 11:38:11 AM 🔑 Ephemeral routing key: d201ce6b53f1ab98…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWKGhh6bzftUnPUh2sxKqtYe5QhSbwQN3tas3LsAb8Wsd6
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:38:11 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:38:12 AM 👥 Group handler ready
+[Bob] [kant] 11:38:12 AM 🔑 Ephemeral routing key: aa31e95862b603b9…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWSqQ2xDZiXmjo6vmgvgLsZD6yKbtMEbH3zgLMh7hMayWt
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:38:13 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:38:53 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:38:55 AM 🔑 Ephemeral routing key: 7a63cc7ecf4693f6…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWSqQ2xDZiXmjo6vmgvgLsZD6yKbtMEbH3zgLMh7hMayWt
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:38:55 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:38:56 AM 👥 Group handler ready
+[Bob] [kant] 11:38:56 AM PING out → 12D3KooWKGhh… 361B [kant-presence] ok
+[Bob] [kant] PING out → 12D3KooWKGhh… 361B [kant-presence] ok
+[Alice] [kant] 11:38:56 AM PING in ← 12D3KooWSqQ2… 361B [kant-presence]
+[Alice] [kant] PING in ← 12D3KooWSqQ2… 361B [kant-presence]
+[Bob] [kant] 11:38:56 AM PING out → 12D3KooWKGhh… 506B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWKGhh… 506B [x3dh-init] ok
+[Alice] [kant] 11:38:56 AM PING in ← 12D3KooWSqQ2… 506B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWSqQ2… 506B [x3dh-init]
+[Alice] [kant] 11:38:56 AM ← 12D3KooWSqQ2… [x3dh-init]
+[Bob] [kant] 11:38:56 AM dial → 12D3KooWKGhh… [ping] 571B ok
+[Bob] [kant] dial → 12D3KooWKGhh… [ping] 571B ok
+[Bob] [kant] 11:38:56 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 11:38:56 AM PING in ← 12D3KooWSqQ2… 571B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWSqQ2… 571B [ciphertext]
+[Alice] [kant] 11:38:56 AM dial → 12D3KooWSqQ2… [ping] 559B ok
+[Alice] [kant] dial → 12D3KooWSqQ2… [ping] 559B ok
+[Bob] [kant] 11:38:56 AM PING in ← 12D3KooWKGhh… 559B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWKGhh… 559B [ciphertext]
+[Alice] [kant] 11:39:00 AM dial → 12D3KooWSqQ2… [ping] 587B ok
+[Alice] [kant] dial → 12D3KooWSqQ2… [ping] 587B ok
+[Bob] [kant] 11:39:00 AM PING in ← 12D3KooWKGhh… 587B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWKGhh… 587B [ciphertext]
+✔ Alice queues a message while Bob is offline and delivers it when he returns (50910.149444ms)
+[Alice] [kant] 11:39:02 AM 🔑 Ephemeral routing key: c35e0e19e91ff37d…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWL7q5fH6srL4xjeVZFDSZo4weHCEgfFNVnhCBN6UoxJxF
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:39:02 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:39:04 AM 🔑 Ephemeral routing key: e7a40d72ef06d96e…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWFSxGYZpvouePnZdY5uif2N7XEm7hPgSywc3Aysk7ZXJ5
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:39:04 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:39:05 AM 👥 Group handler ready
+[Alice] [kant] 11:39:42 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 11:39:44 AM 🔑 Ephemeral routing key: 3ca5c2234ef96a8a…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWL7q5fH6srL4xjeVZFDSZo4weHCEgfFNVnhCBN6UoxJxF
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:39:44 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:39:45 AM 👥 Group handler ready
+[Alice] [kant] 11:39:46 AM ⏳ No session yet — holding message while the secure session starts
+[Alice] [kant] 11:39:50 AM Auto-session fail (53a9e6986b63…): invalid wire type 4 at offset 17
+[Alice] [kant] 11:39:50 AM PING out → 12D3KooWFSxG… [kant-presence] FAIL: failed to connect via relay with status undefined
+[Alice] [kant] PING out → 12D3KooWFSxG… [kant-presence] FAIL: failed to connect via relay with status undefined
+[Alice] [kant] 11:39:57 AM PING out → 12D3KooWFSxG… 516B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWFSxG… 516B [x3dh-init] ok
+[Bob] [kant] 11:39:57 AM PING in ← 12D3KooWL7q5… 516B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 516B [x3dh-init]
+[Bob] [kant] 11:39:57 AM ← 12D3KooWL7q5… [x3dh-init]
+[Alice] [kant] 11:39:57 AM dial → 12D3KooWFSxG… [ping] 570B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 570B ok
+[Alice] [kant] 11:39:57 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 11:39:57 AM PING in ← 12D3KooWL7q5… 570B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 570B [ciphertext]
+[Alice] [kant] 11:39:57 AM dial → 12D3KooWFSxG… [ping] 561B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 561B ok
+[Bob] [kant] 11:39:57 AM PING in ← 12D3KooWL7q5… 561B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 561B [ciphertext]
+[Alice] [kant] 11:39:57 AM 📤 Flushed 1 message(s) after session setup
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 544B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 544B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 544B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 544B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 546B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 546B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 546B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 546B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 548B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 548B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 548B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 548B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 554B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 554B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 554B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 554B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 559B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 559B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 559B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 559B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 552B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 552B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 553B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 553B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 555B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 555B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 548B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 548B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 548B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 548B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 555B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 555B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 550B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 550B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 550B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 550B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 552B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 552B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 553B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 553B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 558B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 558B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 547B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 547B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 547B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 547B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 556B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 556B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 556B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 556B [ciphertext]
+[Alice] [kant] 11:39:58 AM dial → 12D3KooWFSxG… [ping] 557B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 557B ok
+[Bob] [kant] 11:39:58 AM PING in ← 12D3KooWL7q5… 557B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 557B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 546B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 546B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 546B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 546B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 555B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 555B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 556B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 556B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 556B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 556B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 542B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 542B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 542B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 542B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 538B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 538B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 538B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 538B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 540B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 540B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 540B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 540B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 557B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 557B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 557B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 557B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 552B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 552B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 554B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 554B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 554B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 554B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 553B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 553B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 558B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 558B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 541B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 541B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 541B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 541B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 558B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 558B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 553B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 553B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 553B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 555B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 555B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 558B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 558B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 560B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 560B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 560B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 560B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 558B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 558B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 549B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 549B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 549B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 549B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:39:59 AM dial → 12D3KooWFSxG… [ping] 555B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 555B ok
+[Bob] [kant] 11:39:59 AM PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 552B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 552B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 552B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 555B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 555B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 555B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 558B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 558B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 558B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 548B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 548B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 548B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 548B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 551B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 551B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 551B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 510B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 510B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 510B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 510B [ciphertext]
+[Alice] [kant] 11:40:00 AM dial → 12D3KooWFSxG… [ping] 514B ok
+[Alice] [kant] dial → 12D3KooWFSxG… [ping] 514B ok
+[Bob] [kant] 11:40:00 AM PING in ← 12D3KooWL7q5… 514B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWL7q5… 514B [ciphertext]
+✔ rapid messages preserve ratchet order and duplicate message IDs are not processed twice (61821.857903ms)
+[Alice] [kant] 11:40:04 AM 🔑 Ephemeral routing key: 142c04725b7134f9…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:40:04 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 11:40:05 AM 👥 Group handler ready
+[Bob] [kant] 11:40:06 AM 🔑 Ephemeral routing key: c64d0c5006218d43…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:40:06 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:40:46 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:40:48 AM 🔑 Ephemeral routing key: 1da6a8343cda63e9…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:40:48 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:41:28 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:41:30 AM 🔑 Ephemeral routing key: 519c73f85d2d0648…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:41:30 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:42:10 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 11:42:12 AM 🔑 Ephemeral routing key: 333a2628fde21279…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:42:12 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:42:13 AM 👥 Group handler ready
+[Alice] [kant] 11:42:14 AM PING out → 12D3KooWB5QA… 513B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWB5QA… 513B [x3dh-init] ok
+[Bob] [kant] 11:42:14 AM PING in ← 12D3KooWJL3n… 513B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWJL3n… 513B [x3dh-init]
+[Bob] [kant] 11:42:14 AM ← 12D3KooWJL3n… [x3dh-init]
+[Alice] [kant] 11:42:14 AM dial → 12D3KooWB5QA… [ping] 574B ok
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] 574B ok
+[Alice] [kant] 11:42:14 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 11:42:14 AM PING in ← 12D3KooWJL3n… 574B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWJL3n… 574B [ciphertext]
+[Alice] [kant] 11:42:14 AM dial → 12D3KooWB5QA… [ping] 571B ok
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] 571B ok
+[Bob] [kant] 11:42:14 AM PING in ← 12D3KooWJL3n… 571B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWJL3n… 571B [ciphertext]
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:18 AM PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:18 AM PING out → 12D3KooWJL3n… [x3dh-reset] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] PING out → 12D3KooWJL3n… [x3dh-reset] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:18 AM Resync request fail: InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:18 AM ⚠️ Flush ACK failed: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:18 AM ⚠️ Delivery ACK failed: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:23 AM PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:28 AM PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:29 AM ⚠️ No delivery ACK — queued for retry (Bob E2E…)
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:29 AM dial → 12D3KooWB5QA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:29 AM dial → 12D3KooWB5QA… [ping] GAVE UP after 4 attempts
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] GAVE UP after 4 attempts
+[Alice] [queue] retry failed for a2a573e0-37ba-47 InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:33 AM PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:36 AM 🔑 Ephemeral routing key: bdb7bc5d78e82390…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWJL3nWunp9hjr8FgBzapozPPD1GfzcA37nwJUCDrs62Uf
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 11:42:36 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:36 AM dial → 12D3KooWB5QA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:36 AM dial → 12D3KooWB5QA… [ping] GAVE UP after 4 attempts
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] GAVE UP after 4 attempts
+[Alice] [queue] retry failed for a2a573e0-37ba-47 InvalidMessageError: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:37 AM 👥 Group handler ready
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:37 AM PING out → 12D3KooWB5QA… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWB5QA… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:38 AM dial → 12D3KooWB5QA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:38 AM dial → 12D3KooWB5QA… [ping] GAVE UP after 4 attempts
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] GAVE UP after 4 attempts
+[Alice] [kant] 11:42:38 AM 📥 Queued — send failed: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:38 AM PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status CONNECTION_FAILED
+[Bob] [kant] PING out → 12D3KooWJL3n… [kant-presence] FAIL: failed to connect via relay with status CONNECTION_FAILED
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 11:42:42 AM PING out → 12D3KooWB5QA… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWB5QA… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 11:42:43 AM PING out → 12D3KooWJL3n… [kant-presence] FAIL: signal is aborted without reason
+[Bob] [kant] PING out → 12D3KooWJL3n… [kant-presence] FAIL: signal is aborted without reason
+[Bob] [kant] 11:42:44 AM 🔑 Ephemeral routing key: 9f40870fb9ec65f1…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWB5QA6gX61GByLNosyiu3kRSNbDtTodkqgBNDRZZ2FJNM
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 11:42:44 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 11:42:45 AM 👥 Group handler ready
+[Alice] [kant] 11:42:48 AM PING out → 12D3KooWB5QA… 361B [kant-presence] ok
+[Alice] [kant] PING out → 12D3KooWB5QA… 361B [kant-presence] ok
+[Bob] [kant] 11:42:48 AM PING in ← 12D3KooWJL3n… 361B [kant-presence]
+[Bob] [kant] PING in ← 12D3KooWJL3n… 361B [kant-presence]
+[Alice] [kant] 11:42:51 AM dial → 12D3KooWB5QA… [ping] 577B ok
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] 577B ok
+[Bob] [kant] 11:42:51 AM PING in ← 12D3KooWJL3n… 577B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWJL3n… 577B [ciphertext]
+[Alice] [kant] 11:42:51 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg 0dea5a13-203b-42
+[Alice] [kant] 11:42:52 AM dial → 12D3KooWB5QA… [ping] 571B ok
+[Alice] [kant] dial → 12D3KooWB5QA… [ping] 571B ok
+[Bob] [kant] 11:42:52 AM PING in ← 12D3KooWJL3n… 571B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWJL3n… 571B [ciphertext]
+[Alice] [kant] 11:42:52 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg a2a573e0-37ba-47
+[Bob] [kant] 11:42:52 AM dial → 12D3KooWJL3n… [ping] 573B ok
+[Bob] [kant] dial → 12D3KooWJL3n… [ping] 573B ok
+[Alice] [kant] 11:42:52 AM PING in ← 12D3KooWB5QA… 573B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWB5QA… 573B [ciphertext]
+✔ clients recover from a relay restart and resume messaging without manual intervention (169578.060685ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 628805.217272

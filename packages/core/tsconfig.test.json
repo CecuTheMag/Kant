@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-test",
+    "declaration": false,
+    "types": ["node"]
+  },
+  "files": [
+    "./src/x3dh-opk.test.ts",
+    "./src/groups.test.ts",
+    "./src/files-limits.test.ts"
+  ],
+  "exclude": ["node_modules", "dist", "dist-test"]
+}

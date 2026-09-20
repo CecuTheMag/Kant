@@ -1,0 +1,46 @@
+# Kant Relay — HTTP (LAN / internal network)
+#
+# Use this when:
+#   - Running on a LAN where all peers are on the same network
+#   - Behind a VPN (Tailscale, WireGuard) where TLS isn't needed
+#   - Testing / development
+#
+# Usage:
+#   RELAY_PUBLIC_HOST=192.168.1.100 docker compose -f docker-compose.http.yml up -d
+#
+# Peers connect to:
+#   http://<RELAY_PUBLIC_HOST>:3001
+#
+# The seed file in ./data/ keeps the relay PeerID stable across restarts.
+# Back it up — if lost, all clients need to reconnect with the new PeerID.
+
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: packages/relay/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # libp2p WebSocket
+      - "3001:3001"   # HTTP registry API
+    volumes:
+      - relay-data:/data
+    environment:
+      RELAY_PORT: "3000"
+      RELAY_INFO_PORT: "3001"
+      RELAY_HTTP_BIND: "0.0.0.0"
+      RELAY_PUBLIC_HOST: "${RELAY_PUBLIC_HOST:?Set RELAY_PUBLIC_HOST to your server IP}"
+      RELAY_PUBLIC_PORT: "3000"
+      RELAY_DATA_DIR: "/data"
+      # Web Push (optional — desktop PWA offline notifications).
+      # Generate keys: npx web-push generate-vapid-keys
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
+      VAPID_SUBJECT: "${VAPID_SUBJECT:-mailto:admin@kant.local}"
+      # FCM / Android push (optional).
+      # Point at the hosted push proxy — no Firebase credentials needed here.
+      PUSH_PROXY_URL: "${PUSH_PROXY_URL:-}"
+      PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:-}"
+
+volumes:
+  relay-data:
