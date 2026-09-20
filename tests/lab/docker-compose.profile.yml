@@ -1,0 +1,13 @@
+# Apply with e.g.:
+#   docker compose -f docker-compose.yml -f docker-compose.profile.yml --profile nat up -d
+services:
+  relay:
+    networks: [wan]
+  web:
+    networks: [control, lan_a]
+  runner:
+    networks: [control]
+  router_a:
+    networks: [lan_a, wan]
+  router_b:
+    networks: [lan_b, wan]

@@ -1,0 +1,287 @@
+# HELP process_cpu_user_seconds_total Total user CPU time spent in seconds.
+# TYPE process_cpu_user_seconds_total counter
+process_cpu_user_seconds_total 1.4770560000000001
+
+# HELP process_cpu_system_seconds_total Total system CPU time spent in seconds.
+# TYPE process_cpu_system_seconds_total counter
+process_cpu_system_seconds_total 0.39518600000000004
+
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 1.872242
+
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1788435735
+
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 81018880
+
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 43684757504
+
+# HELP process_heap_bytes Process heap size in bytes.
+# TYPE process_heap_bytes gauge
+process_heap_bytes 109531136
+
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 77
+
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 524288
+
+# HELP nodejs_eventloop_lag_seconds Lag of event loop in seconds.
+# TYPE nodejs_eventloop_lag_seconds gauge
+nodejs_eventloop_lag_seconds 0.003753318
+
+# HELP nodejs_eventloop_lag_min_seconds The minimum recorded event loop delay.
+# TYPE nodejs_eventloop_lag_min_seconds gauge
+nodejs_eventloop_lag_min_seconds 0.009084928
+
+# HELP nodejs_eventloop_lag_max_seconds The maximum recorded event loop delay.
+# TYPE nodejs_eventloop_lag_max_seconds gauge
+nodejs_eventloop_lag_max_seconds 0.012574719
+
+# HELP nodejs_eventloop_lag_mean_seconds The mean of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_mean_seconds gauge
+nodejs_eventloop_lag_mean_seconds 0.010152935237553343
+
+# HELP nodejs_eventloop_lag_stddev_seconds The standard deviation of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_stddev_seconds gauge
+nodejs_eventloop_lag_stddev_seconds 0.00029292601309802944
+
+# HELP nodejs_eventloop_lag_p50_seconds The 50th percentile of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_p50_seconds gauge
+nodejs_eventloop_lag_p50_seconds 0.010117119
+
+# HELP nodejs_eventloop_lag_p90_seconds The 90th percentile of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_p90_seconds gauge
+nodejs_eventloop_lag_p90_seconds 0.010264575
+
+# HELP nodejs_eventloop_lag_p99_seconds The 99th percentile of the recorded event loop delays.
+# TYPE nodejs_eventloop_lag_p99_seconds gauge
+nodejs_eventloop_lag_p99_seconds 0.011231231
+
+# HELP nodejs_active_resources Number of active resources that are currently keeping the event loop alive, grouped by async resource type.
+# TYPE nodejs_active_resources gauge
+nodejs_active_resources{type="PipeWrap"} 2
+nodejs_active_resources{type="TCPServerWrap"} 2
+nodejs_active_resources{type="TCPSocketWrap"} 57
+nodejs_active_resources{type="Timeout"} 2
+nodejs_active_resources{type="Immediate"} 1
+
+# HELP nodejs_active_resources_total Total number of active resources.
+# TYPE nodejs_active_resources_total gauge
+nodejs_active_resources_total 64
+
+# HELP nodejs_active_handles Number of active libuv handles grouped by handle type. Every handle type is C++ class name.
+# TYPE nodejs_active_handles gauge
+nodejs_active_handles{type="Socket"} 59
+nodejs_active_handles{type="Server"} 2
+
+# HELP nodejs_active_handles_total Total number of active handles.
+# TYPE nodejs_active_handles_total gauge
+nodejs_active_handles_total 61
+
+# HELP nodejs_active_requests Number of active libuv requests grouped by request type. Every request type is C++ class name.
+# TYPE nodejs_active_requests gauge
+
+# HELP nodejs_active_requests_total Total number of active requests.
+# TYPE nodejs_active_requests_total gauge
+nodejs_active_requests_total 0
+
+# HELP nodejs_heap_size_total_bytes Process heap size from Node.js in bytes.
+# TYPE nodejs_heap_size_total_bytes gauge
+nodejs_heap_size_total_bytes 22691840
+
+# HELP nodejs_heap_size_used_bytes Process heap size used from Node.js in bytes.
+# TYPE nodejs_heap_size_used_bytes gauge
+nodejs_heap_size_used_bytes 21236000
+
+# HELP nodejs_external_memory_bytes Node.js external memory size in bytes.
+# TYPE nodejs_external_memory_bytes gauge
+nodejs_external_memory_bytes 8240836
+
+# HELP nodejs_heap_space_size_total_bytes Process heap space size total from Node.js in bytes.
+# TYPE nodejs_heap_space_size_total_bytes gauge
+nodejs_heap_space_size_total_bytes{space="read_only"} 0
+nodejs_heap_space_size_total_bytes{space="new"} 1048576
+nodejs_heap_space_size_total_bytes{space="old"} 17793024
+nodejs_heap_space_size_total_bytes{space="code"} 1835008
+nodejs_heap_space_size_total_bytes{space="shared"} 0
+nodejs_heap_space_size_total_bytes{space="new_large_object"} 0
+nodejs_heap_space_size_total_bytes{space="large_object"} 2015232
+nodejs_heap_space_size_total_bytes{space="code_large_object"} 0
+nodejs_heap_space_size_total_bytes{space="shared_large_object"} 0
+
+# HELP nodejs_heap_space_size_used_bytes Process heap space size used from Node.js in bytes.
+# TYPE nodejs_heap_space_size_used_bytes gauge
+nodejs_heap_space_size_used_bytes{space="read_only"} 0
+nodejs_heap_space_size_used_bytes{space="new"} 591728
+nodejs_heap_space_size_used_bytes{space="old"} 16953896
+nodejs_heap_space_size_used_bytes{space="code"} 1712080
+nodejs_heap_space_size_used_bytes{space="shared"} 0
+nodejs_heap_space_size_used_bytes{space="new_large_object"} 0
+nodejs_heap_space_size_used_bytes{space="large_object"} 1982144
+nodejs_heap_space_size_used_bytes{space="code_large_object"} 0
+nodejs_heap_space_size_used_bytes{space="shared_large_object"} 0
+
+# HELP nodejs_heap_space_size_available_bytes Process heap space size available from Node.js in bytes.
+# TYPE nodejs_heap_space_size_available_bytes gauge
+nodejs_heap_space_size_available_bytes{space="read_only"} 0
+nodejs_heap_space_size_available_bytes{space="new"} 439152
+nodejs_heap_space_size_available_bytes{space="old"} 494728
+nodejs_heap_space_size_available_bytes{space="code"} 7840
+nodejs_heap_space_size_available_bytes{space="shared"} 0
+nodejs_heap_space_size_available_bytes{space="new_large_object"} 1048576
+nodejs_heap_space_size_available_bytes{space="large_object"} 0
+nodejs_heap_space_size_available_bytes{space="code_large_object"} 0
+nodejs_heap_space_size_available_bytes{space="shared_large_object"} 0
+
+# HELP nodejs_version_info Node.js version info.
+# TYPE nodejs_version_info gauge
+nodejs_version_info{version="v20.20.2",major="20",minor="20",patch="2"} 1
+
+# HELP nodejs_gc_duration_seconds Garbage collection duration by kind, one of major, minor, incremental or weakcb.
+# TYPE nodejs_gc_duration_seconds histogram
+nodejs_gc_duration_seconds_bucket{le="0.001",kind="minor"} 17
+nodejs_gc_duration_seconds_bucket{le="0.01",kind="minor"} 21
+nodejs_gc_duration_seconds_bucket{le="0.1",kind="minor"} 21
+nodejs_gc_duration_seconds_bucket{le="1",kind="minor"} 21
+nodejs_gc_duration_seconds_bucket{le="2",kind="minor"} 21
+nodejs_gc_duration_seconds_bucket{le="5",kind="minor"} 21
+nodejs_gc_duration_seconds_bucket{le="+Inf",kind="minor"} 21
+nodejs_gc_duration_seconds_sum{kind="minor"} 0.016560695990920065
+nodejs_gc_duration_seconds_count{kind="minor"} 21
+nodejs_gc_duration_seconds_bucket{le="0.001",kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="0.01",kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="0.1",kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="1",kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="2",kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="5",kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="+Inf",kind="incremental"} 3
+nodejs_gc_duration_seconds_sum{kind="incremental"} 0.00212474799901247
+nodejs_gc_duration_seconds_count{kind="incremental"} 3
+nodejs_gc_duration_seconds_bucket{le="0.001",kind="major"} 0
+nodejs_gc_duration_seconds_bucket{le="0.01",kind="major"} 3
+nodejs_gc_duration_seconds_bucket{le="0.1",kind="major"} 3
+nodejs_gc_duration_seconds_bucket{le="1",kind="major"} 3
+nodejs_gc_duration_seconds_bucket{le="2",kind="major"} 3
+nodejs_gc_duration_seconds_bucket{le="5",kind="major"} 3
+nodejs_gc_duration_seconds_bucket{le="+Inf",kind="major"} 3
+nodejs_gc_duration_seconds_sum{kind="major"} 0.009547410003840923
+nodejs_gc_duration_seconds_count{kind="major"} 3
+
+# HELP kant_relay_reservations_created_total Total number of circuit reservations created
+# TYPE kant_relay_reservations_created_total counter
+kant_relay_reservations_created_total 2
+
+# HELP kant_relay_reservations_removed_total Total number of circuit reservations removed
+# TYPE kant_relay_reservations_removed_total counter
+
+# HELP kant_relay_reservations_active Current number of active circuit reservations
+# TYPE kant_relay_reservations_active gauge
+kant_relay_reservations_active 2
+
+# HELP kant_relay_reservations_tracked Current number of reservations tracked by admin endpoint
+# TYPE kant_relay_reservations_tracked gauge
+kant_relay_reservations_tracked 2
+
+# HELP kant_relay_reservation_errors_total Total number of reservation errors
+# TYPE kant_relay_reservation_errors_total counter
+
+# HELP kant_relay_admin_evictions_total Total number of manual admin evictions
+# TYPE kant_relay_admin_evictions_total counter
+kant_relay_admin_evictions_total 0
+
+# HELP kant_relay_circuits_opened_total Total number of circuits opened
+# TYPE kant_relay_circuits_opened_total counter
+
+# HELP kant_relay_circuits_closed_total Total number of circuits closed
+# TYPE kant_relay_circuits_closed_total counter
+
+# HELP kant_relay_circuit_duration_seconds Circuit duration in seconds
+# TYPE kant_relay_circuit_duration_seconds histogram
+kant_relay_circuit_duration_seconds_bucket{le="1"} 0
+kant_relay_circuit_duration_seconds_bucket{le="10"} 0
+kant_relay_circuit_duration_seconds_bucket{le="60"} 0
+kant_relay_circuit_duration_seconds_bucket{le="600"} 0
+kant_relay_circuit_duration_seconds_bucket{le="3600"} 0
+kant_relay_circuit_duration_seconds_bucket{le="21600"} 0
+kant_relay_circuit_duration_seconds_bucket{le="+Inf"} 0
+kant_relay_circuit_duration_seconds_sum 0
+kant_relay_circuit_duration_seconds_count 0
+
+# HELP kant_relay_peers_connected_total Total number of peer connections
+# TYPE kant_relay_peers_connected_total counter
+kant_relay_peers_connected_total 4
+
+# HELP kant_relay_peers_disconnected_total Total number of peer disconnections
+# TYPE kant_relay_peers_disconnected_total counter
+kant_relay_peers_disconnected_total 4
+
+# HELP kant_relay_peers_active Current number of connected peers
+# TYPE kant_relay_peers_active gauge
+kant_relay_peers_active 0
+
+# HELP kant_relay_registry_entries Current number of registry entries by kind
+# TYPE kant_relay_registry_entries gauge
+kant_relay_registry_entries{kind="ephemeral"} 0
+kant_relay_registry_entries{kind="identity"} 102
+
+# HELP kant_relay_registry_evictions_total Total number of registry evictions
+# TYPE kant_relay_registry_evictions_total counter
+kant_relay_registry_evictions_total{reason="peer_disconnected"} 2
+
+# HELP kant_relay_register_requests_total Total register requests
+# TYPE kant_relay_register_requests_total counter
+kant_relay_register_requests_total{result="ok"} 104
+
+# HELP kant_relay_lookup_requests_total Total lookup requests
+# TYPE kant_relay_lookup_requests_total counter
+kant_relay_lookup_requests_total{result="ok"} 13
+
+# HELP kant_relay_lookup_hits_total Total lookup hits (entries found)
+# TYPE kant_relay_lookup_hits_total counter
+kant_relay_lookup_hits_total 6
+
+# HELP kant_relay_lookup_misses_total Total lookup misses (entries not found)
+# TYPE kant_relay_lookup_misses_total counter
+kant_relay_lookup_misses_total 7
+
+# HELP kant_relay_register_request_duration_seconds Register request duration in seconds
+# TYPE kant_relay_register_request_duration_seconds histogram
+kant_relay_register_request_duration_seconds_bucket{le="0.001"} 94
+kant_relay_register_request_duration_seconds_bucket{le="0.005"} 104
+kant_relay_register_request_duration_seconds_bucket{le="0.01"} 104
+kant_relay_register_request_duration_seconds_bucket{le="0.05"} 104
+kant_relay_register_request_duration_seconds_bucket{le="0.1"} 104
+kant_relay_register_request_duration_seconds_bucket{le="0.5"} 104
+kant_relay_register_request_duration_seconds_bucket{le="+Inf"} 104
+kant_relay_register_request_duration_seconds_sum 0.085260464
+kant_relay_register_request_duration_seconds_count 104
+
+# HELP kant_relay_lookup_request_duration_seconds Lookup request duration in seconds
+# TYPE kant_relay_lookup_request_duration_seconds histogram
+kant_relay_lookup_request_duration_seconds_bucket{le="0.001"} 9
+kant_relay_lookup_request_duration_seconds_bucket{le="0.005"} 13
+kant_relay_lookup_request_duration_seconds_bucket{le="0.01"} 13
+kant_relay_lookup_request_duration_seconds_bucket{le="0.05"} 13
+kant_relay_lookup_request_duration_seconds_bucket{le="0.1"} 13
+kant_relay_lookup_request_duration_seconds_bucket{le="0.5"} 13
+kant_relay_lookup_request_duration_seconds_bucket{le="+Inf"} 13
+kant_relay_lookup_request_duration_seconds_sum 0.013128270999999997
+kant_relay_lookup_request_duration_seconds_count 13
+
+# HELP kant_relay_opk_burn_failures_total Total OPK burn failures reported by clients (OPK already consumed or missing)
+# TYPE kant_relay_opk_burn_failures_total counter
+kant_relay_opk_burn_failures_total 0
+
+# HELP kant_relay_ready Relay readiness gate
+# TYPE kant_relay_ready gauge
+kant_relay_ready{gate="ready"} 1
+kant_relay_ready{gate="not_ready"} 0

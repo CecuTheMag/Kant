@@ -1,0 +1,91 @@
+groups:
+  - name: kant-relay
+    interval: 30s
+    rules:
+      - alert: KantRelayDown
+        expr: up{job=~"kant-relay.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kant relay is unreachable
+
+      - alert: KantRelayNotReady
+        expr: kant_relay_ready{gate="ready"} != 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kant relay is running but not ready
+
+      - alert: KantNoReservationElevated
+        expr: sum(rate(kant_relay_reservation_errors_total{code="NO_RESERVATION"}[5m])) * 60 > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: NO_RESERVATION errors exceed 10/min
+
+      - alert: KantNoReservationCritical
+        expr: sum(rate(kant_relay_reservation_errors_total{code="NO_RESERVATION"}[5m])) * 60 > 50
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: NO_RESERVATION errors exceed 50/min
+
+      - alert: KantOpkBurnFailures
+        expr: increase(kant_relay_opk_burn_failures_total[15m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: OPK burn failures detected
+
+      - alert: KantCircuitErrorsElevated
+        expr: sum(rate(kant_relay_circuits_closed_total{reason!~"normal|closed|expired"}[5m])) * 60 > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Circuit errors exceed 10/min
+
+      - alert: KantRelayDecodeErrors
+        expr: increase(kant_relay_reservation_errors_total{code="decode"}[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Repeated circuit-relay decode errors detected
+
+      - alert: KantRelayStreamLimitErrors
+        expr: increase(kant_relay_reservation_errors_total{code="stream_limit"}[10m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Relay stream limits are being exhausted
+
+      - alert: KantRegistryNearCapacity
+        expr: sum(kant_relay_registry_entries) > 8000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Relay registry is above 80 percent of the default limit
+
+      - alert: KantRegistryCritical
+        expr: sum(kant_relay_registry_entries) > 9500
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Relay registry is above 95 percent of the default limit
+
+      - alert: KantReservationChurn
+        expr: (sum(rate(kant_relay_reservations_created_total[5m])) + sum(rate(kant_relay_reservations_removed_total[5m]))) * 60 > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Relay reservation churn exceeds 100 events/min

@@ -1,0 +1,294 @@
+/* ==================================================================== *
+ * DIRECTION A — "INSTRUMENT"
+ *
+ * Thesis: someone who chose an accountless, keypair-identity, onion-routed messenger wants
+ * to SEE the machinery. So show it, and make it legible. A precision instrument, not an
+ * appliance.
+ *
+ * The palette rule that drives everything: colour is a signal, never decoration. The chrome
+ * is graphite and carries no hue. Blue means "you can interact with this". Green/amber/red
+ * mean trust state and nothing else. Cyan appears in exactly one place — the route spine.
+ * That's why the current build reads generic: its accent is sprayed across gradients, empty
+ * states and icons, so it means nothing by the time you need it to mean something.
+ *
+ * Three layers, per the design-system skill: primitive → semantic → component.
+ * ==================================================================== */
+
+[data-dir='instrument'] {
+  /* ---------------------------------------------------------------- *
+   * LAYER 1 — PRIMITIVES. Raw values. Never referenced by components.
+   * ---------------------------------------------------------------- */
+
+  /* Graphite ramp. Cool but desaturated — a true neutral would read cheap on an OLED
+     phone, and the current build's blue-tinted #0d1117 muddies every signal colour on
+     top of it. This sits between the two. */
+  --g-0:  #08090b;
+  --g-1:  #0b0d10;
+  --g-2:  #101318;
+  --g-3:  #151920;
+  --g-4:  #1b2028;
+  --g-5:  #222834;
+  --g-6:  #2c3340;
+  --g-7:  #3a4250;
+  --g-8:  #727b8a;   /* raised from #4e5766 — was 2.67:1 on canvas, failed even the 3:1 non-text floor */
+  --g-9:  #7d8695;   /* raised twice: #6b7482 failed on the surface (4.12), #757e8c still
+                        failed on the SELECTED row composite #161f2e (4.03). This clears 4.5
+                        against both. */
+  --g-10: #98a1ad;
+  --g-11: #c3cad3;
+  --g-12: #eef1f5;
+
+  /* Kant blue, kept. This is the one piece of the old identity that survives intact. */
+  --blue-4:  #10233f;
+  --blue-6:  #2f5fa8;
+  --blue-7:  #2f6fd0;
+  --blue-8:  #4f8ef7;
+  --blue-9:  #78abff;
+
+  /* Signal colours. Each owns exactly one meaning. */
+  --sig-green-4: #0d2a1e;
+  --sig-green-8: #2fbf71;
+  --sig-green-9: #56d68f;
+
+  --sig-amber-4: #2e2408;
+  --sig-amber-8: #d99e26;
+  --sig-amber-9: #f0b849;
+
+  --sig-red-4:   #34131a;
+  --sig-red-8:   #f2555f;
+  --sig-red-9:   #ff8087;
+
+  /* Reserved for the route spine and nothing else. When you see cyan, you are looking at
+     the network path. */
+  --sig-cyan-4:  #06282e;
+  --sig-cyan-8:  #22d3ee;
+  --sig-cyan-9:  #67e8f9;
+
+  /* Type */
+  --font-ui: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Space — 4px base. The current build hardcodes 12/14/18/24 ad hoc. */
+  --s-1: 2px;  --s-2: 4px;  --s-3: 6px;  --s-4: 8px;  --s-5: 12px;
+  --s-6: 16px; --s-7: 20px; --s-8: 24px; --s-9: 32px; --s-10: 40px; --s-11: 56px;
+
+  /* Radius — tight. An instrument has machined corners, not pillows. */
+  --r-1: 3px; --r-2: 5px; --r-3: 7px; --r-4: 10px; --r-5: 14px; --r-full: 999px;
+
+  /* Motion. Fast and functional: motion here reports a state change, it doesn't perform. */
+  --dur-instant: 80ms;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Elevation. Sparing — depth is for things that float, not for decoration. */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --e-2: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --e-3: 0 16px 48px rgba(0, 0, 0, 0.6);
+
+  --z-base: 0; --z-sticky: 10; --z-drawer: 20; --z-overlay: 30; --z-modal: 40; --z-toast: 50;
+
+  /* ---------------------------------------------------------------- *
+   * LAYER 2 — SEMANTIC. What a thing is FOR. Components use these.
+   * ---------------------------------------------------------------- */
+
+  --bg-canvas:   var(--g-1);
+  --bg-surface:  var(--g-2);
+  --bg-raised:   var(--g-3);
+  --bg-overlay:  var(--g-4);
+  --bg-hover:    rgba(255, 255, 255, 0.035);
+  --bg-active:   rgba(255, 255, 255, 0.06);
+  --bg-selected: rgba(79, 142, 247, 0.1);
+  /* Sits deliberately below --bg-hover: an unread row must read as lifted off
+     the canvas without competing with the row the pointer is actually on. */
+  --bg-unread:   rgba(255, 255, 255, 0.022);
+
+  --line:        rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.13);
+
+  --fg-primary:   var(--g-12);
+  --fg-secondary: var(--g-10);
+  --fg-tertiary:  var(--g-9);
+  --fg-disabled:  var(--g-8);
+  --fg-on-accent: #fff;
+
+  --accent:       var(--blue-8);
+  --accent-hover: var(--blue-9);
+  --accent-quiet: rgba(79, 142, 247, 0.12);
+  /* White on #4f8ef7 is only 3.21:1, which fails for button labels. Kant blue is kept for
+     everything decorative (borders, dots, selection, the notch); filled controls that carry
+     TEXT use this darker step so the label passes AA. */
+  --accent-solid: var(--blue-7);
+
+  /* Trust. Note `unverified` is NEUTRAL, not amber: unverified is where every contact
+     starts, and colouring the default state as a warning trains people to ignore warnings.
+     Amber is for a contact you started verifying and didn't finish. */
+  --trust-verified:   var(--sig-green-8);
+  --trust-verified-bg: var(--sig-green-4);
+  --trust-unknown:    var(--g-9);
+  --trust-partial:    var(--sig-amber-8);
+  --trust-broken:     var(--sig-red-8);
+  --trust-broken-bg:  var(--sig-red-4);
+
+  /* Network */
+  --net-offline:    var(--g-8);
+  --net-connecting: var(--sig-amber-8);
+  --net-relay:      var(--sig-cyan-8);
+  --net-direct:     var(--sig-green-8);
+  --net-onion:      var(--blue-9);
+  --net-error:      var(--sig-red-8);
+
+  --focus-ring: var(--blue-8);
+
+  /* ---------------------------------------------------------------- *
+   * LAYER 3 — COMPONENT. Per-component overrides.
+   * ---------------------------------------------------------------- */
+
+  --rail-w: 56px;
+  --list-w: 320px;
+  --drawer-w: 320px;
+  --row-h: 56px;          /* comfortable */
+  --row-h-compact: 44px;
+  --header-h: 52px;
+  --spine-h: 34px;
+
+  --btn-h: 32px;
+  --btn-h-lg: 40px;
+  --input-h: 34px;
+
+  --bubble-out: #1c3f78;
+  --bubble-in: var(--g-3);
+}
+
+/* Compact density — a real toggle, not a nice idea. */
+[data-dir='instrument'][data-density='compact'] {
+  --row-h: var(--row-h-compact);
+  --s-5: 10px;
+  --s-6: 13px;
+}
+
+/*
+ * Touch scale.
+ *
+ * Every size above was picked for a mouse: 32px buttons and 34px fields are
+ * comfortable to click and fiddly to hit with a thumb. Android's own guidance
+ * is a 48dp minimum target, and anything under 16px in a text field makes
+ * mobile browsers zoom the viewport on focus, which then has to be pinched back
+ * out. Rather than sprinkle overrides through the component rules, re-scale the
+ * tokens once and let everything built on them follow.
+ *
+ * Keyed on coarse pointers rather than width so a touchscreen laptop gets the
+ * larger targets too, and a narrow desktop window does not.
+ */
+@media (pointer: coarse), (max-width: 700px) {
+  [data-dir='instrument'] {
+    --row-h: 68px;
+    --row-h-compact: 56px;
+    --header-h: 56px;
+
+    --btn-h: 40px;
+    --btn-h-lg: 48px;
+    --input-h: 48px;
+
+    /* 16px is the threshold below which mobile browsers zoom on focus. */
+    --font-field: 16px;
+  }
+}
+
+/* ==================================================================== *
+ * Base
+ * ==================================================================== */
+
+[data-dir='instrument'] {
+  font-family: var(--font-ui);
+  background: var(--bg-canvas);
+  color: var(--fg-primary);
+  font-size: 13.5px;
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  height: 100%;
+  overflow: hidden;
+}
+
+[data-dir='instrument'] *::-webkit-scrollbar { width: 8px; height: 8px; }
+[data-dir='instrument'] *::-webkit-scrollbar-track { background: transparent; }
+[data-dir='instrument'] *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: var(--r-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+[data-dir='instrument'] *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.18); background-clip: content-box; }
+
+[data-dir='instrument'] :focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--r-2);
+}
+
+[data-dir='instrument'] ::selection { background: rgba(79, 142, 247, 0.3); }
+
+/* Every identifier — keys, fingerprints, multiaddrs, latencies, clocks — is monospaced and
+   tabular. This is functional: 0/O and 1/l disambiguation is a correctness property when
+   comparing fingerprints, and tabular figures stop timestamps from jittering. */
+[data-dir='instrument'] .mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1;
+  letter-spacing: 0;
+}
+
+[data-dir='instrument'] .tnum { font-variant-numeric: tabular-nums; }
+
+/* Type scale */
+[data-dir='instrument'] .t-display { font-size: 26px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; }
+[data-dir='instrument'] .t-title   { font-size: 18px; font-weight: 600; letter-spacing: -0.018em; line-height: 1.25; }
+[data-dir='instrument'] .t-heading { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+[data-dir='instrument'] .t-body    { font-size: 13.5px; font-weight: 400; }
+[data-dir='instrument'] .t-small   { font-size: 12.5px; font-weight: 400; }
+[data-dir='instrument'] .t-caption { font-size: 11.5px; font-weight: 400; color: var(--fg-tertiary); }
+[data-dir='instrument'] .t-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--fg-tertiary);
+}
+
+/* ==================================================================== *
+ * Animation
+ * ==================================================================== */
+
+@keyframes inst-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes inst-rise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+@keyframes inst-spin { to { transform: rotate(360deg) } }
+@keyframes inst-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
+/* The spine's live packet. The one ambient animation in the whole direction — it is the
+   product's heartbeat, so it earns its place. */
+@keyframes inst-travel { from { offset-distance: 0% } to { offset-distance: 100% } }
+@keyframes inst-dash { to { stroke-dashoffset: -12 } }
+
+[data-dir='instrument'] .kant-spinner { animation: inst-spin 0.7s linear infinite; flex-shrink: 0; }
+[data-dir='instrument'] .anim-rise { animation: inst-rise var(--dur-base) var(--ease-enter) both; }
+[data-dir='instrument'] .anim-fade { animation: inst-fade-in var(--dur-fast) ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dir='instrument'] *,
+  [data-dir='instrument'] *::before,
+  [data-dir='instrument'] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* The token scope also sets height:100%/overflow:hidden for the app shell. The design-system
+   page borrows the same scope for its tokens but must scroll normally — opt it back out. */
+[data-dir='instrument'].docs {
+  height: auto;
+  overflow: visible;
+  background: transparent;
+}

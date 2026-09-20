@@ -1,0 +1,40 @@
+{
+  "name": "@kant/core",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:test": "tsc -p tsconfig.test.json",
+    "dev": "tsc --watch",
+    "test": "pnpm run build && pnpm run build:test && node --loader ./sodium-loader.mjs keypair.test.mjs && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs ./dist-test/x3dh-opk.test.js && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --test ./dist-test/groups.test.js ./dist-test/files-limits.test.js ./dist-test/files-transfer.test.js ./dist-test/ratchetStore.test.js",
+    "test:coverage": "pnpm run build:test && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --experimental-test-coverage --test-coverage-include='dist-test/*.js' --test-coverage-exclude='dist-test/*.test.js' --test-coverage-lines=40 --test-coverage-branches=65 --test-coverage-functions=40 --test ./dist-test/groups.test.js && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --experimental-test-coverage --test-coverage-include='dist-test/files.js' --test-coverage-lines=45 --test-coverage-branches=50 --test-coverage-functions=50 --test ./dist-test/files-limits.test.js"
+  },
+  "dependencies": {
+    "@libp2p/circuit-relay-v2": "4.1.6",
+    "@libp2p/crypto": "5.1.18",
+    "@libp2p/identify": "4.0.14",
+    "@libp2p/interface": "3.1.1",
+    "@libp2p/noise": "1.0.1",
+    "@libp2p/peer-id": "6.0.9",
+    "@libp2p/websockets": "10.1.7",
+    "@libp2p/yamux": "8.0.1",
+    "@multiformats/multiaddr": "13.0.1",
+    "@types/qrcode": "^1.5.6",
+    "libp2p": "3.1.7",
+    "libsodium-wrappers": "0.7.16",
+    "libsodium-wrappers-sumo": "0.8.2",
+    "qrcode": "^1.5.4",
+    "socks": "^2.8.9",
+    "socks-proxy-agent": "^8.0.4",
+    "ws": "8.21.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/ws": "^8.18.1",
+    "fake-indexeddb": "6.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# deploy-relay — standalone Kant relay launcher
+# Usage: ./deploy-relay [--port 3000] [--http 3001] [--host 0.0.0.0] [--public <ip|domain>]
+#        ./deploy-relay             → defaults: :3000/:3001, autodetect IP, restart if running
+#        ./deploy-relay 1           → instance offset: 3000+3001, 3002+3003, etc
+set -euo pipefail
+
+KANT_ROOT=/tmp/kant
+INSTANCE=
+PORT=3000
+HTTP=3001
+HOST=0.0.0.0
+PUBLIC=
+
+# ── Parse args ────────────────────────────────────────────────────────────
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    1|2|3|4|5) INSTANCE=$1; shift ;;
+    --port) PORT="$2"; shift 2 ;;
+    --http) HTTP="$2"; shift 2 ;;
+    --host) HOST="$2"; shift 2 ;;
+    --public) PUBLIC="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: ./deploy-relay [instance|--port P --http P --host IP --public IP]"
+      echo "  ./deploy-relay           → :3000/:3001 autodetect public IP"
+      echo "  ./deploy-relay 1         → :3000/:3001"
+      echo "  ./deploy-relay 2         → :3002/:3003"
+      echo "  ./deploy-relay --public 213.91.211.200 --port 3002"
+      exit 0 ;;
+    *) echo "Unknown: $1"; exit 1 ;;
+  esac
+done
+
+if [[ -n "$INSTANCE" ]]; then
+  PORT=$((3000 + (INSTANCE - 1) * 2))
+  HTTP=$((PORT + 1))
+fi
+
+PUBLIC="${PUBLIC:-$(curl -s --max-time 3 ifconfig.me 2>/dev/null || echo '127.0.0.1')}"
+
+cd "$KANT_ROOT"
+
+# ── Build ─────────────────────────────────────────────────────────────────
+echo "==> Building relay (port $PORT, http $HTTP)..."
+cd packages/relay
+RELAY_PORT=$PORT RELAY_INFO_PORT=$HTTP npx tsc 2>&1 | tail -1
+
+# ── Kill old ──────────────────────────────────────────────────────────────
+echo "==> Killing old processes on $PORT/$HTTP..."
+lsof -ti:$PORT,$HTTP 2>/dev/null | xargs -r kill -9 2>/dev/null || true
+sleep 0.5
+
+# ── Start ─────────────────────────────────────────────────────────────────
+cd "$KANT_ROOT"
+echo "==> Starting relay on $HOST:$PORT (http: $HTTP, public: $PUBLIC)..."
+RELAY_PORT="$PORT" \
+RELAY_HTTP_BIND="$HOST" \
+RELAY_INFO_PORT="$HTTP" \
+RELAY_PUBLIC_HOST="$PUBLIC" \
+RELAY_PUBLIC_PORT="$PORT" \
+  node packages/relay/dist/index.js

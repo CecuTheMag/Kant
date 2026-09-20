@@ -1,0 +1,55 @@
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-runner-run-284a4b501ce8 Creating 
+ Container kant-test-lab-runner-run-284a4b501ce8 Created 
+
+> @kant/test-lab@ test:ui /workspace/tests/lab
+> playwright test
+
+
+Running 4 tests using 2 workers
+
+  ✓  1 ui/smoke.spec.mjs:4:3 › Kant UI smoke › renders a usable authentication surface (1.1s)
+  ✓  3 ui/smoke.spec.mjs:18:3 › Kant UI smoke › validates identity setup before touching the network (895ms)
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 11:57:40 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+  ✓  4 ui/smoke.spec.mjs:30:3 › Kant UI smoke › has no horizontal overflow on mobile width (727ms)
+[browser] [createNode] Started, peerId: 12D3KooWKHUubdPBqjuoA1YWuKMBZoPU9hVHd9p4e6PYLhEvP3rF
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 11:57:40 AM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 11:57:40 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[browser] [createNode] Started, peerId: 12D3KooWNYyZybpDLZKNswR7nC8wHDNoC81hnT82rhVd6F5ePS9g
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 11:57:40 AM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [kant] 11:57:53 AM ⏳ No session yet — holding message while the secure session starts
+[browser] [kant] 11:58:20 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[browser] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[browser] [kant] 11:58:22 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[browser] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[browser] [createNode] Started, peerId: 12D3KooWNYyZybpDLZKNswR7nC8wHDNoC81hnT82rhVd6F5ePS9g
+[browser] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[browser] [kant] 11:58:22 AM 🚀 Relay dialed; waiting for circuit reservation
+[browser] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWKHUubdPBqjuoA1YWuKMBZoPU9hVHd9p4e6PYLhEvP3rF: failed to connect via relay with status CONNECTION_FAILED
+[browser] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWKHUubdPBqjuoA1YWuKMBZoPU9hVHd9p4e6PYLhEvP3rF: failed to connect via relay with status CONNECTION_FAILED
+[browser] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWKHUubdPBqjuoA1YWuKMBZoPU9hVHd9p4e6PYLhEvP3rF: failed to connect via relay with status CONNECTION_FAILED
+[browser] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWKHUubdPBqjuoA1YWuKMBZoPU9hVHd9p4e6PYLhEvP3rF: failed to connect via relay with status CONNECTION_FAILED
+[browser] [kant] 11:58:28 AM PING out → 12D3KooWKHUu… 361B [kant-presence] ok
+[browser] [kant] PING out → 12D3KooWKHUu… 361B [kant-presence] ok
+[browser] [kant] 11:58:28 AM PING in ← 12D3KooWNYyZ… 361B [kant-presence]
+[browser] [kant] PING in ← 12D3KooWNYyZ… 361B [kant-presence]
+[browser] [kant] 11:58:28 AM PING out → 12D3KooWKHUu… 508B [x3dh-init] ok
+[browser] [kant] PING out → 12D3KooWKHUu… 508B [x3dh-init] ok
+[browser] [kant] 11:58:28 AM PING in ← 12D3KooWNYyZ… 508B [x3dh-init]
+[browser] [kant] PING in ← 12D3KooWNYyZ… 508B [x3dh-init]
+[browser] [kant] 11:58:28 AM 🔒 Session ready: Alice transport…
+[browser] [kant] 11:58:28 AM PING in ← 12D3KooWNYyZ… 573B [ciphertext]
+[browser] [kant] PING in ← 12D3KooWNYyZ… 573B [ciphertext]
+[browser] [kant] 11:58:28 AM 📤 Flushed 1 message(s) after session setup
+[browser] [kant] 11:58:28 AM PING in ← 12D3KooWKHUu… 546B [ciphertext]
+[browser] [kant] PING in ← 12D3KooWKHUu… 546B [ciphertext]
+  ✓  2 ui/transport-e2e.spec.mjs:47:1 › two real clients establish a session and deliver a message through the relay (51.8s)
+
+  4 passed (52.5s)

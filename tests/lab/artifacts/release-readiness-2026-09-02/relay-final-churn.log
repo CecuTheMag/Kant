@@ -1,0 +1,60 @@
+{"level":30,"time":"2026-09-02T20:52:36.276Z","service":"kant-relay","event":"seed.generated","path":"/tmp/kant/packages/relay/data/relay-seed-3000.bin","msg":"Generated new relay seed"}
+{"level":30,"time":"2026-09-02T20:52:36.372Z","service":"kant-relay","event":"relay.started","peerId":"12D3KooWBM4xrTY682459aa38X5hE9vZBCKqtETrb3dSabQ9invQ","multiaddrs":["/ip4/192.168.0.114/tcp/3000/ws/p2p/12D3KooWBM4xrTY682459aa38X5hE9vZBCKqtETrb3dSabQ9invQ"],"msg":"Kant relay running"}
+{"level":30,"time":"2026-09-02T20:52:36.372Z","service":"kant-relay","event":"relay.address","addr":"/ip4/192.168.0.114/tcp/3000/ws/p2p/12D3KooWBM4xrTY682459aa38X5hE9vZBCKqtETrb3dSabQ9invQ","msg":"Full relay addr"}
+{"level":30,"time":"2026-09-02T20:52:36.374Z","service":"kant-relay","event":"http.started","bind":"0.0.0.0","port":3001,"endpoints":["/relay-info","/healthz","/readyz","/metrics"],"msg":"HTTP info server started"}
+{"level":30,"time":"2026-09-02T20:52:39.725Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWE8Lo22gJw5WQR5Y7is1gn3gYeF44jg8tLt4sJeR2LBf9","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:52:40.851Z","service":"kant-relay","event":"registry.register","keyHex":"4009a5e4b8d3","publicKeyHex":"571343b842bf","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:52:40.851Z","service":"kant-relay","event":"registry.register","keyHex":"571343b842bf","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:52:41.853Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWCtUrcaFR1MPnzYekonWSKnWxLohCrZb2FjD37GPA35XZ","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:52:46.374Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWE8Lo","expires":"2026-09-02T22:52:39.825Z","duration":7193451,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:52:46.374Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWCtUr","expires":"2026-09-02T22:52:41.880Z","duration":7195506,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:52:56.373Z","service":"kant-relay","event":"reservation.refreshed","peerId":"12D3KooWE8Lo","expires":"2026-09-02T22:52:39.824Z","msg":"reservation refreshed"}
+{"level":30,"time":"2026-09-02T20:52:56.373Z","service":"kant-relay","event":"reservation.refreshed","peerId":"12D3KooWCtUr","expires":"2026-09-02T22:52:41.879Z","msg":"reservation refreshed"}
+{"level":30,"time":"2026-09-02T20:53:21.898Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWCtUrcaFR1MPnzYekonWSKnWxLohCrZb2FjD37GPA35XZ","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:53:23.942Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWCtUrcaFR1MPnzYekonWSKnWxLohCrZb2FjD37GPA35XZ","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:53:24.984Z","service":"kant-relay","event":"registry.register","keyHex":"2da0f20bc9bb","publicKeyHex":"65e2d8173109","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:53:24.984Z","service":"kant-relay","event":"registry.register","keyHex":"65e2d8173109","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:53:27.703Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWE8Lo22gJw5WQR5Y7is1gn3gYeF44jg8tLt4sJeR2LBf9","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:53:27.703Z","service":"kant-relay","event":"registry.removed","keyHex":"571343b842bf","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:53:27.734Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWCtUrcaFR1MPnzYekonWSKnWxLohCrZb2FjD37GPA35XZ","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:53:27.734Z","service":"kant-relay","event":"registry.removed","keyHex":"65e2d8173109","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:53:30.418Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWPRhXAZUgY1r3WVDCuuyoGrAFjjv6NiGVe7mC8dEunLge","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:53:31.536Z","service":"kant-relay","event":"registry.register","keyHex":"ca3523cc65f2","publicKeyHex":"605eeee87c9f","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:53:31.536Z","service":"kant-relay","event":"registry.register","keyHex":"605eeee87c9f","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:53:32.886Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWMPkB85391wdFvp2tAgx7AxQMBqkTp13HE8GshDERxGtF","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:53:36.374Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWPRhX","expires":"2026-09-02T22:53:30.508Z","duration":7194134,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:53:36.374Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWMPkB","expires":"2026-09-02T22:53:32.983Z","duration":7196609,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:54:13.026Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWMPkB85391wdFvp2tAgx7AxQMBqkTp13HE8GshDERxGtF","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:54:15.058Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWMPkB85391wdFvp2tAgx7AxQMBqkTp13HE8GshDERxGtF","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:54:55.079Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWMPkB85391wdFvp2tAgx7AxQMBqkTp13HE8GshDERxGtF","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:54:57.108Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWMPkB85391wdFvp2tAgx7AxQMBqkTp13HE8GshDERxGtF","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:54:58.144Z","service":"kant-relay","event":"registry.register","keyHex":"abfd9b11f49f","publicKeyHex":"43220a553039","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:54:58.144Z","service":"kant-relay","event":"registry.register","keyHex":"43220a553039","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:55:04.077Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWQti9napFkz1gAkMmDvgezDsV3mn78PhWEepVceVQ6fBe","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:55:05.133Z","service":"kant-relay","event":"registry.register","keyHex":"dffc38f7ed24","publicKeyHex":"9d48fdcf9c47","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:55:05.133Z","service":"kant-relay","event":"registry.register","keyHex":"9d48fdcf9c47","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:55:06.375Z","service":"kant-relay","event":"reservation.tracked","peerId":"12D3KooWQti9","expires":"2026-09-02T22:55:04.113Z","duration":7197738,"msg":"reservation tracked"}
+{"level":30,"time":"2026-09-02T20:55:36.374Z","service":"kant-relay","event":"registry.evicted","keyHex":"4009a5e4b8d3","reason":"ttl_expired","msg":"evicted stale entry"}
+{"level":30,"time":"2026-09-02T20:55:36.374Z","service":"kant-relay","event":"registry.evicted","keyHex":"2da0f20bc9bb","reason":"ttl_expired","msg":"evicted stale entry"}
+{"level":30,"time":"2026-09-02T20:55:42.193Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWQti9napFkz1gAkMmDvgezDsV3mn78PhWEepVceVQ6fBe","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:42.193Z","service":"kant-relay","event":"registry.removed","keyHex":"9d48fdcf9c47","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:55:43.875Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWQti9napFkz1gAkMmDvgezDsV3mn78PhWEepVceVQ6fBe","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:55:44.003Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWPRhXAZUgY1r3WVDCuuyoGrAFjjv6NiGVe7mC8dEunLge","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:44.005Z","service":"kant-relay","event":"registry.removed","keyHex":"605eeee87c9f","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:55:44.027Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWMPkB85391wdFvp2tAgx7AxQMBqkTp13HE8GshDERxGtF","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:44.027Z","service":"kant-relay","event":"registry.removed","keyHex":"43220a553039","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:55:44.125Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWQti9napFkz1gAkMmDvgezDsV3mn78PhWEepVceVQ6fBe","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:46.677Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWHxgwY9rysnjwMrd9JQZY6o3nXeFh6yZg91MmTXrrPLd9","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:55:47.827Z","service":"kant-relay","event":"registry.register","keyHex":"78ff5e27a380","publicKeyHex":"e1b2d431b54a","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:55:47.829Z","service":"kant-relay","event":"registry.register","keyHex":"e1b2d431b54a","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:55:48.824Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWRtr42p6gUbnL32N97EJNfygNAqWz83hvREAtL6uq6jFu","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:55:49.875Z","service":"kant-relay","event":"registry.register","keyHex":"eee0d7c8655a","publicKeyHex":"29d765b11ff1","msg":"identity entry registered"}
+{"level":30,"time":"2026-09-02T20:55:49.875Z","service":"kant-relay","event":"registry.register","keyHex":"29d765b11ff1","msg":"registered"}
+{"level":30,"time":"2026-09-02T20:55:51.096Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWRtr42p6gUbnL32N97EJNfygNAqWz83hvREAtL6uq6jFu","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:51.096Z","service":"kant-relay","event":"registry.removed","keyHex":"29d765b11ff1","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:55:52.850Z","service":"kant-relay","event":"peer.connect","remotePeer":"12D3KooWRtr42p6gUbnL32N97EJNfygNAqWz83hvREAtL6uq6jFu","msg":"peer connected"}
+{"level":30,"time":"2026-09-02T20:55:52.968Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWHxgwY9rysnjwMrd9JQZY6o3nXeFh6yZg91MmTXrrPLd9","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:52.968Z","service":"kant-relay","event":"registry.removed","keyHex":"e1b2d431b54a","reason":"peer_disconnected","msg":"removed ephemeral registration"}
+{"level":30,"time":"2026-09-02T20:55:53.006Z","service":"kant-relay","event":"peer.disconnect","remotePeer":"12D3KooWRtr42p6gUbnL32N97EJNfygNAqWz83hvREAtL6uq6jFu","msg":"peer disconnected"}
+{"level":30,"time":"2026-09-02T20:55:53.105Z","service":"kant-relay","event":"shutdown.start","signal":"SIGTERM","msg":"received SIGTERM"}
+{"level":30,"time":"2026-09-02T20:55:53.113Z","service":"kant-relay","event":"shutdown.complete","msg":"server closed"}

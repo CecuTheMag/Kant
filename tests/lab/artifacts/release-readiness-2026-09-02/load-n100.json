@@ -1,0 +1,23 @@
+{
+  "N": 100,
+  "ok": 100,
+  "registerOk": 100,
+  "lookupOk": 100,
+  "routingOk": 100,
+  "routedTotal": 9900,
+  "expectedRoutes": 9900,
+  "noReservation": 0,
+  "errors": 0,
+  "registerLatencyMs": {
+    "p50": 240,
+    "p95": 519,
+    "p99": 657,
+    "avg": 253
+  },
+  "lookupLatencyMs": {
+    "p50": 86,
+    "p95": 159,
+    "p99": 178,
+    "avg": 90
+  }
+}

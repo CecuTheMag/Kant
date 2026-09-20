@@ -1,0 +1,358 @@
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-runner-run-f9075f8d1dc6 Creating 
+ Container kant-test-lab-runner-run-f9075f8d1dc6 Created 
+[Alice] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Alice] [kant] 10:13:34 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Alice] [kant] 10:13:34 AM 🔑 Ephemeral routing key: 0bd8504d2f0c5909…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWLDzZHzo3Ps3BtdJDUZy8C4PZvHbA4angRT4sTyzoF8pW
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 10:13:34 AM Node: 12D3KooWLDzZHzo3Ps3B…
+[Alice] [discovery] listening for peers
+[Alice] [kant] 10:13:34 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Bob] [kant] 10:13:36 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Bob] [kant] 10:13:36 AM 🔑 Ephemeral routing key: 170f692d9b0ea07e…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWE7KemNG9Qqnrqd3ZLs2kyKYoxiYWLDPYJ9aRpWL1MGxj
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 10:13:36 AM Node: 12D3KooWE7KemNG9Qqnr…
+[Bob] [discovery] listening for peers
+[Bob] [kant] 10:13:36 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 10:13:37 AM 🔗 self:update addrs=1 circuit=1
+[Bob] [kant] 10:13:37 AM ✅ Circuit from event: ...yKYoxiYWLDPYJ9aRpWL1MGxj
+[Bob] [kant] 10:13:37 AM 🔗 self:update addrs=1 circuit=1
+[Bob] [kant] 10:13:37 AM 👥 Group handler ready
+[Alice] [kant] 10:13:44 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:13:46 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:13:54 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:13:56 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:14:04 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:14:06 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:14:14 AM 💓 conns=1 circuit=NO ratchets=0
+[Alice] [kant] 10:14:14 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 10:14:14 AM 🔌 conn:close 12D3KooWQZ65… (conns=1)
+[Alice] [kant] 10:14:14 AM 🔌 Disconnected
+[Bob] [kant] 10:14:16 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Alice] [kant] 10:14:16 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Alice] [kant] 10:14:16 AM 🔑 Ephemeral routing key: 2e44c1b31b52cb6e…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWLDzZHzo3Ps3BtdJDUZy8C4PZvHbA4angRT4sTyzoF8pW
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 10:14:16 AM Node: 12D3KooWLDzZHzo3Ps3B…
+[Alice] [discovery] listening for peers
+[Alice] [kant] 10:14:16 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 10:14:26 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:14:26 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:14:36 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:14:36 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:14:46 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:14:46 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:14:56 AM 💓 conns=1 circuit=yes ratchets=0
+[Alice] [kant] 10:14:56 AM 💓 conns=1 circuit=NO ratchets=0
+[Alice] [kant] 10:14:56 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Alice] [kant] 10:14:56 AM 🔌 conn:close 12D3KooWQZ65… (conns=1)
+[Alice] [kant] 10:14:56 AM 🔌 Disconnected
+[Alice] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Alice] [kant] 10:14:58 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Alice] [kant] 10:14:58 AM 🔑 Ephemeral routing key: 9ee74c1514f150f6…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWLDzZHzo3Ps3BtdJDUZy8C4PZvHbA4angRT4sTyzoF8pW
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 10:14:58 AM Node: 12D3KooWLDzZHzo3Ps3B…
+[Alice] [discovery] listening for peers
+[Alice] [kant] 10:14:58 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 10:14:59 AM 🔗 self:update addrs=1 circuit=1
+[Alice] [kant] 10:14:59 AM ✅ Circuit from event: ...C4PZvHbA4angRT4sTyzoF8pW
+[Alice] [kant] 10:14:59 AM 🔗 self:update addrs=1 circuit=1
+[Alice] [kant] 10:14:59 AM 👥 Group handler ready
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWE7KemNG9Qqnrqd3ZLs2kyKYoxiYWLDPYJ9aRpWL1MGxj
+[Alice] [kant] 10:14:59 AM 🔌 conn:open 12D3KooWE7Ke… (conns=2)
+[Alice] [send-lock] dial success /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWE7KemNG9Qqnrqd3ZLs2kyKYoxiYWLDPYJ9aRpWL1MGxj
+[Bob] [kant] 10:14:59 AM 🔌 conn:open 12D3KooWLDzZ… (conns=2)
+[Alice] [kant] 10:14:59 AM PING out → 12D3KooWE7Ke… 361B [kant-presence] ok
+[Alice] [kant] PING out → 12D3KooWE7Ke… 361B [kant-presence] ok
+[Bob] [kant] 10:14:59 AM PING in ← 12D3KooWLDzZ… 361B [kant-presence]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 361B [kant-presence]
+[Bob] [kant] 10:14:59 AM ← 12D3KooWLDzZ… [kant-presence]
+[Alice] [kant] 10:15:00 AM PING out → 12D3KooWE7Ke… 512B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWE7Ke… 512B [x3dh-init] ok
+[Alice] [kant] 10:15:00 AM onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Bob] [kant] 10:15:00 AM PING in ← 12D3KooWLDzZ… 512B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 512B [x3dh-init]
+[Bob] [kant] 10:15:00 AM ← 12D3KooWLDzZ… [x3dh-init]
+[Alice] [kant] 10:15:00 AM dial → 12D3KooWE7Ke… [ping] 560B ok
+[Alice] [kant] dial → 12D3KooWE7Ke… [ping] 560B ok
+[Alice] [kant] 10:15:00 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 10:15:00 AM 👤 Alice E2E… online
+[Bob] [kant] 10:15:00 AM PING in ← 12D3KooWLDzZ… 560B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 560B [ciphertext]
+[Bob] [kant] 10:15:00 AM ← 12D3KooWLDzZ… [ciphertext]
+[Bob] [kant] 10:15:00 AM 🔓 decrypting msg#0 from 9aa25f6fd699… (0 ratchet(s) known)
+[Bob] [kant] 10:15:00 AM 🔑 Ratchet ready (receiver)
+[Bob] [kant] 10:15:00 AM 🔓 Retrying 1 buffered ciphertext(s) from 9aa25f6fd699…
+[Bob] [kant] 10:15:00 AM 🔑 Remote won tiebreak for Alice E2E…
+[Bob] [kant] 10:15:00 AM PING out → 12D3KooWLDzZ… 104B [x3dh-reset] ok
+[Bob] [kant] PING out → 12D3KooWLDzZ… 104B [x3dh-reset] ok
+[Bob] [kant] 10:15:00 AM 🔁 Desync detected — requested resync from 9aa25f6fd699…
+[Alice] [kant] 10:15:00 AM PING in ← 12D3KooWE7Ke… 104B [x3dh-reset]
+[Alice] [kant] PING in ← 12D3KooWE7Ke… 104B [x3dh-reset]
+[Alice] [kant] 10:15:00 AM ← 12D3KooWE7Ke… [x3dh-reset]
+[Alice] [kant] 10:15:00 AM 🔁 Resync requested by 3fc6c68f1c10… — rebuilding session
+[Alice] [kant] 10:15:00 AM ✓ delivered from 12D3KooWE7Ke…
+[Alice] [kant] 10:15:00 AM PING out → 12D3KooWE7Ke… 507B [x3dh-init] ok
+[Alice] [kant] PING out → 12D3KooWE7Ke… 507B [x3dh-init] ok
+[Alice] [kant] 10:15:00 AM onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Bob] [kant] 10:15:00 AM PING in ← 12D3KooWLDzZ… 507B [x3dh-init]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 507B [x3dh-init]
+[Bob] [kant] 10:15:00 AM ← 12D3KooWLDzZ… [x3dh-init]
+[Alice] [kant] 10:15:00 AM dial → 12D3KooWE7Ke… [ping] 566B ok
+[Alice] [kant] dial → 12D3KooWE7Ke… [ping] 566B ok
+[Alice] [kant] 10:15:00 AM 🔒 Session ready: Bob E2E…
+[Bob] [kant] 10:15:00 AM 🔑 Ratchet ready (receiver)
+[Bob] [kant] 10:15:00 AM PING in ← 12D3KooWLDzZ… 566B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 566B [ciphertext]
+[Bob] [kant] 10:15:00 AM ← 12D3KooWLDzZ… [ciphertext]
+[Bob] [kant] 10:15:00 AM 🔓 decrypting msg#0 from 9aa25f6fd699… (1 ratchet(s) known)
+[Bob] [kant] 10:15:00 AM ✅ decrypted from 9aa25f6fd699…
+[Alice] [kant] 10:15:00 AM ✓ delivered from 12D3KooWE7Ke…
+[Alice] [kant] 10:15:00 AM 📨 send → 3fc6c68f1c10… ratchet=map addr=live(LDPYJ9aRpWL1MGxj)
+[Alice] [kant] 10:15:00 AM 🔒 encrypted msg#1
+[Alice] [kant] 10:15:00 AM onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Alice] [kant] 10:15:00 AM dial → 12D3KooWE7Ke… [ping] 565B ok
+[Alice] [kant] dial → 12D3KooWE7Ke… [ping] 565B ok
+[Alice] [kant] 10:15:00 AM 📤 transport accepted (1 hop(s)); waiting for delivery ACK
+[Bob] [kant] 10:15:00 AM PING in ← 12D3KooWLDzZ… 565B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 565B [ciphertext]
+[Bob] [kant] 10:15:00 AM ← 12D3KooWLDzZ… [ciphertext]
+[Bob] [kant] 10:15:00 AM 🔓 decrypting msg#1 from 9aa25f6fd699… (1 ratchet(s) known)
+[Bob] [kant] 10:15:00 AM ✅ decrypted from 9aa25f6fd699…
+[Alice] [kant] 10:15:00 AM ✓ delivered from 12D3KooWE7Ke…
+[Alice] [discovery] peer found: 12D3KooWE7KemNG9Qqnr /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLka
+[Bob] [discovery] peer found: 12D3KooWLDzZHzo3Ps3B /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLka
+[Alice] [kant] 10:15:03 AM 📨 send → 3fc6c68f1c10… ratchet=map addr=live(LDPYJ9aRpWL1MGxj)
+[Alice] [kant] 10:15:03 AM 🔒 encrypted msg#2
+[Alice] [kant] 10:15:03 AM onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWE7Ke… via 0 hop(s), 1024B
+[Alice] [kant] 10:15:03 AM dial → 12D3KooWE7Ke… [ping] 600B ok
+[Alice] [kant] dial → 12D3KooWE7Ke… [ping] 600B ok
+[Alice] [kant] 10:15:03 AM 📤 transport accepted (1 hop(s)); waiting for delivery ACK
+[Bob] [kant] 10:15:03 AM PING in ← 12D3KooWLDzZ… 600B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWLDzZ… 600B [ciphertext]
+[Bob] [kant] 10:15:03 AM ← 12D3KooWLDzZ… [ciphertext]
+[Bob] [kant] 10:15:03 AM 🔓 decrypting msg#2 from 9aa25f6fd699… (1 ratchet(s) known)
+[Bob] [kant] 10:15:03 AM ✅ decrypted from 9aa25f6fd699…
+[Alice] [kant] 10:15:03 AM ✓ delivered from 12D3KooWE7Ke…
+✔ Alice queues a message while Bob is offline and delivers it when he returns (90741.481202ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 91118.76146
+[Alice] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Alice] [kant] 10:15:05 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Alice] [kant] 10:15:05 AM 🔑 Ephemeral routing key: 9c95779d25649851…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 10:15:06 AM Node: 12D3KooWAxkbo9RuEQM4…
+[Alice] [discovery] listening for peers
+[Alice] [kant] 10:15:06 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 10:15:07 AM 🔗 self:update addrs=1 circuit=1
+[Alice] [kant] 10:15:07 AM ✅ Circuit from event: ...1QjaajApX8QQoLVoNEYuqcUz
+[Alice] [kant] 10:15:07 AM 🔗 self:update addrs=1 circuit=1
+[Alice] [kant] 10:15:07 AM 👥 Group handler ready
+[Bob] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Bob] [kant] 10:15:07 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Bob] [kant] 10:15:07 AM 🔑 Ephemeral routing key: 65cac6651eb2995f…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 10:15:07 AM Node: 12D3KooWBqWiBc8Td7J6…
+[Bob] [discovery] listening for peers
+[Bob] [kant] 10:15:07 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 10:15:16 AM 💓 conns=1 circuit=yes ratchets=0
+[Bob] [kant] 10:15:17 AM 💓 conns=1 circuit=NO ratchets=0
+[Alice] [kant] 10:15:26 AM 💓 conns=1 circuit=yes ratchets=0
+[Bob] [kant] 10:15:27 AM 💓 conns=1 circuit=NO ratchets=0
+[Alice] [kant] 10:15:36 AM 💓 conns=1 circuit=yes ratchets=0
+[Bob] [kant] 10:15:37 AM 💓 conns=1 circuit=NO ratchets=0
+[Alice] [kant] 10:15:46 AM 💓 conns=1 circuit=yes ratchets=0
+[Bob] [kant] 10:15:47 AM 💓 conns=1 circuit=NO ratchets=0
+[Bob] [kant] 10:15:47 AM 🔄 Relay connected but no circuit reservation — restarting node to re-reserve
+[Bob] [kant] 10:15:47 AM 🔌 conn:close 12D3KooWQZ65… (conns=1)
+[Bob] [kant] 10:15:47 AM 🔌 Disconnected
+[Bob] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Bob] [kant] 10:15:49 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Bob] [kant] 10:15:49 AM 🔑 Ephemeral routing key: 323f3945c744ff2e…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 10:15:49 AM Node: 12D3KooWBqWiBc8Td7J6…
+[Bob] [discovery] listening for peers
+[Bob] [kant] 10:15:49 AM 🚀 Relay dialed; waiting for circuit reservation
+[Bob] [kant] 10:15:50 AM 🔗 self:update addrs=1 circuit=1
+[Bob] [kant] 10:15:50 AM ✅ Circuit from event: ...1batMqt7zB22Eaoo9W4GCCvr
+[Bob] [kant] 10:15:50 AM 🔗 self:update addrs=1 circuit=1
+[Bob] [kant] 10:15:50 AM 👥 Group handler ready
+[Bob] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz: failed to connect via relay with status CONNECTION_FAILED
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr: failed to connect via relay with status CONNECTION_FAILED
+[Bob] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz
+[Bob] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz: failed to connect via relay with status CONNECTION_FAILED
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr: failed to connect via relay with status CONNECTION_FAILED
+[Bob] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz
+[Bob] [kant] 10:15:52 AM 🔌 conn:open 12D3KooWAxkb… (conns=2)
+[Bob] [send-lock] dial success /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz
+[Alice] [kant] 10:15:52 AM 🔌 conn:open 12D3KooWBqWi… (conns=2)
+[Bob] [kant] 10:15:52 AM PING out → 12D3KooWAxkb… 361B [kant-presence] ok
+[Bob] [kant] PING out → 12D3KooWAxkb… 361B [kant-presence] ok
+[Alice] [kant] 10:15:52 AM PING in ← 12D3KooWBqWi… 361B [kant-presence]
+[Alice] [kant] PING in ← 12D3KooWBqWi… 361B [kant-presence]
+[Alice] [kant] 10:15:52 AM ← 12D3KooWBqWi… [kant-presence]
+[Bob] [kant] 10:15:52 AM PING out → 12D3KooWAxkb… 508B [x3dh-init] ok
+[Bob] [kant] PING out → 12D3KooWAxkb… 508B [x3dh-init] ok
+[Bob] [kant] 10:15:52 AM onion send → 12D3KooWAxkb… via 0 hop(s), 1024B
+[Bob] [kant] onion send → 12D3KooWAxkb… via 0 hop(s), 1024B
+[Alice] [kant] 10:15:52 AM PING in ← 12D3KooWBqWi… 508B [x3dh-init]
+[Alice] [kant] PING in ← 12D3KooWBqWi… 508B [x3dh-init]
+[Alice] [kant] 10:15:52 AM ← 12D3KooWBqWi… [x3dh-init]
+[Alice] [kant] 10:15:52 AM 👤 Bob E2E… online
+[Bob] [kant] 10:15:52 AM dial → 12D3KooWAxkb… [ping] 565B ok
+[Bob] [kant] dial → 12D3KooWAxkb… [ping] 565B ok
+[Bob] [kant] 10:15:52 AM 🔒 Session ready: Alice E2E…
+[Alice] [kant] 10:15:52 AM 🔑 Ratchet ready (receiver)
+[Alice] [kant] 10:15:52 AM PING in ← 12D3KooWBqWi… 565B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWBqWi… 565B [ciphertext]
+[Alice] [kant] 10:15:52 AM ← 12D3KooWBqWi… [ciphertext]
+[Alice] [kant] 10:15:52 AM 🔓 decrypting msg#0 from 1e029cfa55c9… (1 ratchet(s) known)
+[Alice] [kant] 10:15:52 AM ✅ decrypted from 1e029cfa55c9…
+[Alice] [kant] 10:15:52 AM 🔑 Remote won tiebreak for Bob E2E…
+[Alice] [kant] 10:15:52 AM 🔑 Remote won tiebreak for Bob E2E…
+[Alice] [kant] 10:15:52 AM 📨 send → 1e029cfa55c9… ratchet=map addr=live(zB22Eaoo9W4GCCvr)
+[Alice] [kant] 10:15:52 AM 🔒 encrypted msg#0
+[Alice] [kant] 10:15:52 AM onion send → 12D3KooWBqWi… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWBqWi… via 0 hop(s), 1024B
+[Bob] [kant] 10:15:52 AM ✓ delivered from 12D3KooWAxkb…
+[Alice] [kant] 10:15:52 AM dial → 12D3KooWBqWi… [ping] 569B ok
+[Alice] [kant] dial → 12D3KooWBqWi… [ping] 569B ok
+[Alice] [kant] 10:15:52 AM 📤 transport accepted (1 hop(s)); waiting for delivery ACK
+[Bob] [kant] 10:15:52 AM PING in ← 12D3KooWAxkb… 569B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWAxkb… 569B [ciphertext]
+[Bob] [kant] 10:15:52 AM ← 12D3KooWAxkb… [ciphertext]
+[Bob] [kant] 10:15:52 AM 🔓 decrypting msg#0 from 1101b27fe0e8… (1 ratchet(s) known)
+[Bob] [kant] 10:15:52 AM ✅ decrypted from 1101b27fe0e8…
+[Alice] [kant] 10:15:52 AM ✓ delivered from 12D3KooWBqWi…
+[Alice] [kant] 10:15:52 AM 🔌 conn:close 12D3KooWBqWi… (conns=1)
+[Alice] [kant] 10:15:53 AM 🔌 conn:close 12D3KooWQZ65… (conns=0)
+[Bob] [kant] 10:15:53 AM 🔌 conn:close 12D3KooWAxkb… (conns=1)
+[Bob] [kant] 10:15:53 AM 🔌 conn:close 12D3KooWQZ65… (conns=0)
+[Bob] [discovery] peer found: 12D3KooWAxkbo9RuEQM4 /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLka
+[Alice] [discovery] peer found: 12D3KooWBqWiBc8Td7J6 /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLka
+[Alice] [kant] 10:15:54 AM 🔗 self:update addrs=0 circuit=0
+[Bob] [kant] 10:15:54 AM 🔗 self:update addrs=0 circuit=0
+[Alice] [kant] 10:15:56 AM 💓 conns=0 circuit=NO ratchets=1
+[Bob] [kant] 10:15:59 AM 💓 conns=0 circuit=NO ratchets=1
+[Alice] [kant] 10:16:06 AM 💓 conns=0 circuit=NO ratchets=1
+[Bob] [kant] 10:16:09 AM 💓 conns=0 circuit=NO ratchets=1
+[Alice] [kant] 10:16:16 AM 💓 conns=0 circuit=NO ratchets=1
+[Alice] [kant] 10:16:16 AM 🔄 Circuit lost while connected — restarting node to re-reserve
+[Alice] [kant] 10:16:16 AM 🔌 Disconnected
+[Alice] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Alice] [kant] 10:16:18 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Alice] [kant] 10:16:18 AM 🔑 Ephemeral routing key: 006f7ea43da2b7fa…
+[Alice] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Alice] [createNode] Started, peerId: 12D3KooWAxkbo9RuEQM44sUeG4AD1QjaajApX8QQoLVoNEYuqcUz
+[Alice] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Alice] [kant] 10:16:18 AM Node: 12D3KooWAxkbo9RuEQM4…
+[Alice] [discovery] listening for peers
+[Alice] [kant] 10:16:18 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 10:16:19 AM 🔗 self:update addrs=1 circuit=1
+[Alice] [kant] 10:16:19 AM ✅ Circuit from event: ...1QjaajApX8QQoLVoNEYuqcUz
+[Alice] [kant] 10:16:19 AM 🔗 self:update addrs=1 circuit=1
+[Alice] [kant] 10:16:19 AM 👥 Group handler ready
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 10:16:19 AM PING out → 12D3KooWBqWi… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] PING out → 12D3KooWBqWi… [kant-presence] FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 10:16:19 AM 📨 send → 1e029cfa55c9… ratchet=map addr=live(zB22Eaoo9W4GCCvr)
+[Alice] [kant] 10:16:19 AM 🔒 encrypted msg#1
+[Alice] [kant] 10:16:19 AM onion send → 12D3KooWBqWi… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWBqWi… via 0 hop(s), 1024B
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 10:16:19 AM dial → 12D3KooWBqWi… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] dial → 12D3KooWBqWi… [ping] attempt 1/4 FAIL: failed to connect via relay with status NO_RESERVATION
+[Alice] [kant] 10:16:19 AM dial → 12D3KooWBqWi… [ping] GAVE UP after 4 attempts
+[Alice] [kant] dial → 12D3KooWBqWi… [ping] GAVE UP after 4 attempts
+[Alice] [kant] 10:16:19 AM 📥 Queued — send failed: failed to connect via relay with status NO_RESERVATION
+[Bob] [kant] 10:16:19 AM 💓 conns=0 circuit=NO ratchets=1
+[Bob] [kant] 10:16:19 AM 🔄 Circuit lost while connected — restarting node to re-reserve
+[Bob] [kant] 10:16:19 AM 🔌 Disconnected
+[Bob] [getRelayInfo] relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf
+[Bob] [kant] 10:16:21 AM Relay: 12D3KooWQZ654sdZuw8Y…
+[Bob] [kant] 10:16:21 AM 🔑 Ephemeral routing key: 67437aa61ce3616b…
+[Bob] [createNode] Starting, relay: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf tor: off
+[Bob] [createNode] Started, peerId: 12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Bob] [createNode] Relay dialled: /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zL
+[Bob] [kant] 10:16:21 AM Node: 12D3KooWBqWiBc8Td7J6…
+[Bob] [discovery] listening for peers
+[Bob] [kant] 10:16:21 AM 🚀 Relay dialed; waiting for circuit reservation
+[Alice] [kant] 10:16:23 AM onion send → 12D3KooWBqWi… via 0 hop(s), 1024B
+[Alice] [kant] onion send → 12D3KooWBqWi… via 0 hop(s), 1024B
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr: invalid wire type 4 at offset 12
+[Alice] [kant] 10:16:23 AM dial → 12D3KooWBqWi… [ping] attempt 1/4 FAIL: invalid wire type 4 at offset 12
+[Alice] [kant] dial → 12D3KooWBqWi… [ping] attempt 1/4 FAIL: invalid wire type 4 at offset 12
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [send-lock] dial failed /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr: invalid wire type 4 at offset 12
+[Alice] [kant] 10:16:23 AM dial → 12D3KooWBqWi… [ping] attempt 2/4 FAIL: invalid wire type 4 at offset 12
+[Alice] [kant] dial → 12D3KooWBqWi… [ping] attempt 2/4 FAIL: invalid wire type 4 at offset 12
+[Bob] [kant] 10:16:23 AM ✅ Circuit ready (…zB22Eaoo9W4GCCvr)
+[Bob] [kant] 10:16:23 AM 🔗 self:update addrs=1 circuit=1
+[Bob] [kant] 10:16:23 AM 👥 Group handler ready
+[Alice] [send-lock] dialing /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Alice] [kant] 10:16:23 AM 🔌 conn:open 12D3KooWBqWi… (conns=2)
+[Alice] [send-lock] dial success /ip4/127.0.0.1/tcp/3000/ws/p2p/12D3KooWQZ654sdZuw8YKYNW1K2zLeSzvMVSnrBzrMeZXgLkaZvf/p2p-circuit/p2p/12D3KooWBqWiBc8Td7J6xAD6Www41batMqt7zB22Eaoo9W4GCCvr
+[Bob] [kant] 10:16:23 AM 🔌 conn:open 12D3KooWAxkb… (conns=2)
+[Alice] [kant] 10:16:23 AM dial → 12D3KooWBqWi… [ping] 576B ok (attempt 3)
+[Alice] [kant] dial → 12D3KooWBqWi… [ping] 576B ok (attempt 3)
+[Alice] [kant] 10:16:23 AM 📤 Queued msg delivered
+[Alice] [queue] flushed queued msg c7fb15e6-4de8-4a
+[Bob] [kant] 10:16:23 AM PING in ← 12D3KooWAxkb… 576B [ciphertext]
+[Bob] [kant] PING in ← 12D3KooWAxkb… 576B [ciphertext]
+[Bob] [kant] 10:16:23 AM ← 12D3KooWAxkb… [ciphertext]
+[Bob] [kant] 10:16:23 AM 🔓 decrypting msg#1 from 1101b27fe0e8… (1 ratchet(s) known)
+[Bob] [kant] 10:16:23 AM ✅ decrypted from 1101b27fe0e8…
+[Alice] [kant] 10:16:23 AM ✓ delivered from 12D3KooWBqWi…
+[Bob] [kant] 10:16:24 AM 📨 send → 1101b27fe0e8… ratchet=map addr=live(X8QQoLVoNEYuqcUz)
+[Bob] [kant] 10:16:24 AM 🔒 encrypted msg#0
+[Bob] [kant] 10:16:24 AM onion send → 12D3KooWAxkb… via 0 hop(s), 1024B
+[Bob] [kant] onion send → 12D3KooWAxkb… via 0 hop(s), 1024B
+[Bob] [kant] 10:16:24 AM dial → 12D3KooWAxkb… [ping] 574B ok
+[Bob] [kant] dial → 12D3KooWAxkb… [ping] 574B ok
+[Bob] [kant] 10:16:24 AM 📤 transport accepted (1 hop(s)); waiting for delivery ACK
+[Alice] [kant] 10:16:24 AM PING in ← 12D3KooWBqWi… 574B [ciphertext]
+[Alice] [kant] PING in ← 12D3KooWBqWi… 574B [ciphertext]
+[Alice] [kant] 10:16:24 AM ← 12D3KooWBqWi… [ciphertext]
+[Alice] [kant] 10:16:24 AM 🔓 decrypting msg#0 from 1e029cfa55c9… (1 ratchet(s) known)
+[Alice] [kant] 10:16:24 AM ✅ decrypted from 1e029cfa55c9…
+✔ clients recover from a relay restart and resume messaging without manual intervention (80006.918843ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80351.138515

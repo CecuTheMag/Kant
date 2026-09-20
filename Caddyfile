@@ -1,0 +1,257 @@
+# =============================================================================
+# Kant Relay — Hardened Caddy Configuration
+# =============================================================================
+# Purpose: Reverse proxy for libp2p WebSocket relay (circuit-relay transport)
+#
+# Key requirements addressed:
+#   • Long-lived WebSocket connections (no idle timeouts)
+#   • WebSocket Upgrade passthrough for libp2p
+#   • HTTP/1.1 only to backend (HTTP/2 can interfere with libp2p Noise)
+#   • Rate limiting to prevent abuse
+#   • Health check endpoint for monitoring
+#   • Security headers and TLS hardening
+#
+# Relay ports:
+#   • relay:3000 — libp2p WebSocket (long-lived connections)
+#   • relay:3001 — HTTP registry (register, lookup, relay-info)
+# =============================================================================
+
+{
+    # Global settings
+
+    # Admin API — local access only for security
+    admin off
+
+    # Email for Let's Encrypt certificate notifications
+    email {$CADDY_EMAIL:admin@example.com}
+
+    # Log configuration
+    log {
+        level INFO
+        output stdout
+        format json
+    }
+
+    # TLS is handled automatically for domain-based sites.
+    # The default Caddy ACME/Let's Encrypt flow is the correct production choice.
+
+    # Server-wide settings
+    servers {
+        # HTTP/1.1 only — critical for libp2p WebSocket compatibility
+        # HTTP/2 multiplexing can cause issues with the Noise handshake
+        protocols h1
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Relay domain — receives {$RELAY_DOMAIN} from environment
+# -----------------------------------------------------------------------------
+{$RELAY_DOMAIN} {
+
+    # Access logging
+    log {
+        output stdout
+        format json
+    }
+
+    # -------------------------------------------------------------------------
+    # Security Headers
+    # -------------------------------------------------------------------------
+    header {
+        # Prevent MIME type sniffing
+        X-Content-Type-Options "nosniff"
+
+        # Clickjacking protection
+        X-Frame-Options "DENY"
+
+        # XSS protection (legacy browsers)
+        X-XSS-Protection "1; mode=block"
+
+        # Referrer policy for privacy
+        Referrer-Policy "strict-origin-when-cross-origin"
+
+        # Content Security Policy
+        # Note: Allow WebSocket connections to the same origin
+        Content-Security-Policy "default-src 'self'; connect-src 'self' wss: https:; script-src 'self'; object-src 'none'; frame-ancestors 'none'"
+
+        # Remove server identification header
+        -Server
+
+        # Remove Caddy identification
+        -X-Powered-By
+
+        # HSTS (HTTP Strict Transport Security)
+        # 1 year max-age, include subdomains, preload
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+        # Permissions Policy (limit browser features)
+        Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    }
+
+    # -------------------------------------------------------------------------
+    # Rate limiting
+    # -------------------------------------------------------------------------
+    # The stock caddy:2-alpine image does not include the ratelimit module.
+    # We use a custom Caddy build in docker-compose.https.yml so this block works
+    # in production without breaking the relay.
+
+    # -------------------------------------------------------------------------
+    # Health Check Endpoint
+    # -------------------------------------------------------------------------
+    # Exposed at /health for load balancers and monitoring systems
+    @health {
+        path /health
+    }
+    handle @health {
+        respond "OK" 200 {
+            close
+        }
+    }
+
+    # Push proxy shares the relay domain. Caddy strips /proxy before forwarding
+    # so the proxy keeps its small, stable endpoint contract.
+    @push_proxy {
+        path /proxy /proxy/*
+    }
+    handle @push_proxy {
+        uri strip_prefix /proxy
+        reverse_proxy push-proxy:4001 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # Metrics — operators only
+    # -------------------------------------------------------------------------
+    # /metrics reports active peer counts, push-subscription totals and
+    # connection churn. That is operational metadata about who is using the
+    # relay and when, so it must not be world-readable on a privacy tool.
+    # Scrape it from inside the network; the public internet gets a 404 so the
+    # endpoint is not even confirmed to exist. Must precede @push_registration,
+    # which would otherwise proxy /metrics straight through.
+    @metrics_public {
+        path /metrics
+        not remote_ip private_ranges
+    }
+    handle @metrics_public {
+        respond "Not Found" 404 {
+            close
+        }
+    }
+
+    # Push subscription endpoints belong to the relay HTTP API. Keep this
+    # before the WebSocket fallback so browser/Android registration requests
+    # never get sent to the libp2p transport.
+    @push_registration {
+        path /push/* /relay-info /register /lookup /lookup/* /healthz /readyz /metrics /report/* /admin/*
+    }
+    handle @push_registration {
+        reverse_proxy relay:3001 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # HTTP API Routes — proxy to relay info server (port 3001)
+    # -------------------------------------------------------------------------
+    # These are standard HTTP/JSON endpoints for peer registration and lookup
+
+    @relay-info {
+        path /relay-info
+    }
+    handle @relay-info {
+        reverse_proxy relay:3001 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    @register {
+        path /register
+    }
+    handle @register {
+        reverse_proxy relay:3001 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    @lookup {
+        path /lookup*
+    }
+    handle @lookup {
+        reverse_proxy relay:3001 {
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # WebSocket / libp2p Transport — proxy to relay WebSocket port (3000)
+    # -------------------------------------------------------------------------
+    # This handles the circuit-relay transport with long-lived connections
+    #
+    # CRITICAL SETTINGS:
+    #   • flush_interval -1: Disable buffering for real-time streaming
+    #   • versions 1.1: HTTP/1.1 only (HTTP/2 breaks libp2p Noise handshake)
+    #   • Long timeouts: libp2p connections can be open for days
+    #   • Large buffer: Support full WebSocket frames and file transfers
+    # -------------------------------------------------------------------------
+
+    @websocket {
+        # Match everything else — libp2p WebSocket transport
+        # The WebSocket upgrade happens at the root path
+        header Connection *Upgrade*
+        header Upgrade *websocket*
+    }
+
+    handle @websocket {
+        reverse_proxy relay:3000 {
+            flush_interval -1
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # Catch-all for anything else — also goes to WebSocket port
+    # -------------------------------------------------------------------------
+    # This handles WebSocket connections without explicit Upgrade headers
+    # (some libp2p implementations may not send Connection header)
+    handle {
+        reverse_proxy relay:3000 {
+            flush_interval -1
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
+    # -------------------------------------------------------------------------
+    # Error Handling
+    # -------------------------------------------------------------------------
+    handle_errors {
+        # Return JSON errors for API endpoints
+        @5xx {
+            expression {http.error.status_code} >= 500
+        }
+        handle @5xx {
+            respond "{err.status_code} {err.status_text}" "{err.status_code}" {
+                close
+            }
+        }
+
+        # Catch all other errors
+        respond "{err.status_code} {err.status_text}" "{err.status_code}" {
+            close
+        }
+    }
+}

@@ -1,0 +1,104 @@
+{
+  "name": "kant-desktop",
+  "version": "0.2.0",
+  "description": "Kant — desktop app for Linux",
+  "author": {
+    "name": "Kant",
+    "email": "dev@kant.app"
+  },
+  "homepage": "https://kant.app",
+  "main": "dist-electron/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter @kant/app dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "prepare:relay-runtime": "rm -rf relay-runtime && CI=true pnpm --dir ../.. --filter @kant/relay --prod deploy --legacy packages/desktop/relay-runtime",
+    "build:ci": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json",
+    "build": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux --mac --win",
+    "build:linux": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux",
+    "build:mac": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --mac",
+    "build:win": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --win",
+    "build:appimage": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux AppImage",
+    "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux deb"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "electron-updater": "6.8.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.1",
+    "dmg-license": "^1.0.11",
+    "electron": "33.4.11",
+    "electron-builder": "24.13.3",
+    "typescript": "5.9.3",
+    "wait-on": "8.0.5"
+  },
+  "build": {
+    "appId": "com.kant.messenger",
+    "productName": "Kant",
+    "copyright": "Copyright © 2024 Kant",
+    "asar": true,
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "!../app/src/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../app/dist",
+        "to": "app"
+      },
+      {
+        "from": "relay-runtime",
+        "to": "relay"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Network",
+      "icon": "assets/icon.png",
+      "maintainer": "Kant <dev@kant.app>",
+      "vendor": "Kant <dev@kant.app>",
+      "synopsis": "Private. Serverless. Encrypted.",
+      "description": "Kant is a peer-to-peer encrypted messenger with no central message storage or account requirement."
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "assets/icon.png",
+      "category": "public.app-category.social-networking",
+      "darkModeSupport": true
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

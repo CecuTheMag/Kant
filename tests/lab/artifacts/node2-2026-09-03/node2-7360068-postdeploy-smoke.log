@@ -1,0 +1,28 @@
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-runner-run-223c6d2aa2e7 Creating 
+ Container kant-test-lab-runner-run-223c6d2aa2e7 Created 
+✔ X3DH derives the same shared secret (54.784463ms)
+✔ ratchet encrypt/decrypt advances and rejects tampering (5.968312ms)
+✔ file chunks authenticate index and decrypt exactly (0.73758ms)
+✔ QR parser accepts valid identity data and rejects malformed data (0.219349ms)
+✔ X3DH with OPK derives different secret than without OPK (3.183241ms)
+✔ X3DH OPK: second receive with same OPK private key produces same secret (burn is caller responsibility) (2.533393ms)
+✔ relay info endpoint is reachable and identifies a peer (46.420095ms)
+✔ /healthz returns 200 with status ok (4.57023ms)
+✔ /readyz returns 200 when relay is started (3.461833ms)
+✔ /metrics returns Prometheus text format (5.572722ms)
+✔ network profile is explicit (0.46809ms)
+✔ admin endpoints require authorization (7.468921ms)
+✔ admin reservations endpoint returns list (3.855274ms)
+✔ admin reservations detail endpoint returns 404 for unknown peer (3.621759ms)
+✔ admin reservation delete returns 404 for unknown peer (3.921784ms)
+✔ admin endpoint with bad auth on POST /__lab/restart still works (3.109679ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 403.341116

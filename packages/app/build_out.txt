@@ -1,0 +1,22 @@
+
+> @kant/app@0.0.1 build
+> tsc && vite build
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+vite v5.4.21 building for production...
+transforming...
+✓ 644 modules transformed.
+[plugin:vite:reporter] [plugin vite:reporter] 
+(!) /home/magcecu/Documents/GitHub/Kant/node_modules/.pnpm/libsodium-wrappers-sumo@0.8.2/node_modules/libsodium-wrappers-sumo/dist/modules-sumo/libsodium-wrappers.js is dynamically imported by /home/magcecu/Documents/GitHub/Kant/packages/core/src/sodium.ts but also statically imported by /home/magcecu/Documents/GitHub/Kant/packages/core/src/contacts.ts, /home/magcecu/Documents/GitHub/Kant/packages/core/src/index.ts, /home/magcecu/Documents/GitHub/Kant/packages/core/src/messages.ts, dynamic import will not move module into another chunk.
+
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.38 kB │ gzip:   0.26 kB
+dist/assets/index-DN7fi68_.css      1.45 kB │ gzip:   0.80 kB
+dist/assets/index-CScMFLRX.js   1,963.22 kB │ gzip: 601.87 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.57s

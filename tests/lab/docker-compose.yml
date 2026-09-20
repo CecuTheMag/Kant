@@ -1,0 +1,124 @@
+name: kant-test-lab
+
+services:
+  core:
+    build:
+      context: ../..
+      dockerfile: tests/lab/core.Dockerfile
+    command: ["node", "tests/lab/tests/core.test.mjs"]
+
+  relay:
+    build:
+      context: ../..
+      dockerfile: packages/relay/Dockerfile
+    restart: unless-stopped
+    environment:
+      RELAY_PORT: "3000"
+      RELAY_INFO_PORT: "3001"
+      RELAY_HTTP_BIND: "0.0.0.0"
+      # Override with the LXC/Tailscale address when testing from another host.
+      # Default to 127.0.0.1 so browsers in host-network runners can reach the relay.
+      RELAY_PUBLIC_HOST: ${RELAY_PUBLIC_HOST:-127.0.0.1}
+      RELAY_PUBLIC_PORT: "3000"
+      RELAY_DATA_DIR: /data
+      RELAY_LAB_CONTROL_TOKEN: ${KANT_RELAY_LAB_CONTROL_TOKEN:-kant-lab-restart-token}
+    volumes:
+      - relay-data:/data
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    networks:
+      wan:
+        aliases: [relay]
+
+  web:
+    build:
+      context: ../..
+      dockerfile: tests/lab/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      control:
+        aliases: [web]
+      lan_a:
+        aliases: [web-lan-a]
+
+  runner:
+    build:
+      context: ../..
+      dockerfile: tests/lab/runner.Dockerfile
+    network_mode: "host"
+    environment:
+      KANT_WEB_URL: http://localhost:8080
+      KANT_RELAY_URL: http://localhost:3001
+      KANT_RELAY_INFO_URL: http://localhost:3001/relay-info
+      KANT_NETWORK_PROFILE: ${KANT_NETWORK_PROFILE:-lan}
+      KANT_RELAY_LAB_CONTROL_TOKEN: ${KANT_RELAY_LAB_CONTROL_TOKEN:-kant-lab-restart-token}
+    volumes:
+      - ./artifacts:/workspace/tests/lab/artifacts
+      # Mount live source so test helper changes are picked up without rebuilding.
+      - ./tests:/workspace/tests/lab/tests:ro
+    depends_on:
+      relay:
+        condition: service_started
+      web:
+        condition: service_started
+
+  client_a:
+    image: alpine:3.20
+    profiles: [wan, nat, hairpin, loss]
+    command: ["sh", "-c", "sleep infinity"]
+    networks: [lan_a]
+
+  client_b:
+    image: alpine:3.20
+    profiles: [wan, nat, hairpin, loss]
+    command: ["sh", "-c", "sleep infinity"]
+    networks: [lan_b]
+
+  client_c:
+    image: alpine:3.20
+    profiles: [wan, nat, hairpin, loss]
+    command: ["sh", "-c", "sleep infinity"]
+    networks: [lan_a]
+
+  # A privileged router is used only by the WAN/NAT profiles. It is not
+  # enabled in the default LAN profile and has no host port publishing.
+  router_a:
+    build:
+      context: ../..
+      dockerfile: tests/lab/router.Dockerfile
+    profiles: [wan, nat, hairpin, loss]
+    privileged: true
+    cap_add: [NET_ADMIN]
+    command: ["sleep", "infinity"]
+    networks:
+      - lan_a
+      - wan
+
+  router_b:
+    build:
+      context: ../..
+      dockerfile: tests/lab/router.Dockerfile
+    profiles: [wan, nat, hairpin, loss]
+    privileged: true
+    cap_add: [NET_ADMIN]
+    command: ["sleep", "infinity"]
+    networks:
+      - lan_b
+      - wan
+
+networks:
+  control:
+    internal: true
+    ipam: { config: [{ subnet: 172.29.0.0/24 }] }
+  wan:
+    ipam: { config: [{ subnet: 172.30.0.0/24 }] }
+  lan_a:
+    ipam: { config: [{ subnet: 172.31.0.0/24 }] }
+  lan_b:
+    ipam: { config: [{ subnet: 172.32.0.0/24 }] }
+
+volumes:
+  relay-data:

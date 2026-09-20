@@ -1,0 +1,45 @@
+ Container kant-test-lab-relay-1 Running 
+ Container kant-test-lab-web-1 Running 
+ Container kant-test-lab-runner-run-5334bedb7531 Creating 
+ Container kant-test-lab-runner-run-5334bedb7531 Created 
+[11:44:02] Running load test with N=100 clients against kant-test-lab-relay-1
+[11:44:02] Time budgets: key=80s, total=200s
+[11:44:03] Pre-test: relay NO_RESERVATION errors = 0
+[11:44:03] Pre-test relay stats: kant-test-lab-relay-1 0.73% 31.27MiB / 4GiB 0.76%
+[11:44:03] Generating 100 keypairs in-process and spawning 100 client processes...
+[11:44:04] All 100 clients launched. Waiting for registrations to complete...
+[11:44:11] Go signal sent. Timing registry routing...
+[11:44:12] All clients finished (or timed out) in 1s
+
+================ Kant load test report ================
+Clients (N):               100
+Relay container:           kant-test-lab-relay-1
+Wall clock (routing):      1s
+  {
+    "N": 100,
+    "ok": 100,
+    "registerOk": 100,
+    "lookupOk": 100,
+    "routingOk": 100,
+    "routedTotal": 9900,
+    "expectedRoutes": 9900,
+    "noReservation": 0,
+    "errors": 0,
+    "registerLatencyMs": {
+      "p50": 112,
+      "p95": 287,
+      "p99": 388,
+      "avg": 122
+    },
+    "lookupLatencyMs": {
+      "p50": 119,
+      "p95": 222,
+      "p99": 225,
+      "avg": 116
+    }
+  }
+NO_RESERVATION errors:     0 (delta over test, sampled from /metrics)
+Relay stats (post):        kant-test-lab-relay-1 0.70% 33.62MiB / 4GiB 0.82%
+=======================================================
+[11:44:13] PASS: all 100 clients registered and resolved every peer
+[11:44:13] Artifacts retained at /workspace/tests/lab/artifacts/node2-70c9b5e-load-n100
