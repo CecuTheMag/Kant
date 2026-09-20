@@ -1,8 +1,79 @@
-# Kant
+<div align="center">
+  <img src="assets/logowithtext.png" alt="Kant" width="360" />
+
+  <p><strong>Serverless. End-to-end encrypted. Peer-to-peer.</strong></p>
+
+  <p>
+    <a href="https://kant.network"><img src="https://img.shields.io/badge/Website-kant.network-4f8ef7?style=flat-square" alt="Website"></a>
+    <a href="https://discord.gg/kant"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Dual--Use-22d3ee?style=flat-square" alt="License"></a>
+    <a href="docs/security"><img src="https://img.shields.io/badge/Security-Threat%20Model-2fbf71?style=flat-square" alt="Security"></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/badge/libp2p-relay--v2-eab308?style=flat-square" alt="libp2p">
+    <img src="https://img.shields.io/badge/libsodium-X3DH%20%2B%20Ratchet-f2555f?style=flat-square" alt="libsodium">
+    <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript">
+    <img src="https://img.shields.io/badge/pnpm-monorepo-F69220?style=flat-square&logo=pnpm&logoColor=white" alt="pnpm">
+  </p>
+
+  <p>
+    <a href="https://kant.network/how-it-works">How it works</a> ·
+    <a href="https://kant.network/why-kant">Why Kant</a> ·
+    <a href="https://kant.network/security">Security</a> ·
+    <a href="https://kant.network/community">Community</a>
+  </p>
+</div>
+
+---
 
 Kant is a secure peer-to-peer messaging platform built around libp2p, libsodium, and a stateless circuit relay bootstrap node. The repository is organized as a monorepo with a web client, a relay runtime, and a shared core library.
 
 This project is the working product core for encrypted messaging and relay-assisted peer connectivity. The free community build is intended for personal, academic, journalism, and security research use. The admin plane, governance tooling, and broader enterprise bundle are reserved for commercial/corporate use under the project license.
+
+> 💬 **The project happens in the open.** Protocol decisions, relay operations, and the roadmap are discussed on [Discord](https://discord.gg/kant) — not in a support ticket queue. Come argue about the ratchet with us.
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🔒 Control
+Run your own relay and connect clients to a network you operate. Nobody else's infrastructure sits between you and your peers.
+
+</td>
+<td width="33%" valign="top">
+
+### 🕶️ Privacy posture
+The relay is intentionally not the message store. It never processes plaintext content — it forwards ciphertext and nothing else.
+
+</td>
+<td width="33%" valign="top">
+
+### 📡 Reachability
+Built on libp2p and circuit-relay v2, designed for peers behind NAT, firewalls, and mobile network churn.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 📊 Operational transparency
+Health, readiness, metrics, and registry endpoints are built into the runtime — you can watch exactly what it's doing.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧩 Platform independence
+Client and relay are decoupled enough to support self-hosted or fully customized network designs.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧅 Route awareness
+Optional multi-hop onion routing with cover traffic, for peers who want to hide routing metadata too.
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -197,15 +268,19 @@ This is a disciplined, operationally transparent messaging substrate rather than
 ├── start.sh
 ├── docker-compose.http.yml
 ├── docker-compose.https.yml
+├── docker-compose.push-proxy.yml
 ├── RELAY_DEPLOY.md
 ├── REPO_SETUP.md
+├── assets/
 ├── docs/
 ├── packages/
 │   ├── app/
 │   ├── cli/
 │   ├── core/
 │   ├── desktop/
+│   ├── push-proxy/
 │   ├── relay/
+│   ├── site/
 │   └── admin/
 ├── tests/
 ├── ops/
@@ -221,6 +296,8 @@ This is a disciplined, operationally transparent messaging substrate rather than
 | [packages/app](packages/app) | React web client |
 | [packages/desktop](packages/desktop) | desktop packaging and host integration |
 | [packages/cli](packages/cli) | command-line interface surface |
+| [packages/push-proxy](packages/push-proxy) | Firebase-holding wake-signal proxy for Android push, isolated from relay operators |
+| [packages/site](packages/site) | the [kant.network](https://kant.network) marketing/wiki site (Next.js) |
 | [packages/admin](packages/admin) | placeholder status; not an active product surface |
 
 ---
@@ -236,7 +313,7 @@ This is a disciplined, operationally transparent messaging substrate rather than
 ### Install dependencies
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/CecuTheMag/Kant.git
 cd Kant
 npx pnpm install
 ```
@@ -348,12 +425,23 @@ The code does not include a complete admin console, policy engine, or enterprise
 
 The repo contains operational guidance for deployment, incident handling, monitoring, and readiness review:
 
+- [kant.network/security](https://kant.network/security) — the threat model and privacy posture, in plain language
 - [RELAY_DEPLOY.md](RELAY_DEPLOY.md)
 - [REPO_SETUP.md](REPO_SETUP.md)
 - [docs/runbooks/monitoring.md](docs/runbooks/monitoring.md)
 - [docs/runbooks/incident-response.md](docs/runbooks/incident-response.md)
 - [docs/runbooks/backup-recovery.md](docs/runbooks/backup-recovery.md)
 - [docs/runbooks/production-readiness.md](docs/runbooks/production-readiness.md)
+
+---
+
+## Community
+
+Kant doesn't run a helpdesk. The Discord is where the actual work happens — protocol decisions, relay operations, and the roadmap, discussed by the people building and running it.
+
+<div align="center">
+  <a href="https://discord.gg/kant"><img src="https://img.shields.io/badge/Join%20the-Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the Discord"></a>
+</div>
 
 ---
 
