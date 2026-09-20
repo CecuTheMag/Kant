@@ -110,7 +110,7 @@ export default function WhyKant() {
 
       <section className="section">
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head reveal">
             <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Competitive comparison</div>
             <h2 className="h-2">Framed around architecture, not inflated claims.</h2>
             <p className="body-text" style={{ marginTop: "var(--s-5)" }}>
@@ -118,7 +118,7 @@ export default function WhyKant() {
               current implementation — not unimplemented admin tooling.
             </p>
           </div>
-          <div className="cmp-scroll">
+          <div className="cmp-scroll reveal">
             <table className="cmp-table">
               <thead>
                 <tr>
@@ -134,11 +134,11 @@ export default function WhyKant() {
                 {comparisonRows.map((row) => (
                   <tr key={row[0]}>
                     <th scope="row">{row[0]}</th>
-                    <td className="cmp-kant">{row[1]}</td>
-                    <td>{row[2]}</td>
-                    <td>{row[3]}</td>
-                    <td>{row[4]}</td>
-                    <td>{row[5]}</td>
+                    <td className="cmp-kant" data-label="Kant">{row[1]}</td>
+                    <td data-label="Signal">{row[2]}</td>
+                    <td data-label="Telegram">{row[3]}</td>
+                    <td data-label="WhatsApp">{row[4]}</td>
+                    <td data-label="Matrix">{row[5]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -149,11 +149,11 @@ export default function WhyKant() {
 
       <section className="section" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head reveal">
             <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Head to head</div>
             <h2 className="h-2">Why buyers pick the alternative — and why Kant fits better anyway.</h2>
           </div>
-          <div className="cmp-scroll">
+          <div className="cmp-scroll reveal">
             <table className="cmp-table">
               <thead>
                 <tr>
@@ -165,9 +165,9 @@ export default function WhyKant() {
               <tbody>
                 {altRows.map((row) => (
                   <tr key={row[0]}>
-                    <td style={{ color: "var(--fg-primary)", fontWeight: 500 }}>{row[0]}</td>
-                    <td>{row[1]}</td>
-                    <td className="cmp-kant">{row[2]}</td>
+                    <th scope="row">{row[0]}</th>
+                    <td data-label="Why buyers pick it">{row[1]}</td>
+                    <td className="cmp-kant" data-label="Why Kant is the better fit">{row[2]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -178,7 +178,7 @@ export default function WhyKant() {
 
       <section className="section">
         <div className="wrap">
-          <div className="grid-2">
+          <div className="grid-2 reveal">
             <div>
               <h2 className="h-2" style={{ marginBottom: "var(--s-7)" }}>Who should choose Kant</h2>
               <ul className="fit-list">

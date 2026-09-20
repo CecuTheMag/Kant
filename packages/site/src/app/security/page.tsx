@@ -68,7 +68,7 @@ export default function Security() {
 
       <section className="section">
         <div className="wrap">
-          <div className="grid-2">
+          <div className="grid-2 reveal-stagger">
             <div className="card" style={{ borderColor: "rgba(47,191,113,0.25)" }}>
               <div className="badge" style={{ marginBottom: "var(--s-7)" }}>
                 <span className="badge-dot ok" /> the relay never stores
@@ -101,7 +101,7 @@ export default function Security() {
 
       <section className="section" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head reveal">
             <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Threat model</div>
             <h2 className="h-2">Modeled threats and their mitigations.</h2>
             <p className="body-text" style={{ marginTop: "var(--s-5)" }}>
@@ -110,7 +110,7 @@ export default function Security() {
               termination layer in front of the public relay.
             </p>
           </div>
-          <div className="grid-3">
+          <div className="grid-3 reveal-stagger">
             {threats.map((t) => (
               <div key={t.title} className="card card-hover">
                 <h3 className="h-3" style={{ marginBottom: "var(--s-4)" }}>{t.title}</h3>
@@ -123,7 +123,7 @@ export default function Security() {
 
       <section className="section">
         <div className="wrap">
-          <div className="banner banner-info" style={{
+          <div className="banner banner-info reveal" style={{
             display: "flex", flexDirection: "column", gap: "var(--s-5)",
             padding: "var(--s-7) var(--s-8)", borderRadius: "var(--r-4)",
             border: "1px solid var(--line-strong)", background: "var(--g-2)",

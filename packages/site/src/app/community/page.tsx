@@ -52,7 +52,7 @@ export default function Community() {
 
       <section className="section">
         <div className="wrap">
-          <div className="grid-4">
+          <div className="grid-4 reveal-stagger">
             {rooms.map((r) => (
               <div key={r.title} className="card card-hover">
                 <div className="icon-tile" style={{ marginBottom: "var(--s-6)" }}>
@@ -67,7 +67,7 @@ export default function Community() {
       </section>
 
       <section className="section">
-        <div className="wrap">
+        <div className="wrap reveal">
           <DiscordCTA
             eyebrow="Join in"
             title="Come argue about the ratchet with us."
@@ -79,7 +79,7 @@ export default function Community() {
       <section className="section-tight">
         <div className="wrap">
           <hr className="divider" style={{ marginBottom: "var(--s-9)" }} />
-          <div className="grid-2">
+          <div className="grid-2 reveal">
             <div>
               <h3 className="h-3" style={{ marginBottom: "var(--s-4)" }}>Free for the use it was built for</h3>
               <p className="body-text">
