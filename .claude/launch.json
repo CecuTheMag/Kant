@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kant-site",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "packages/site", "dev", "--port", "3100"],
+      "port": 3100
+    }
+  ]
+}

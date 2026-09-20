@@ -281,6 +281,7 @@ h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.02em; }
 .btn-ghost:hover { background: var(--bg-hover); border-color: var(--g-8); }
 
 .btn-sm { height: 36px; padding: 0 var(--s-6); font-size: 13px; }
+.btn-block { width: 100%; }
 
 /* ---------------- nav ---------------- */
 
@@ -301,10 +302,78 @@ h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.02em; }
 .nav-links { display: flex; align-items: center; gap: var(--s-8); flex: 1; }
 .nav-link { font-size: 13.5px; font-weight: 500; color: var(--fg-secondary); transition: color var(--dur-fast); white-space: nowrap; }
 .nav-link:hover { color: var(--fg-primary); }
+.nav-link[aria-current='page'] { color: var(--fg-primary); }
 .nav-cta { margin-left: auto; display: flex; align-items: center; gap: var(--s-5); flex-shrink: 0; }
+
+.nav-burger {
+  display: none;
+  width: 40px; height: 40px;
+  margin-left: var(--s-5);
+  flex-shrink: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-3);
+  background: var(--g-2);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.burger-line {
+  width: 16px; height: 1.5px;
+  background: var(--fg-primary);
+  border-radius: 1px;
+  transition: transform var(--dur-base) var(--ease-standard), opacity var(--dur-fast) var(--ease-standard);
+}
+.burger-line.is-open:first-child { transform: translateY(3.25px) rotate(45deg); }
+.burger-line.is-open:last-child { transform: translateY(-3.25px) rotate(-45deg); }
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  inset: 72px 0 0 0;
+  z-index: 49;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--s-8) var(--s-6) var(--s-9);
+  background: rgba(8, 9, 11, 0.98);
+  backdrop-filter: blur(20px);
+  overflow-y: auto;
+  transform: translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--dur-base) var(--ease-enter), opacity var(--dur-base) var(--ease-standard);
+}
+
+.mobile-menu.is-open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-menu-links { display: flex; flex-direction: column; }
+.mobile-menu-link {
+  display: flex;
+  align-items: center;
+  height: 56px;
+  font-size: 18px;
+  font-weight: 550;
+  letter-spacing: -0.012em;
+  color: var(--fg-primary);
+  border-bottom: 1px solid var(--line);
+}
+.mobile-menu-link[aria-current='page'] { color: var(--accent-hover); }
 
 @media (max-width: 780px) {
   .nav-links { display: none; }
+  .nav-cta { display: none; }
+  .nav-burger { display: flex; }
+  .mobile-menu { display: flex; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu { transition: none; }
 }
 
 /* ---------------- footer ---------------- */
@@ -522,3 +591,99 @@ h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.02em; }
 .section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
 
 .kicker-row { display: flex; align-items: center; gap: var(--s-6); margin-bottom: var(--s-6); }
+
+/* ---------------- film grain texture ----------------
+ * A near-invisible noise layer over the canvas — the thing that separates a
+ * flat dark background from one that reads as material. Fixed, pointer-events
+ * none, extremely low opacity. Same trick used across premium dark-mode
+ * developer tools; here it's an inline SVG turbulence filter so there's no
+ * image request and no bundle cost. */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------------- scroll reveal ---------------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.4s var(--ease-enter), transform 0.4s var(--ease-enter);
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+.reveal-stagger > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.4s var(--ease-enter), transform 0.4s var(--ease-enter);
+}
+.reveal-stagger.is-visible > * { opacity: 1; transform: none; }
+.reveal-stagger.is-visible > *:nth-child(1) { transition-delay: 0ms; }
+.reveal-stagger.is-visible > *:nth-child(2) { transition-delay: 60ms; }
+.reveal-stagger.is-visible > *:nth-child(3) { transition-delay: 120ms; }
+.reveal-stagger.is-visible > *:nth-child(4) { transition-delay: 180ms; }
+.reveal-stagger.is-visible > *:nth-child(5) { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-stagger > * { opacity: 1; transform: none; transition: none; }
+}
+
+/* ---------------- comparison table → mobile cards ----------------
+ * A 6-column table forces horizontal scrolling on a phone no matter how it's
+ * styled. Below 700px the same markup renders as a stack of labeled rows
+ * instead — each <td> becomes a labeled line via a data-label attribute, and
+ * the table chrome (borders, header row) drops away entirely. */
+
+@media (max-width: 700px) {
+  .cmp-scroll { overflow-x: visible; border: 0; border-radius: 0; }
+  .cmp-scroll .cmp-table { min-width: 0; }
+
+  .cmp-table thead { display: none; }
+  .cmp-table, .cmp-table tbody, .cmp-table tr, .cmp-table td, .cmp-table th {
+    display: block;
+    width: 100%;
+  }
+  .cmp-table tr {
+    padding: var(--s-6) 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cmp-table tr:first-child { padding-top: 0; }
+  .cmp-table th[scope='row'] {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--route);
+    font-weight: 600;
+    text-align: left;
+    padding: 0 0 var(--s-4);
+  }
+  .cmp-table td {
+    padding: var(--s-3) 0 var(--s-3) var(--s-5);
+    border-left: 2px solid var(--line-strong);
+    border-bottom: 0;
+  }
+  .cmp-table td.cmp-kant { border-left-color: var(--accent); background: transparent; padding-left: var(--s-5); }
+  .cmp-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--fg-disabled);
+    margin-bottom: 2px;
+  }
+}
+
+/* ---------------- touch targets ---------------- */
+
+@media (pointer: coarse) {
+  .footer-link, .nav-link { padding: 4px 0; }
+}

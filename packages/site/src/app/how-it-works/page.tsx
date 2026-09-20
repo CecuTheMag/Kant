@@ -48,7 +48,7 @@ export default function HowItWorks() {
       </section>
 
       <section className="wrap" style={{ paddingBottom: "var(--s-9)" }}>
-        <div className="grid-4" style={{ gap: "var(--s-5)" }}>
+        <div className="grid-4 reveal-stagger" style={{ gap: "var(--s-5)" }}>
           {sections.map((s) => (
             <a
               key={s.id}
@@ -63,7 +63,7 @@ export default function HowItWorks() {
       </section>
 
       <section className="wrap section prose" style={{ paddingTop: 0 }}>
-        <div id="identity">
+        <div id="identity" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconLock /></div>
             <h2 style={{ margin: 0 }}>Identity &amp; handshake</h2>
@@ -91,7 +91,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="relay">
+        <div id="relay" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconServer /></div>
             <h2 style={{ margin: 0 }}>The relay is a bootstrap, not a server</h2>
@@ -118,7 +118,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="transport">
+        <div id="transport" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconGrid /></div>
             <h2 style={{ margin: 0 }}>Direct transport</h2>
@@ -139,7 +139,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="groups">
+        <div id="groups" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconGrid /></div>
             <h2 style={{ margin: 0 }}>Group messaging</h2>
@@ -153,7 +153,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="files">
+        <div id="files" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconFile /></div>
             <h2 style={{ margin: 0 }}>File transfer</h2>
@@ -167,7 +167,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="onion">
+        <div id="onion" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconOnion /></div>
             <h2 style={{ margin: 0 }}>Onion routing (optional)</h2>
@@ -181,7 +181,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="push">
+        <div id="push" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconServer /></div>
             <h2 style={{ margin: 0 }}>Push wake-up, not push delivery</h2>
@@ -196,7 +196,7 @@ export default function HowItWorks() {
           </p>
         </div>
 
-        <div id="ops">
+        <div id="ops" className="reveal">
           <div className="kicker-row">
             <div className="icon-tile"><IconTerminal /></div>
             <h2 style={{ margin: 0 }}>Operational surface</h2>

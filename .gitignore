@@ -1,0 +1,40 @@
+**/node_modules/
+relay*.log
+.env
+.env.*
+!.env.*.example
+.kant-secrets/
+
+# Build / generated output (keep repo clone functional via src)
+**/dist/
+**/dist-test/
+**/build/
+**/out/
+**/.vite/
+**/.next/
+**/.vercel/
+**/coverage/
+**/*.tsbuildinfo
+**/.hermes-tmp.*
+
+# Electron builder / packaged artifacts
+packages/desktop/dist-electron/
+packages/desktop/release/
+packages/desktop/squashfs-root/
+
+# Relay seed files — private keys, must never be committed
+packages/relay/data/*.bin
+packages/relay/data/kant-debug.log
+.pnpm-store
+packages/app/android/app/google-services.json
+google-services.json
+kant-messenger-firebase-adminsdk-fbsvc-0ec9646002.json
+
+# gstack (global install)
+.amazonq/rules/gstack.md
+
+# Claude Code local settings (may reference local paths/IPs, not for public repo)
+.claude/settings.local.json
+
+# Generated knowledge-graph output (local tooling artifact, not repo content)
+graphify-out/

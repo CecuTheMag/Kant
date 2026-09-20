@@ -81,11 +81,11 @@ export default function Home() {
 
       <section className="section">
         <div className="wrap">
-          <div className="section-head">
+          <div className="section-head reveal">
             <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>The value proposition</div>
             <h2 className="h-1">Five reasons teams choose infrastructure they own.</h2>
           </div>
-          <div className="grid-3">
+          <div className="grid-3 reveal-stagger">
             {values.map((v) => (
               <div key={v.title} className="card card-hover">
                 <div className="icon-tile" style={{ marginBottom: "var(--s-6)" }}>
@@ -101,7 +101,7 @@ export default function Home() {
 
       <section className="section" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
         <div className="wrap">
-          <div className="grid-2" style={{ alignItems: "center" }}>
+          <div className="grid-2 reveal" style={{ alignItems: "center" }}>
             <div>
               <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Positioning</div>
               <h2 className="h-1" style={{ marginBottom: "var(--s-7)" }}>
@@ -132,7 +132,7 @@ export default function Home() {
 
       <section className="section">
         <div className="wrap">
-          <div className="grid-2" style={{ alignItems: "start" }}>
+          <div className="grid-2 reveal" style={{ alignItems: "start" }}>
             <div>
               <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Under the hood</div>
               <h2 className="h-1" style={{ marginBottom: "var(--s-6)" }}>
@@ -160,7 +160,7 @@ export default function Home() {
       </section>
 
       <section className="section">
-        <div className="wrap">
+        <div className="wrap reveal">
           <DiscordCTA />
         </div>
       </section>
