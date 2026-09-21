@@ -7,8 +7,8 @@ export const SITE = {
   tagline: "Serverless, end-to-end encrypted, peer-to-peer.",
   description:
     "Kant is a serverless, end-to-end encrypted peer-to-peer messenger built on libp2p and libsodium. No central server ever holds a message — not even the relay that connects you.",
-  discordUrl: "https://discord.gg/kant", // TODO: replace with the real invite
-  githubUrl: "https://github.com/kant-project/kant", // TODO: replace with the real repo
+  discordUrl: "https://discord.gg/kdn2tAPtRX",
+  githubUrl: "https://github.com/CecuTheMag/Kant",
 };
 
 export const NAV_LINKS = [

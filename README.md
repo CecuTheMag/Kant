@@ -5,7 +5,7 @@
 
   <p>
     <a href="https://kant.network"><img src="https://img.shields.io/badge/Website-kant.network-4f8ef7?style=flat-square" alt="Website"></a>
-    <a href="https://discord.gg/kant"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
+    <a href="https://discord.gg/kdn2tAPtRX"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-Dual--Use-22d3ee?style=flat-square" alt="License"></a>
     <a href="docs/security"><img src="https://img.shields.io/badge/Security-Threat%20Model-2fbf71?style=flat-square" alt="Security"></a>
   </p>
@@ -30,7 +30,7 @@ Kant is a secure peer-to-peer messaging platform built around libp2p, libsodium,
 
 This project is the working product core for encrypted messaging and relay-assisted peer connectivity. The free community build is intended for personal, academic, journalism, and security research use. The admin plane, governance tooling, and broader enterprise bundle are reserved for commercial/corporate use under the project license.
 
-> 💬 **The project happens in the open.** Protocol decisions, relay operations, and the roadmap are discussed on [Discord](https://discord.gg/kant) — not in a support ticket queue. Come argue about the ratchet with us.
+> 💬 **The project happens in the open.** Protocol decisions, relay operations, and the roadmap are discussed on [Discord](https://discord.gg/kdn2tAPtRX) — not in a support ticket queue. Come argue about the ratchet with us.
 
 <table>
 <tr>
@@ -88,6 +88,16 @@ Prebuilt clients are attached to each [GitHub release](https://github.com/CecuTh
 | Windows | — | Not currently built (cross-compiling from the Linux build environment requires Wine); build locally with `pnpm --dir packages/desktop run build:win` on Windows or via CI. |
 
 Alternatively, build any client from source — see [Local development](#local-development) below.
+
+### Getting a relay to connect to
+
+Every client needs a relay to register with and discover peers through — the relay never sees plaintext, but clients still need a network path to reach it. Which setup you need depends on where the relay runs:
+
+- **VPS / cloud server (public IP)** — no port forwarding needed. The server already has a public IP; just open the relay port in its firewall (and 443 if you're fronting it with TLS via the included Caddy config) and point clients at that IP or domain. This is [`docker-compose.https.yml`](docker-compose.https.yml).
+- **Home machine / behind a router (NAT)** — your router doesn't know to send inbound connections to your machine by default. You must configure **port forwarding** on the router: forward the external relay port to your machine's LAN IP on that same port. Without this, the relay works fine for devices on your own network but is unreachable from outside it, even though it looks "up" locally.
+- **Client on the same LAN as the relay** — if a device on the same network as the relay tries to reach it through the relay's public IP or domain name (rather than its LAN IP), many consumer routers fail silently here: they don't support **NAT hairpinning** (a.k.a. NAT loopback), so a packet that leaves the LAN addressed to the router's own WAN IP never routes back in. Fixes, in order of preference: enable NAT loopback/hairpinning in the router's settings if it's supported; otherwise point same-LAN clients at the relay's local IP/hostname directly instead of its public address.
+
+See [Production deployment](#production-deployment) below for the full environment variable reference (`RELAY_PUBLIC_HOST`, `RELAY_HTTP_BIND`, etc.) and the local/LAN compose file.
 
 ---
 
@@ -454,7 +464,7 @@ The repo contains operational guidance for deployment, incident handling, monito
 Kant doesn't run a helpdesk. The Discord is where the actual work happens — protocol decisions, relay operations, and the roadmap, discussed by the people building and running it.
 
 <div align="center">
-  <a href="https://discord.gg/kant"><img src="https://img.shields.io/badge/Join%20the-Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the Discord"></a>
+  <a href="https://discord.gg/kdn2tAPtRX"><img src="https://img.shields.io/badge/Join%20the-Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the Discord"></a>
 </div>
 
 ---
