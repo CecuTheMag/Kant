@@ -77,7 +77,7 @@ export function Nav() {
         className={`mobile-menu${open ? " is-open" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-hidden={!open}
+        aria-hidden={open ? undefined : true}
       >
         <nav className="mobile-menu-links">
           {NAV_LINKS.map((link) => (
