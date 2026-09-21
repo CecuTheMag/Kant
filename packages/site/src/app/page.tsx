@@ -47,9 +47,16 @@ const protocolFacts = [
   ["Operations", "/healthz · /readyz · /metrics · Prometheus-native"],
 ];
 
+const stats = [
+  { value: "0", label: "Bytes of plaintext at the relay" },
+  { value: "E2EE", label: "Every message, every hop" },
+  { value: "Self-hosted", label: "Relay you own and operate" },
+];
+
 export default function Home() {
   return (
     <>
+      {/* ── Hero ── */}
       <section className="section" style={{ paddingBottom: "var(--s-9)" }}>
         <div className="wrap">
           <div className="eyebrow" style={{ marginBottom: "var(--s-7)" }}>
@@ -58,13 +65,13 @@ export default function Home() {
           <h1 className="h-display anim-rise" style={{ maxWidth: "18ch" }}>
             Messaging infrastructure you own outright.
           </h1>
-          <p className="lede prose-w anim-rise" style={{ marginTop: "var(--s-7)" }}>
+          <p className="lede prose-w anim-rise" style={{ marginTop: "var(--s-7)", maxWidth: "52ch" }}>
             {SITE.name} is the secure communication layer for teams that
             refuse to hand their message routing to a centralized provider.
             No account server, no message store, no plaintext ever touching
             infrastructure you don&apos;t control.
           </p>
-          <div style={{ display: "flex", gap: "var(--s-6)", marginTop: "var(--s-9)", flexWrap: "wrap" }}>
+          <div className="hero-actions">
             <a href={SITE.discordUrl} target="_blank" rel="noreferrer" className="btn btn-accent">
               Join the Discord
             </a>
@@ -75,10 +82,24 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="wrap section-tight">
+      {/* ── Stat bar ── */}
+      <section className="wrap" style={{ paddingBottom: "var(--s-10)" }}>
+        <div className="stat-bar reveal">
+          {stats.map((s) => (
+            <div key={s.label} className="stat-bar-item">
+              <span className="stat-value">{s.value}</span>
+              <span className="stat-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Route spine ── */}
+      <section className="wrap section-tight" style={{ paddingTop: 0 }}>
         <RouteSpine />
       </section>
 
+      {/* ── Value props ── */}
       <section className="section">
         <div className="wrap">
           <div className="section-head reveal">
@@ -99,7 +120,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
+      {/* ── Positioning ── */}
+      <section className="section section-accent">
         <div className="wrap">
           <div className="grid-2 reveal" style={{ alignItems: "center" }}>
             <div>
@@ -130,6 +152,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Protocol facts ── */}
       <section className="section">
         <div className="wrap">
           <div className="grid-2 reveal" style={{ alignItems: "start" }}>
@@ -149,8 +172,8 @@ export default function Home() {
             </div>
             <div className="code-block">
               {protocolFacts.map(([label, value]) => (
-                <div key={label} style={{ display: "flex", gap: "var(--s-6)", justifyContent: "space-between" }}>
-                  <span className="c-muted">{label}</span>
+                <div key={label} style={{ display: "flex", gap: "var(--s-6)", justifyContent: "space-between", flexWrap: "wrap" }}>
+                  <span className="c-muted" style={{ flexShrink: 0 }}>{label}</span>
                   <span className="c-key" style={{ textAlign: "right" }}>{value}</span>
                 </div>
               ))}
@@ -159,6 +182,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Discord CTA ── */}
       <section className="section">
         <div className="wrap reveal">
           <DiscordCTA />
