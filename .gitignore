@@ -21,6 +21,7 @@ relay*.log
 packages/desktop/dist-electron/
 packages/desktop/release/
 packages/desktop/squashfs-root/
+release-artifacts/
 
 # Relay seed files — private keys, must never be committed
 packages/relay/data/*.bin
@@ -29,6 +30,9 @@ packages/relay/data/kant-debug.log
 packages/app/android/app/google-services.json
 google-services.json
 kant-messenger-firebase-adminsdk-fbsvc-0ec9646002.json
+
+# Android release signing key — private, must never be committed
+packages/app/android/keystore/
 
 # gstack (global install)
 .amazonq/rules/gstack.md
