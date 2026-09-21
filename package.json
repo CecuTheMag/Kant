@@ -15,8 +15,9 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
-    "typescript": "5.9.3",
-    "pnpm": "10.13.1"
+    "@types/node": "22.7.4",
+    "pnpm": "10.13.1",
+    "typescript": "5.9.3"
   },
   "packageManager": "pnpm@10.13.1",
   "pnpm": {
@@ -28,7 +29,11 @@
       "qs": "6.16.0",
       "hono": "4.12.34",
       "@hono/node-server": "1.19.15"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
   },
   "workspaces": [
     "packages/*"

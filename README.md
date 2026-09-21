@@ -77,6 +77,20 @@ Optional multi-hop onion routing with cover traffic, for peers who want to hide 
 
 ---
 
+## Download
+
+Prebuilt clients are attached to each [GitHub release](https://github.com/CecuTheMag/Kant/releases/latest):
+
+| Platform | Artifact | Notes |
+| --- | --- | --- |
+| Android | `Kant-<version>.apk` | Signed with the project's release key. Android will still show an "unknown developer" prompt on install — that's expected for any app installed outside the Play Store, not a sign of tampering. Verify the SHA-256 checksum from the release notes before installing. |
+| Linux | `Kant-<version>.AppImage` | Self-contained, no install required — `chmod +x` and run. |
+| Windows | — | Not currently built (cross-compiling from the Linux build environment requires Wine); build locally with `pnpm --dir packages/desktop run build:win` on Windows or via CI. |
+
+Alternatively, build any client from source — see [Local development](#local-development) below.
+
+---
+
 ## Commercial model and corporate bundle
 
 The project license distinguishes clearly between free community use and paid commercial use:

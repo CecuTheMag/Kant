@@ -22,6 +22,7 @@
     "@multiformats/multiaddr": "13.0.1",
     "@types/qrcode.react": "^3.0.0",
     "libp2p": "3.1.7",
+    "libsodium-wrappers-sumo": "0.8.2",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
