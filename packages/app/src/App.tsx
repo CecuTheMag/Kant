@@ -3,6 +3,7 @@ import { useKant } from './hooks/useKant';
 import { useGroups } from './hooks/useGroups';
 import { useAiBridge } from './hooks/useAiBridge';
 import { useUnreadTitle } from './hooks/useUnreadTitle';
+import { useTermsAcceptance } from './hooks/useTermsAcceptance';
 import { AuthScreen } from './components/AuthScreen';
 import { RelaySetupScreen } from './components/RelaySetupScreen';
 import { Sidebar } from './components/Sidebar';
@@ -10,6 +11,7 @@ import { ChatArea } from './components/ChatArea';
 import { GroupChatArea } from './components/GroupChatArea';
 import { DebugLog } from './components/DebugLog';
 import { CreateGroupModal } from './components/CreateGroupModal';
+import { TermsGate } from './components/TermsGate';
 import { Spinner } from './components/icons';
 import { aiContact } from './lib/aiClient';
 import { DesignApp } from './design/DesignApp';
@@ -17,6 +19,7 @@ import './index.css';
 
 export default function App() {
   const kant = useKant();
+  const terms = useTermsAcceptance();
 
   const groups = useGroups(
     kant._nodeRef,
@@ -76,6 +79,14 @@ export default function App() {
 
   if (kant.screen === 'setup' || kant.screen === 'unlock') {
     return <AuthScreen mode={kant.screen} onSetup={kant.setup} onUnlock={kant.unlock} onDeleteIdentity={kant.deleteIdentity} />;
+  }
+
+  // Terms of Service must be accepted before the app screen (either UI) renders.
+  // Gated here rather than earlier so it doesn't block relay setup or identity
+  // creation/unlock, but nothing that touches contacts, messaging, or the
+  // network runs until it's been accepted.
+  if (!terms.accepted) {
+    return <TermsGate onAccept={terms.accept} />;
   }
 
   // Design pass (2026-08-17): the rev-2 directions backed by the REAL backend.
