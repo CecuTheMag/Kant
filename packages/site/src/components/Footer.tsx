@@ -44,6 +44,14 @@ export function Footer() {
               <span className="footer-link mono" style={{ fontSize: 12.5 }}>X3DH + Double Ratchet</span>
             </div>
           </div>
+
+          <div>
+            <div className="footer-col-title">Legal</div>
+            <div className="footer-links">
+              <Link href="/terms" className="footer-link">Terms of Service</Link>
+              <a href={`${SITE.githubUrl}/blob/main/LICENSE`} className="footer-link" target="_blank" rel="noreferrer">Licence</a>
+            </div>
+          </div>
         </div>
 
         <hr className="divider" />
