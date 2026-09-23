@@ -28,7 +28,7 @@ export function TermsBanner() {
   if (!visible) return null;
 
   return (
-    <div className="terms-banner" role="dialog" aria-live="polite">
+    <div className="terms-banner" role="region" aria-label="Terms notice">
       <p className="terms-banner-text">
         By using this site or downloading Kant, you agree to our{" "}
         <Link href="/terms">Terms of Service</Link>, including the liability

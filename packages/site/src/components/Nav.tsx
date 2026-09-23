@@ -4,41 +4,48 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { IconGithub } from "@/components/icons";
 import { NAV_LINKS, SITE } from "@/lib/config";
 
 export function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    document.documentElement.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.documentElement.style.overflow = "";
-    };
-  }, [open]);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
+    document.documentElement.style.overflow = open ? "hidden" : "";
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.documentElement.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (
     <>
-      <header className="nav">
+      <a href="#main" className="skip-link">Skip to content</a>
+      <header className={`nav${scrolled ? " is-scrolled" : ""}${open ? " is-open" : ""}`}>
         <div className="wrap nav-row">
-          <Link href="/" className="nav-brand">
-            <Image src="/logo.png" alt="" width={28} height={28} priority />
+          <Link href="/" className="nav-brand" aria-label={`${SITE.name} home`}>
+            <Image src="/logo.png" alt="" width={26} height={26} priority />
             {SITE.name}
           </Link>
-          <nav className="nav-links">
+          <nav className="nav-links" aria-label="Main">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -51,12 +58,19 @@ export function Nav() {
             ))}
           </nav>
           <div className="nav-cta">
-            <a href={SITE.githubUrl} className="nav-link" target="_blank" rel="noreferrer">
-              GitHub
+            <a
+              href={SITE.githubUrl}
+              className="nav-gh"
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${SITE.name} on GitHub`}
+              title="View the code on GitHub"
+            >
+              <IconGithub size={20} />
             </a>
-            <a href={SITE.discordUrl} className="btn btn-accent btn-sm" target="_blank" rel="noreferrer">
-              Join Discord
-            </a>
+            <Link href="/download" className="btn btn-primary">
+              Download
+            </Link>
           </div>
           <button
             type="button"
@@ -75,11 +89,13 @@ export function Nav() {
       <div
         id="mobile-menu"
         className={`mobile-menu${open ? " is-open" : ""}`}
-        role="dialog"
-        aria-modal="true"
         aria-hidden={open ? undefined : true}
+        inert={!open}
       >
-        <nav className="mobile-menu-links">
+        <nav className="mobile-menu-links" aria-label="Mobile">
+          <Link href="/" className="mobile-menu-link" aria-current={pathname === "/" ? "page" : undefined}>
+            Home
+          </Link>
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -90,23 +106,18 @@ export function Nav() {
               {link.label}
             </Link>
           ))}
-          <a
-            href={SITE.githubUrl}
-            className="mobile-menu-link"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
-          </a>
         </nav>
-        <a
-          href={SITE.discordUrl}
-          className="btn btn-accent btn-block"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Join the Discord
-        </a>
+        <div className="mobile-menu-foot">
+          <Link href="/download" className="btn btn-primary btn-block">
+            Download Kant
+          </Link>
+          <a href={SITE.githubUrl} className="btn btn-light btn-block" target="_blank" rel="noreferrer">
+            <IconGithub size={19} /> View the code on GitHub
+          </a>
+          <a href={SITE.discordUrl} className="btn btn-light btn-block" target="_blank" rel="noreferrer">
+            Join the community
+          </a>
+        </div>
       </div>
     </>
   );

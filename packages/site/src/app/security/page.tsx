@@ -1,148 +1,159 @@
 import type { Metadata } from "next";
+import { IconCheck, IconChevron, IconEyeOff, IconLock, IconShield } from "@/components/icons";
+import { SITE } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "Security & privacy",
+  title: "Privacy & security",
   description:
-    "What the Kant relay can see, what it never touches, and an honest accounting of the threat model — including what it does not yet cover.",
+    "What Kant's relay can see, what it never touches, and an honest account of the threat model — including what isn't covered yet.",
+  alternates: { canonical: "/security" },
 };
 
 const relayNeverSees = [
-  "Message content",
-  "Message history",
-  "Contact lists",
-  "User identity keys (beyond the relay's own long-term seed)",
-  "Private user payloads",
+  "Your messages",
+  "Your message history",
+  "Your contact list",
+  "Your identity keys",
+  "Your photos, files and other private data",
 ];
 
 const relayProcesses = [
-  "Public registry metadata (signed circuit addresses)",
-  "Connection and reservation metadata",
-  "Health, readiness, and metrics data",
-  "TLS/certificate data at the termination layer",
+  "Signed, public addresses so devices can find each other",
+  "Connection and reservation details",
+  "Health, readiness and metrics data",
+  "TLS certificate data where the relay is served over HTTPS",
 ];
 
 const threats = [
   {
-    title: "Message interception",
-    body: "Mitigated by end-to-end encryption at the client — the relay only ever forwards ciphertext frames it cannot decrypt.",
+    title: "Someone intercepts a message",
+    body: "Messages are encrypted end to end on the device. The relay only ever forwards encrypted frames it can't decrypt.",
   },
   {
-    title: "Relay impersonation",
-    body: "Registry entries are signed by the registering peer's identity key, so a spoofed relay can't publish addresses on someone else's behalf.",
+    title: "Someone impersonates you",
+    body: "Address records are signed with the owner's identity key, so nobody can publish an address on someone else's behalf.",
   },
   {
-    title: "Replay attacks",
-    body: "Every /register and /lookup call carries a nonce; duplicates are rejected outright.",
+    title: "Someone replays old requests",
+    body: "Every /register and /lookup call carries a one-time nonce. Duplicates are rejected outright.",
   },
   {
-    title: "Reservation abuse / resource exhaustion",
-    body: "Registry entries expire on TTL and are pruned on disconnect, bounding how much state a flood of reservations can accumulate.",
+    title: "Someone floods the relay",
+    body: "Address records expire on a timer and are removed on disconnect, which limits how much a flood of reservations can pile up.",
   },
   {
-    title: "Seed compromise",
-    body: "The relay's identity is recoverable through an authenticated backup flow — a compromised host doesn't mean the relay's identity is unrecoverable.",
+    title: "The relay host is compromised",
+    body: "The relay's identity can be restored through an authenticated backup flow, so a lost host doesn't mean a lost relay identity.",
   },
   {
-    title: "Public exposure of admin services",
-    body: "Admin reservation endpoints require a configured bearer token and are not reachable at all without one.",
+    title: "Admin tools are exposed",
+    body: "Admin endpoints require a configured bearer token and aren't reachable at all without one.",
   },
 ];
 
 export default function Security() {
   return (
     <>
-      <section className="section-tight">
+      <section className="page-hero">
         <div className="wrap">
-          <div className="eyebrow" style={{ marginBottom: "var(--s-6)" }}>Security &amp; privacy</div>
-          <h1 className="h-1" style={{ maxWidth: "22ch", marginBottom: "var(--s-6)" }}>
-            What the relay can see. What it can&apos;t.
-          </h1>
-          <p className="lede prose-w">
-            Kant is designed around relay-assisted privacy rather than full
-            central-server custody. Below is the actual data processing
-            model and threat model — stated plainly, including the parts
-            that are still open.
+          <span className="eyebrow anim-rise">Privacy & security</span>
+          <h1 className="h-1 anim-rise d1">What the relay sees. And what it never can.</h1>
+          <p className="lede anim-rise d2">
+            Privacy claims are easy to make. Here is exactly how Kant handles
+            your data — stated plainly, including the parts that are still in
+            progress.
           </p>
         </div>
       </section>
 
-      <section className="section">
+      <section className="section-tight section-alt">
         <div className="wrap">
-          <div className="grid-2 reveal-stagger">
-            <div className="card" style={{ borderColor: "rgba(47,191,113,0.25)" }}>
-              <div className="badge" style={{ marginBottom: "var(--s-7)" }}>
-                <span className="badge-dot ok" /> the relay never stores
+          <div className="grid-2 tight reveal-stagger">
+            <div className="card">
+              <div className="badge" style={{ marginBottom: 22, background: "var(--ok-tint)", color: "var(--ok)" }}>
+                <IconLock size={14} /> Never stored or readable by the relay
               </div>
-              <ul className="fit-list">
+              <ul className="check-list">
                 {relayNeverSees.map((item) => (
-                  <li key={item} className="fit-item">
-                    <span className="fit-mark yes">✓</span>
+                  <li key={item} style={{ fontSize: 17.5 }}>
+                    <span className="mark yes"><IconCheck /></span>
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
             <div className="card">
-              <div className="badge" style={{ marginBottom: "var(--s-7)" }}>
-                <span className="badge-dot warn" /> the relay does process
+              <div className="badge" style={{ marginBottom: 22, background: "var(--warn-tint)", color: "var(--warn)" }}>
+                <IconEyeOff size={14} /> What the relay does handle
               </div>
-              <ul className="fit-list">
+              <ul className="check-list">
                 {relayProcesses.map((item) => (
-                  <li key={item} className="fit-item">
-                    <span className="fit-mark no" style={{ background: "var(--sig-amber-4)", color: "var(--sig-amber-9)", border: "none" }}>•</span>
+                  <li key={item} style={{ fontSize: 17.5 }}>
+                    <span className="mark" style={{ background: "var(--bg-sunken)", color: "var(--text-2)" }}>•</span>
                     {item}
                   </li>
                 ))}
               </ul>
+              <p className="small-text" style={{ marginTop: 20 }}>
+                Who connects when is still visible to a relay operator. If that
+                matters to you, turn on onion routing — or run your own relay.
+              </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
-        <div className="wrap">
-          <div className="section-head reveal">
-            <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Threat model</div>
-            <h2 className="h-2">Modeled threats and their mitigations.</h2>
-            <p className="body-text" style={{ marginTop: "var(--s-5)" }}>
-              Scoped to the active product surface: relay bootstrap, registry
-              publishing, client identity and session handling, and the TLS
-              termination layer in front of the public relay.
-            </p>
-          </div>
-          <div className="grid-3 reveal-stagger">
-            {threats.map((t) => (
-              <div key={t.title} className="card card-hover">
-                <h3 className="h-3" style={{ marginBottom: "var(--s-4)" }}>{t.title}</h3>
-                <p className="body-text">{t.body}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
       <section className="section">
         <div className="wrap">
-          <div className="banner banner-info reveal" style={{
-            display: "flex", flexDirection: "column", gap: "var(--s-5)",
-            padding: "var(--s-7) var(--s-8)", borderRadius: "var(--r-4)",
-            border: "1px solid var(--line-strong)", background: "var(--g-2)",
-          }}>
-            <h3 className="h-3">This is an engineering threat model, not an audit claim.</h3>
-            <p className="body-text" style={{ margin: 0 }}>
-              It&apos;s written for deployment and review, and it does not
-              replace a formal red-team or external audit. Release to
-              production is gated on a tested public deployment path, a
-              backup/restore plan for the relay seed, a secrets rotation
-              plan, current threat model review, and an independent security
-              audit or penetration test. We&apos;d rather tell you exactly
-              what&apos;s been checked than round up.
+          <div className="section-head center reveal">
+            <span className="eyebrow">Threat model</span>
+            <h2 className="h-2">What we planned for, and how.</h2>
+            <p className="body-text">
+              Scoped to what ships today: the relay, address publishing, identity
+              and session handling on your device, and the HTTPS layer in front
+              of public relays.
             </p>
-            <p className="small-text" style={{ margin: 0 }}>
-              Likewise, the privacy posture described here is a practical
-              baseline for the project and its deployment model — it is not
-              a legal opinion or a formal compliance certification.
+          </div>
+          <div className="grid-3 reveal-stagger">
+            {threats.map((t) => (
+              <div key={t.title} className="card card-hover">
+                <div className="icon-tile" style={{ marginBottom: 18, background: "var(--ok-tint)", color: "var(--ok)" }}>
+                  <IconShield />
+                </div>
+                <h3 className="h-4" style={{ marginBottom: 8, fontSize: 18 }}>{t.title}</h3>
+                <p className="body-text" style={{ fontSize: 16 }}>{t.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-alt">
+        <div className="wrap wrap-narrow">
+          <div className="reveal">
+            <span className="eyebrow">Honest by default</span>
+            <h2 className="h-2" style={{ marginBottom: 20 }}>This is an engineering threat model, not an audit badge.</h2>
+            <p className="body-text" style={{ marginBottom: 16 }}>
+              It’s written for deployment and review. It doesn’t replace a
+              formal red-team or an independent audit — and Kant hasn’t had one
+              yet. A production release is gated on a tested public deployment,
+              a backup and restore plan for the relay seed, a secrets rotation
+              plan, a current threat-model review, and an independent security
+              audit or penetration test.
             </p>
+            <p className="body-text" style={{ marginBottom: 28 }}>
+              We’d rather tell you exactly what has been checked than round up.
+              Likewise, this privacy summary is a practical baseline — not a
+              legal opinion or a compliance certification.
+            </p>
+            <div className="cta-row">
+              <a href={`${SITE.githubUrl}/blob/main/docs/security/threat-model.md`} className="link" target="_blank" rel="noreferrer">
+                Read the full threat model <IconChevron />
+              </a>
+              <a href={`${SITE.githubUrl}/blob/main/docs/security/privacy-data-policy.md`} className="link" target="_blank" rel="noreferrer">
+                Data policy <IconChevron />
+              </a>
+            </div>
           </div>
         </div>
       </section>

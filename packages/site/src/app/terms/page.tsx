@@ -6,18 +6,17 @@ export const metadata: Metadata = {
   title: "Terms of Service",
   description:
     "The terms that govern use of Kant's software, protocol, and website, including the liability disclaimer and additional terms for commercial and enterprise use.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function Terms() {
   return (
     <>
-      <section className="section-tight">
+      <section className="page-hero">
         <div className="wrap">
-          <div className="eyebrow" style={{ marginBottom: "var(--s-6)" }}>Legal</div>
-          <h1 className="h-1" style={{ maxWidth: "26ch", marginBottom: "var(--s-6)" }}>
-            Terms of Service
-          </h1>
-          <p className="lede prose-w">
+          <span className="eyebrow">Legal</span>
+          <h1 className="h-1">Terms of Service</h1>
+          <p className="lede" style={{ fontSize: "1.125rem" }}>
             Version 1.0 — Effective 2026-09-22. This is the plain reference for
             what governs your use of Kant. The canonical copy lives in the
             repository at{" "}
@@ -34,14 +33,9 @@ export default function Terms() {
         </div>
       </section>
 
-      <section className="section">
-        <div className="wrap">
-          <div className="banner banner-info" style={{
-            display: "flex", flexDirection: "column", gap: "var(--s-4)",
-            padding: "var(--s-7) var(--s-8)", borderRadius: "var(--r-4)",
-            border: "1px solid var(--line-strong)", background: "var(--g-2)",
-            marginBottom: "var(--s-11)",
-          }}>
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrap" style={{ maxWidth: "calc(720px + var(--gutter) * 2)" }}>
+          <div className="note" style={{ marginBottom: 56 }}>
             <p className="body-text" style={{ margin: 0 }}>
               This is a general legal reference, not a substitute for advice
               from a qualified lawyer in your jurisdiction — see Section 11 in
