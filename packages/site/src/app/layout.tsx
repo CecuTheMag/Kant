@@ -1,92 +1,134 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { TermsBanner } from "@/components/TermsBanner";
-import { SITE } from "@/lib/config";
+import { RELEASE, SITE } from "@/lib/config";
 import "./globals.css";
 
-const plexSans = IBM_Plex_Sans({
+// Apple devices render in the system SF font (listed first in the CSS stack),
+// so Inter is only fetched on platforms that need it — no preload.
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-plex-sans",
+  variable: "--font-inter",
   display: "swap",
+  preload: false,
 });
 
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-mono",
-  display: "swap",
-});
+const title = `${SITE.name} — Private, encrypted messaging with no one in the middle`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
-    template: `%s — ${SITE.name}`,
+    default: title,
+    template: `%s · ${SITE.name}`,
   },
   description: SITE.description,
+  applicationName: SITE.name,
   keywords: [
-    "encrypted messenger",
-    "peer-to-peer messaging",
-    "serverless messenger",
-    "end-to-end encryption",
-    "libp2p",
-    "libsodium",
-    "self-hosted messaging",
     "private messenger",
+    "encrypted messaging app",
+    "secure messaging",
+    "end-to-end encrypted chat",
+    "no phone number messenger",
+    "peer-to-peer messenger",
+    "serverless messenger",
+    "Signal alternative",
+    "WhatsApp alternative",
+    "Telegram alternative",
+    "self-hosted messaging",
   ],
-  alternates: {
-    canonical: SITE.url,
-  },
+  authors: [{ name: "The Kant Project", url: SITE.url }],
+  creator: "The Kant Project",
+  category: "technology",
+  alternates: { canonical: "/" },
   openGraph: {
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title,
     description: SITE.description,
     url: SITE.url,
     siteName: SITE.name,
+    locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE.name} — ${SITE.tagline}`,
+    title,
     description: SITE.description,
   },
-  icons: {
-    icon: "/favicon.png",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: [{ url: "/logo.png" }],
+  },
+  formatDetection: { telephone: false, email: false, address: false },
+  appleWebApp: { title: SITE.name, statusBarStyle: "default" },
 };
 
-const structuredData = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: SITE.name,
-  applicationCategory: "CommunicationApplication",
-  operatingSystem: "Android, Linux, Windows, macOS, Web",
-  description: SITE.description,
-  url: SITE.url,
-  offers: {
-    "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
-  },
-  sameAs: [SITE.githubUrl, SITE.discordUrl],
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
+  colorScheme: "light",
 };
+
+const structuredData = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "The Kant Project",
+    url: SITE.url,
+    logo: `${SITE.url}/logo.png`,
+    sameAs: [SITE.githubUrl, SITE.discordUrl],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE.name,
+    url: SITE.url,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: SITE.name,
+    applicationCategory: "CommunicationApplication",
+    operatingSystem: "Android, Linux",
+    softwareVersion: RELEASE.version,
+    description: SITE.description,
+    url: SITE.url,
+    downloadUrl: `${SITE.url}/download`,
+    image: `${SITE.url}/logo.png`,
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    featureList: [
+      "End-to-end encryption",
+      "No phone number or email required",
+      "Peer-to-peer delivery with no server-side message storage",
+      "Encrypted group chats and file transfer",
+      "Optional onion routing",
+      "Self-hostable relay",
+    ],
+  },
+];
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
+    <html lang="en" className={inter.variable}>
       <body>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <Nav />
-        <main>{children}</main>
+        <main id="main">{children}</main>
         <Footer />
         <ScrollReveal />
         <TermsBanner />

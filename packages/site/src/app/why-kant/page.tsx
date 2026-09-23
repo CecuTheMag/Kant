@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { IconChevron } from "@/components/icons";
 
 export const metadata: Metadata = {
-  title: "Why Kant",
+  title: "Why Kant — compared with Signal, Telegram, WhatsApp and Matrix",
   description:
-    "Kant is not a Telegram or Signal replacement. It's a relay-assisted, self-hostable messaging substrate for teams that want infrastructure control over polished consumer convenience.",
+    "How Kant compares with Signal, Telegram, WhatsApp and Matrix: a peer-to-peer, end-to-end encrypted messenger where no company server holds your messages and teams can run their own network.",
+  alternates: { canonical: "/why-kant" },
 };
 
 const comparisonRows: Array<[string, string, string, string, string, string]> = [
@@ -66,6 +68,7 @@ const altRows = [
 ];
 
 const shouldUse = [
+  "Anyone who wants private conversations without a phone number or a company in the middle",
   "Security-conscious teams that want more control over network topology",
   "Organizations operating across mobile, remote, or NAT-heavy environments",
   "Teams that want a self-hostable relay with measurable operational surfaces",
@@ -73,7 +76,7 @@ const shouldUse = [
 ];
 
 const shouldWait = [
-  "Teams that need a polished consumer feature set immediately, with no interest in infrastructure ownership",
+  "People who need every polished consumer feature today and don't mind a provider in the middle",
   "Organizations looking for a full enterprise admin SaaS bundle before the product matures further",
   "Buyers expecting a completed admin console, policy engine, or managed compliance suite today",
 ];
@@ -81,53 +84,47 @@ const shouldWait = [
 export default function WhyKant() {
   return (
     <>
-      <section className="section-tight">
+      <section className="page-hero">
         <div className="wrap">
-          <div className="eyebrow" style={{ marginBottom: "var(--s-6)" }}>Positioning</div>
-          <h1 className="h-1" style={{ maxWidth: "22ch", marginBottom: "var(--s-6)" }}>
-            Not everyone should use Kant. That&apos;s the point.
-          </h1>
-          <p className="lede prose-w">
-            The messaging market isn&apos;t short on encryption. It&apos;s short on
-            infrastructure you can actually own. Kant doesn&apos;t aim to win the
-            broad consumer market by imitating Telegram or WhatsApp — it aims
-            to win where those products are structurally weak.
+          <span className="eyebrow anim-rise">Why Kant</span>
+          <h1 className="h-1 anim-rise d1">Encryption is common. Ownership isn’t.</h1>
+          <p className="lede anim-rise d2">
+            Plenty of apps encrypt your messages. Far fewer let you keep them
+            off someone else’s servers entirely. That’s the gap Kant is built
+            to fill.
           </p>
         </div>
       </section>
 
-      <section className="wrap section-tight">
-        <div className="prose">
-          <blockquote>
-            <p>
-              &ldquo;Kant is the secure communication layer for teams that do
-              not want to depend on a centralized provider for their message
-              routing and peer connectivity.&rdquo;
-            </p>
-          </blockquote>
+      <section className="section-tight section-alt">
+        <div className="wrap">
+          <p className="statement reveal" style={{ maxWidth: "26ch" }}>
+            “A secure way to talk that doesn’t depend on a big provider to
+            route your messages or connect you to people.”
+          </p>
         </div>
       </section>
 
       <section className="section">
         <div className="wrap">
-          <div className="section-head reveal">
-            <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Competitive comparison</div>
-            <h2 className="h-2">Framed around architecture, not inflated claims.</h2>
-            <p className="body-text" style={{ marginTop: "var(--s-5)" }}>
-              This table is intentionally scoped to product strategy and
-              current implementation — not unimplemented admin tooling.
+          <div className="section-head center reveal">
+            <span className="eyebrow">Side by side</span>
+            <h2 className="h-2">How Kant compares.</h2>
+            <p className="body-text">
+              Framed around how each app is built — not marketing claims, and
+              not features that aren’t shipped yet.
             </p>
           </div>
           <div className="cmp-scroll reveal">
             <table className="cmp-table">
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th className="cmp-kant">Kant</th>
-                  <th>Signal</th>
-                  <th>Telegram</th>
-                  <th>WhatsApp</th>
-                  <th>Matrix</th>
+                  <th scope="col">Category</th>
+                  <th scope="col" className="cmp-kant">Kant</th>
+                  <th scope="col">Signal</th>
+                  <th scope="col">Telegram</th>
+                  <th scope="col">WhatsApp</th>
+                  <th scope="col">Matrix</th>
                 </tr>
               </thead>
               <tbody>
@@ -147,27 +144,27 @@ export default function WhyKant() {
         </div>
       </section>
 
-      <section className="section" style={{ background: "var(--bg-surface)", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
+      <section className="section section-alt">
         <div className="wrap">
-          <div className="section-head reveal">
-            <div className="eyebrow neutral" style={{ marginBottom: "var(--s-6)" }}>Head to head</div>
-            <h2 className="h-2">Why buyers pick the alternative — and why Kant fits better anyway.</h2>
+          <div className="section-head center reveal">
+            <span className="eyebrow">Head to head</span>
+            <h2 className="h-2">Why people pick the others — and where Kant fits better.</h2>
           </div>
           <div className="cmp-scroll reveal">
-            <table className="cmp-table">
+            <table className="cmp-table" style={{ minWidth: 0 }}>
               <thead>
                 <tr>
-                  <th>Alternative</th>
-                  <th>Why buyers pick it</th>
-                  <th className="cmp-kant">Why Kant is the better fit</th>
+                  <th scope="col">Alternative</th>
+                  <th scope="col">Why people pick it</th>
+                  <th scope="col" className="cmp-kant">Where Kant fits better</th>
                 </tr>
               </thead>
               <tbody>
                 {altRows.map((row) => (
                   <tr key={row[0]}>
                     <th scope="row">{row[0]}</th>
-                    <td data-label="Why buyers pick it">{row[1]}</td>
-                    <td className="cmp-kant" data-label="Why Kant is the better fit">{row[2]}</td>
+                    <td data-label="Why people pick it">{row[1]}</td>
+                    <td className="cmp-kant" data-label="Where Kant fits better">{row[2]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -178,9 +175,9 @@ export default function WhyKant() {
 
       <section className="section">
         <div className="wrap">
-          <div className="grid-2 reveal">
-            <div>
-              <h2 className="h-2" style={{ marginBottom: "var(--s-7)" }}>Who should choose Kant</h2>
+          <div className="grid-2 tight reveal-stagger">
+            <div className="card">
+              <h2 className="h-3" style={{ marginBottom: 22 }}>Kant is a great fit for</h2>
               <ul className="fit-list">
                 {shouldUse.map((item) => (
                   <li key={item} className="fit-item">
@@ -190,31 +187,21 @@ export default function WhyKant() {
                 ))}
               </ul>
             </div>
-            <div>
-              <h2 className="h-2" style={{ marginBottom: "var(--s-7)" }}>Who should wait</h2>
+            <div className="card">
+              <h2 className="h-3" style={{ marginBottom: 22 }}>You might want to wait if you’re</h2>
               <ul className="fit-list">
                 {shouldWait.map((item) => (
                   <li key={item} className="fit-item">
-                    <span className="fit-mark no">✕</span>
+                    <span className="fit-mark no">–</span>
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="section-tight">
-        <div className="wrap">
-          <div className="card" style={{ textAlign: "center" }}>
-            <p className="body-text" style={{ marginBottom: "var(--s-6)" }}>
-              Want the technical detail behind these claims?
-            </p>
-            <div style={{ display: "flex", gap: "var(--s-5)", justifyContent: "center", flexWrap: "wrap" }}>
-              <Link href="/how-it-works" className="btn btn-ghost btn-sm">How it works</Link>
-              <Link href="/security" className="btn btn-ghost btn-sm">Security &amp; privacy</Link>
-            </div>
+          <div className="cta-row center" style={{ marginTop: 48 }}>
+            <Link href="/how-it-works" className="link">How it works <IconChevron /></Link>
+            <Link href="/security" className="link">Privacy & security <IconChevron /></Link>
           </div>
         </div>
       </section>
