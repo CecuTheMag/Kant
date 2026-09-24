@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { readFileSync } from 'fs';
+
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string };
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
@@ -20,6 +23,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     global: 'globalThis',
+    __KANT_VERSION__: JSON.stringify(pkg.version),
     'import.meta.env.VITE_RELAY_URL': JSON.stringify(process.env.VITE_RELAY_URL ?? ''),
     'import.meta.env.VITE_RELAY_HTTP_PORT': JSON.stringify(process.env.VITE_RELAY_HTTP_PORT ?? '3001'),
   }

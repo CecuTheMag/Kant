@@ -1105,6 +1105,13 @@ export function useKant() {
               if (senderHex) void persistRatchet(senderHex);
               let isSessionBootstrap = false;
               try { isSessionBootstrap = JSON.parse(decrypted)?.type === 'kant-session-ready'; } catch { /* normal user text */ }
+              // Messages from a blocked contact are still acknowledged (so the
+              // sender's retries stop) but never shown, stored or notified.
+              let hideFromUser = isSessionBootstrap;
+              if (!hideFromUser && senderHex && (await getContact(senderHex))?.blocked) {
+                hideFromUser = true;
+                addLog(`🚫 Dropped message from blocked contact ${senderHex.slice(0, 12)}…`);
+              }
               // The bootstrap advances the receiver chain but is protocol
               // control traffic, never a user-visible/persisted message.
               // "Is this conversation the one on screen right now?" — which is a
@@ -1116,7 +1123,7 @@ export function useKant() {
               const isOpenConversation = !senderHex || senderHex === selectedContactRef.current?.publicKeyHex;
               const userIsLooking = isOpenConversation && !appIsHidden() && conversationVisibleRef.current;
 
-              if (!isSessionBootstrap && isOpenConversation) {
+              if (!hideFromUser && isOpenConversation) {
                 const fgId = messageId || generateId();
                 addMessage('them', decrypted, 'delivered', fgId, undefined, senderHex, incomingReplyTo);
                 // On screen and being read — nothing further to announce.
@@ -1131,7 +1138,7 @@ export function useKant() {
                   void incrementUnread(senderHex);
                   await notifyIfAway(senderHex, decrypted);
                 }
-              } else if (!isSessionBootstrap) {
+              } else if (!hideFromUser) {
                 // Someone can message us before we have ever added them — that is
                 // the whole point of publishing a key. Without a contact record
                 // the thread below is orphaned: the message is decrypted and
@@ -1140,7 +1147,7 @@ export function useKant() {
                 // so an existing nickname/trust state is preserved.
                 const known = await getContact(senderHex);
                 if (!known) {
-                  await addContact(senderHex);
+                  await addContact(senderHex, undefined, undefined, { request: true });
                   addLog(`👤 new contact from inbound message: ${senderHex.slice(0, 12)}…`);
                   setContacts(await getContacts());
                 }
@@ -1157,7 +1164,7 @@ export function useKant() {
                 await notifyIfAway(senderHex, decrypted);
               }
               if (identityRef.current && senderHex) {
-                if (!isSessionBootstrap) {
+                if (!hideFromUser) {
                   await saveMessage(senderHex, identityRef.current.derivedKey, {
                     id: messageId || generateId(), fromMe: false, text: decrypted,
                     timestamp: Date.now(), status: 'delivered', replyTo: incomingReplyTo,
@@ -1174,7 +1181,7 @@ export function useKant() {
                   acknowledge();
                 }
                 // Surface to a connected AI agent (desktop MCP bridge; no-op on web).
-                if (!isSessionBootstrap) {
+                if (!hideFromUser) {
                   (window as any).kantDesktop?.ai?.notify({
                     type: 'message', conversationType: 'dm',
                     fromPubkeyHex: senderHex, text: decrypted, timestamp: Date.now(),
@@ -1938,10 +1945,27 @@ export function useKant() {
   // ── Contacts ──────────────────────────────────────────────────────────────
 
   async function addNewContact(hex: string, nick?: string, circuitAddr?: string) {
-    await addContact(hex, nick, circuitAddr);
+    // Adding someone yourself is consent: it accepts a pending request and
+    // lifts a block.
+    await addContact(hex, nick, circuitAddr, { request: false, blocked: false });
     const all = await getContacts();
     setContacts(all);
     if (circuitAddr) contactAddrRef.current.set(hex, circuitAddr);
+  }
+
+  async function renameContact(hex: string, nick: string) {
+    await addContact(hex, nick.trim() || undefined);
+    setContacts(await getContacts());
+  }
+
+  async function acceptContact(hex: string, nick?: string) {
+    await addContact(hex, nick?.trim() || undefined, undefined, { request: false, blocked: false });
+    setContacts(await getContacts());
+  }
+
+  async function blockContact(hex: string, blocked = true) {
+    await addContact(hex, undefined, undefined, { blocked, request: false });
+    setContacts(await getContacts());
   }
 
   async function removeContact(contact: Contact) {
@@ -2216,7 +2240,7 @@ export function useKant() {
     onionEnabled, toggleOnion,
     checkIdentity, configureRelay, setup, unlock, deleteIdentity,
     startNode, disconnectNode, initSession, sendMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment,
-    addNewContact, removeContact, selectContact,
+    addNewContact, renameContact, acceptContact, blockContact, removeContact, selectContact,
     setConversationVisible,
     setMessages,
     _nodeRef: nodeRef,

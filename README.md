@@ -99,6 +99,17 @@ Every client needs a relay to register with and discover peers through — the r
 
 See [Production deployment](#production-deployment) below for the full environment variable reference (`RELAY_PUBLIC_HOST`, `RELAY_HTTP_BIND`, etc.) and the local/LAN compose file.
 
+### Shipping builds with a default network
+
+A release built **without** a default relay opens on a "Connect to a network" step, which asks people for a relay address or a friend's invite link. For a public release, build the clients with your relay baked in so people go straight from install → password → chatting:
+
+```bash
+VITE_RELAY_URL=https://relay.kant.network pnpm --dir packages/app run build:android
+VITE_RELAY_URL=https://relay.kant.network pnpm --dir packages/desktop run build:linux
+```
+
+Anyone can still switch relays later in **Settings → Network → Relay**. Invite links include the sharer's relay (unless it's a loopback address), so a friend without a default network is set up automatically when they paste one.
+
 ---
 
 ## Commercial model and corporate bundle
@@ -255,13 +266,16 @@ The open-source implementation is in [packages/push-proxy/src/index.ts](packages
 
 ### Client application
 
-The app is a React + Vite interface that connects to a relay, starts a libp2p node, and provides user-facing messaging. It supports local relay configuration and remote relay URLs, with runtime selection of the active relay endpoint.
+The app is a React + Vite interface (also packaged for Android via Capacitor and desktop via Electron). It follows the device's light/dark setting and uses the platform's own system font.
 
 Key entry points:
 
-- [packages/app/src/App.tsx](packages/app/src/App.tsx)
-- [packages/app/src/hooks/useKant.ts](packages/app/src/hooks/useKant.ts)
-- [packages/app/src/components/RelaySetupScreen.tsx](packages/app/src/components/RelaySetupScreen.tsx)
+- [packages/app/src/App.tsx](packages/app/src/App.tsx) — routes between onboarding, unlock and the app
+- [packages/app/src/ui/](packages/app/src/ui/) — every screen: onboarding, chat list, conversation, settings and sheets
+- [packages/app/src/ui/core/realkant.tsx](packages/app/src/ui/core/realkant.tsx) — the store the UI talks to, backed by `useKant` + `useGroups`
+- [packages/app/src/hooks/useKant.ts](packages/app/src/hooks/useKant.ts) — identity, sessions, transport and message handling
+
+People add each other by scanning a QR code or sharing an invite link (`https://kant.network/add#k=<key>&n=<name>&r=<relay>`). The part after `#` never leaves the device — the website's `/add` page reads it in the browser. Messages from someone you haven't added arrive as **message requests** you can accept or block.
 
 ---
 
