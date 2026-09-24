@@ -213,10 +213,10 @@ export default function Home() {
             </li>
             <li className="step">
               <span className="step-num">2</span>
-              <h3>Share your key</h3>
-              <p>Kant gives you a personal key — like a phone number only you control. Send it to a friend any way you like.</p>
+              <h3>Share your code</h3>
+              <p>Show your QR code or send your invite link. It works like a phone number that only you control.</p>
               <div className="step-visual" aria-hidden="true">
-                <div className="keychip"><IconKey size={16} /><span>b7e4 19c2 5fa0 d31e 8c07 42ab…</span></div>
+                <div className="keychip"><IconKey size={16} /><span>kant.network/add#k=b7e4…</span></div>
               </div>
             </li>
             <li className="step">

@@ -24,6 +24,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Invite links: kant://add#k=<key>&n=<name> opens the Add contact sheet
+                 (the kant.network/add page offers an "Open in Kant" button). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="kant" android:host="add" />
+            </intent-filter>
+
         </activity>
 
         <!-- FCM wake-up service (Signal-style: empty payload, no message content in FCM) -->
@@ -71,6 +80,10 @@
          from Android 14 and must match the service's foregroundServiceType. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Scanning a friend's QR code to add them. Optional: devices without a
+         camera can still paste an invite link. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 </manifest>

@@ -21,6 +21,11 @@ export interface Contact {
   previousKeyHex?: string;
   /** When the ceremony was completed (Unix ms), so the UI can date it. */
   verifiedAt?: number;
+  /** Created by an inbound message from someone we never added. The UI shows
+   *  these as message requests until the user accepts or blocks them. */
+  request?: boolean;
+  /** Messages from blocked contacts are dropped on arrival. */
+  blocked?: boolean;
 }
 
 /** Normalize a stored record: backfill id + trust for legacy rows (no backfill to verified). */
@@ -48,8 +53,14 @@ export async function setContactTrust(publicKeyHex: string, trust: Contact['trus
 
 const STORE = 'contacts';
 
-/** Add or update a contact */
-export async function addContact(publicKeyHex: string, nickname?: string, circuitAddr?: string): Promise<void> {
+/** Add or update a contact.
+ *  `flags` sets the request/blocked state; omitted flags keep their stored value. */
+export async function addContact(
+  publicKeyHex: string,
+  nickname?: string,
+  circuitAddr?: string,
+  flags?: { request?: boolean; blocked?: boolean },
+): Promise<void> {
   if (!/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) throw new Error('Invalid public key hex');
   const db       = await openDB();
   const existing = await dbGetContact<Contact>(db, STORE, publicKeyHex);
@@ -59,6 +70,8 @@ export async function addContact(publicKeyHex: string, nickname?: string, circui
     nickname:       nickname ?? existing?.nickname,
     addedAt:        existing?.addedAt ?? Date.now(),
     lastCircuitAddr: circuitAddr ?? existing?.lastCircuitAddr,
+    request:        flags?.request ?? existing?.request,
+    blocked:        flags?.blocked ?? existing?.blocked,
   });
   db.close();
 }

@@ -85,8 +85,9 @@ See `tests/lab/README.md` for the Docker-compose based workflow (`tests/lab/scri
 
 ### App layer (`packages/app`)
 - `useKant.ts` (`packages/app/src/hooks/useKant.ts`) is the central state hook — screen/navigation state, node lifecycle, contacts, per-contact message threads, unread counts — and is the main integration point between the UI and `@kant/core`. It's large; when touching messaging/contact/group flows, start there.
-- `App.tsx` composes screens (`relay` setup → `setup`/`unlock` identity → `app`) and components in `src/components/` (ChatArea, GroupChatArea, ContactList, GroupList, Sidebar, RelaySettings/RelaySetupScreen, DebugLog, AiSettings).
-- `src/design/` holds a separate design-system exploration (components/core/directions/shell) distinct from `src/components/`.
+- `App.tsx` routes between onboarding (`ui/Onboarding.tsx`: welcome + terms → network step only when no `VITE_RELAY_URL` was baked in → create password), unlock, and the signed-in app (`ui/KantApp.tsx`).
+- All screens live in `src/ui/` (Apple-style design system in `ui/kant.css`, light/dark following the OS). The UI talks only to the `Store` interface in `ui/core/store.tsx`; `ui/core/realkant.tsx` implements it on top of `useKant` + `useGroups`. Add new backend capabilities there rather than calling the hooks from components.
+- Contacts created by an inbound message from an unknown sender are flagged `request` (shown as message requests); `blocked` contacts have their messages dropped on arrival (see `hideFromUser` in `useKant.ts`).
 - Relay URL resolution: `VITE_RELAY_URL` (preferred) or legacy `VITE_RELAY_HTTP_PORT`, see `packages/app/.env.example`.
 
 ### Licensing / feature gating
