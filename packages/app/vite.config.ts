@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string };
+
+// The Android build only applies the Firebase plugin when google-services.json
+// is present (see android/app/build.gradle). Without it, calling FCM register()
+// throws natively and kills the app, so the web layer must know not to try.
+const hasFirebaseConfig = existsSync(path.resolve(__dirname, 'android/app/google-services.json'));
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
@@ -24,6 +29,7 @@ export default defineConfig(({ mode }) => ({
   define: {
     global: 'globalThis',
     __KANT_VERSION__: JSON.stringify(pkg.version),
+    __KANT_FCM__: JSON.stringify(hasFirebaseConfig),
     'import.meta.env.VITE_RELAY_URL': JSON.stringify(process.env.VITE_RELAY_URL ?? ''),
     'import.meta.env.VITE_RELAY_HTTP_PORT': JSON.stringify(process.env.VITE_RELAY_HTTP_PORT ?? '3001'),
   }
