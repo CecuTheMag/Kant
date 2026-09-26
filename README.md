@@ -6,7 +6,7 @@
   <p>
     <a href="https://kant.network"><img src="https://img.shields.io/badge/Website-kant.network-4f8ef7?style=flat-square" alt="Website"></a>
     <a href="https://discord.gg/kdn2tAPtRX"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Dual--Use-22d3ee?style=flat-square" alt="License"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-22d3ee?style=flat-square" alt="License: AGPL-3.0"></a>
     <a href="docs/security"><img src="https://img.shields.io/badge/Security-Threat%20Model-2fbf71?style=flat-square" alt="Security"></a>
   </p>
   <p>
@@ -28,7 +28,7 @@
 
 Kant is a secure peer-to-peer messaging platform built around libp2p, libsodium, and a stateless circuit relay bootstrap node. The repository is organized as a monorepo with a web client, a relay runtime, and a shared core library.
 
-This project is the working product core for encrypted messaging and relay-assisted peer connectivity. The free community build is intended for personal, academic, journalism, and security research use. The admin plane, governance tooling, and broader enterprise bundle are reserved for commercial/corporate use under the project license.
+This project is the working product core for encrypted messaging and relay-assisted peer connectivity. The messenger, core library, relay, desktop and CLI clients are free and open source under the [GNU AGPL-3.0](LICENSE). The admin plane, governance tooling, and broader enterprise bundle (`packages/admin`) are a separately licensed corporate layer.
 
 > 💬 **The project happens in the open.** Protocol decisions, relay operations, and the roadmap are discussed on [Discord](https://discord.gg/kdn2tAPtRX) — not in a support ticket queue. Come argue about the ratchet with us.
 
@@ -114,10 +114,10 @@ Anyone can still switch relays later in **Settings → Network → Relay**. Invi
 
 ## Commercial model and corporate bundle
 
-The project license distinguishes clearly between free community use and paid commercial use:
+Kant is open core:
 
-- community / non-commercial use is free and intended for personal, academic, research, and similar use cases
-- commercial use requires a written commercial license
+- the messenger, `@kant/core`, the relay, the desktop and CLI clients and the push proxy are open source under the AGPL-3.0 — anyone, including companies, can use, modify and self-host them for free
+- organisations that can't meet the AGPL's obligations (for example, shipping a modified Kant without publishing the changes) can buy a commercial licence instead
 - the paid corporate bundle is designed for organisational deployments and includes the admin-focused features and governance controls that are not part of the free community build
 
 This means the admin features are not a general consumer feature. They are part of the corporate bundle and are meant for enterprise deployment, internal control, auditability, and managed operational governance.
@@ -485,6 +485,21 @@ Kant doesn't run a helpdesk. The Discord is where the actual work happens — pr
 
 ## License
 
-Kant is source-available under a dual-use licence: free for personal,
-academic, journalism, and security research use; commercial use requires a
-separate commercial licence. See [LICENSE](LICENSE) for full terms.
+Kant is open core:
+
+- **Everything in this repository except `packages/admin`** is licensed under
+  the [GNU Affero General Public License v3.0](LICENSE) (`AGPL-3.0-only`).
+  You can use, study, modify and share it. If you distribute a modified version,
+  or run one as a network service (for example, a modified relay), you must
+  make your source available under the same licence.
+- **`packages/admin`** (the admin plane and corporate governance bundle) is
+  under the [Kant Dual-Use Licence](packages/admin/LICENSE).
+- **Commercial licences** that release you from the AGPL's obligations are
+  available from [licensing@kant.network](mailto:licensing@kant.network).
+
+The name "Kant" and the Kant logo are not covered by either licence. Forks are
+welcome, but please give them a different name so people can tell them apart.
+
+By contributing, you agree that your contribution is licensed under the
+AGPL-3.0, and that the Kant Project may also distribute it under the commercial
+licence, so that dual licensing stays possible.

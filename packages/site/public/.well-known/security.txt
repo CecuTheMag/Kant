@@ -1,0 +1,5 @@
+Contact: https://github.com/CecuTheMag/Kant/security/advisories/new
+Expires: 2027-09-26T00:00:00.000Z
+Policy: https://github.com/CecuTheMag/Kant/blob/main/SECURITY.md
+Preferred-Languages: en
+Canonical: https://kant.network/.well-known/security.txt

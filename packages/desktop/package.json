@@ -2,6 +2,7 @@
   "name": "kant-desktop",
   "version": "0.3.0",
   "description": "Kant — desktop app for Linux",
+  "license": "AGPL-3.0-only",
   "author": {
     "name": "Kant",
     "email": "dev@kant.app"

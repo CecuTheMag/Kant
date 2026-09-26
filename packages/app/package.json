@@ -39,6 +39,6 @@
   "main": "index.js",
   "keywords": [],
   "author": "",
-  "license": "SEE LICENSE IN ../../LICENSE",
+  "license": "AGPL-3.0-only",
   "description": "Kant — encrypted P2P messenger"
 }

@@ -84,7 +84,7 @@ export function Footer() {
           </nav>
         </div>
         <div className="footer-bottom">
-          <span>Copyright © {new Date().getFullYear()} {SITE.name}. Free for personal, academic and research use.</span>
+          <span>Copyright © {new Date().getFullYear()} {SITE.name}. Open source under the AGPL-3.0.</span>
           <span>Cookie-free, anonymous page analytics only.</span>
         </div>
       </div>

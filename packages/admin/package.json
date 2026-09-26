@@ -2,6 +2,7 @@
   "name": "@kant/admin",
   "version": "0.0.1",
   "description": "Kant Enterprise Admin Node (Phase 3)",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

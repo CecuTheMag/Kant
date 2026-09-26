@@ -1,0 +1,315 @@
+================================================================================
+  KANT DUAL-USE LICENCE
+  Version 1.0
+================================================================================
+
+Copyright (c) 2026 The Kant Project
+All rights reserved.
+
+SCOPE: This licence applies only to the contents of the packages/admin
+directory (the admin plane and corporate governance bundle). The rest of the
+Kant repository is licensed under the GNU Affero General Public License,
+version 3 — see the LICENSE file at the repository root.
+
+This licence governs the use, copying, modification, and distribution of this
+software and its associated documentation files (the "Software"). By using,
+copying, modifying, or distributing the Software, you agree to the terms of
+this licence. If you do not agree, do not use the Software.
+
+
+================================================================================
+  PART I — FREE LICENCE (NON-COMMERCIAL USE)
+================================================================================
+
+Permission is hereby granted, free of charge, to any person or entity that
+qualifies under the Non-Commercial Use definition below, to use, copy, modify,
+merge, publish, and distribute the Software, subject to the following conditions:
+
+--------------------------------------------------------------------------------
+  1. DEFINITION OF NON-COMMERCIAL USE
+--------------------------------------------------------------------------------
+
+The following uses are considered Non-Commercial and are permitted at no charge:
+
+  (a) PERSONAL USE
+      Use by a natural person for private, personal purposes, where no
+      commercial activity is involved and no revenue is generated through
+      or with the Software.
+
+  (b) ACADEMIC AND RESEARCH USE
+      Use by students, researchers, faculty, or staff at an accredited
+      educational institution or non-commercial research organisation, for the
+      purposes of education, academic research, or scholarly publication.
+      This includes use in coursework, dissertations, published papers, and
+      non-commercial research projects.
+
+  (c) JOURNALISM AND PRESS
+      Use by individual journalists, freelance reporters, and press
+      organisations for the purpose of newsgathering, source protection,
+      and the publication of journalism in the public interest, provided
+      that the primary purpose of the organisation is the publication of
+      news or editorial content and not the sale of software or services
+      derived from the Software.
+
+  (d) SECURITY RESEARCH
+      Use for the purpose of identifying, analysing, and responsibly
+      disclosing security vulnerabilities in the Software itself, provided
+      that any findings are disclosed to the copyright holder before or
+      concurrent with any public disclosure.
+
+  Any use that does not fall within (a), (b), (c), or (d) above is
+  Commercial Use and requires a Commercial Licence as set out in Part II.
+
+--------------------------------------------------------------------------------
+  2. CONDITIONS FOR NON-COMMERCIAL USE
+--------------------------------------------------------------------------------
+
+All Non-Commercial use is subject to the following conditions:
+
+  (a) ATTRIBUTION
+      The above copyright notice and this licence must be included in all
+      copies or substantial portions of the Software, whether in source
+      or binary form.
+
+  (b) PRESERVATION OF NOTICES
+      You may not remove, obscure, or alter any copyright notice, licence
+      notice, or attribution notice present in the Software.
+
+  (c) NO MISREPRESENTATION
+      You may not represent modified versions of the Software as the
+      original, unmodified Software. If you distribute a modified version,
+      you must clearly indicate that changes have been made.
+
+  (d) SHARE-ALIKE FOR DISTRIBUTIONS
+      If you distribute the Software or any derivative work under this
+      Non-Commercial Licence, you must do so under the same licence terms
+      as set out in this Part I. You may not apply additional restrictions
+      that would prevent recipients from exercising the rights granted here.
+
+  (e) NO SUBLICENSING
+      You may not sublicence the Software to any third party. Third parties
+      who wish to use the Software must obtain their own licence directly
+      under these terms or under a Commercial Licence.
+
+  (f) INTEGRITY OF SECURITY FEATURES
+      You may not modify, disable, remove, or circumvent any encryption,
+      authentication, or security mechanism present in the Software and
+      then distribute that modified version to third parties.
+
+
+================================================================================
+  PART II — COMMERCIAL LICENCE
+================================================================================
+
+--------------------------------------------------------------------------------
+  3. DEFINITION OF COMMERCIAL USE
+--------------------------------------------------------------------------------
+
+Commercial Use means any use of the Software that does not qualify as
+Non-Commercial Use under Part I, including but not limited to:
+
+  (a) Use by a for-profit company, partnership, sole trader, or other
+      commercial entity, regardless of company size or annual revenue.
+
+  (b) Internal business communication, operations, or tooling at any
+      commercial organisation.
+
+  (c) Integration of the Software, in whole or in part, into a product
+      or service that is sold, licensed, or offered for a fee.
+
+  (d) Use by a commercial entity to provide managed services, hosting,
+      or any service offering to third parties that relies on or includes
+      the Software.
+
+  (e) Use by a contractor, consultant, or freelancer on behalf of a
+      commercial client.
+
+  For the avoidance of doubt: an organisation is commercial if it operates
+  with the primary purpose of generating profit, regardless of whether it
+  is currently profitable.
+
+--------------------------------------------------------------------------------
+  4. REQUIREMENT FOR COMMERCIAL LICENCE
+--------------------------------------------------------------------------------
+
+Any Commercial Use of the Software requires a separate, written Commercial
+Licence Agreement obtained directly from the copyright holder.
+
+  (a) You must obtain a Commercial Licence BEFORE beginning any Commercial Use.
+
+  (b) Use of the Software for Commercial purposes without a valid Commercial
+      Licence is a material breach of this licence and an infringement of
+      the copyright holder's rights.
+
+  (c) To obtain a Commercial Licence, contact the copyright holder at the
+      address or email set out at the end of this document.
+
+  (d) Commercial Licences are granted on a per-organisation basis and are
+      non-transferable without written consent from the copyright holder.
+
+--------------------------------------------------------------------------------
+  5. COMMERCIAL LICENCE — GENERAL TERMS
+--------------------------------------------------------------------------------
+
+Commercial Licences are issued on the following general terms unless otherwise
+agreed in writing:
+
+  (a) SCOPE
+      A Commercial Licence grants the licensee the right to use the Software
+      within their organisation for internal business communication and
+      operations, in accordance with the specific terms agreed in the
+      Commercial Licence Agreement.
+
+  (b) MODIFICATIONS
+      Commercial licensees may modify the Software for internal use. Any
+      modifications that are distributed externally require written consent
+      from the copyright holder.
+
+  (c) NO RESALE WITHOUT AGREEMENT
+      A Commercial Licence does not grant the right to resell, sublicence,
+      or redistribute the Software or derivative works to third parties
+      without a separate written reseller or OEM agreement.
+
+  (d) AUDIT RIGHT
+      The copyright holder reserves the right, on reasonable written notice,
+      to audit the licensee's use of the Software to verify compliance with
+      the Commercial Licence terms.
+
+  (e) TERMINATION
+      A Commercial Licence may be terminated by the copyright holder with
+      written notice if the licensee materially breaches the licence terms
+      and fails to remedy the breach within thirty (30) days of written
+      notice.
+
+
+================================================================================
+  PART III — GENERAL TERMS (ALL USERS)
+================================================================================
+
+--------------------------------------------------------------------------------
+  6. CONTRIBUTIONS
+--------------------------------------------------------------------------------
+
+  (a) If you submit a contribution (code, documentation, or other material)
+      to the Software — for example via pull request, patch, or direct
+      submission — you grant the copyright holder a perpetual, worldwide,
+      irrevocable, royalty-free licence to use, reproduce, modify, sublicence,
+      and distribute your contribution as part of the Software under any
+      licence terms the copyright holder chooses, including future versions
+      of this licence and Commercial Licence agreements.
+
+  (b) You represent that you have the right to grant the licence in (a) and
+      that your contribution does not infringe any third-party intellectual
+      property rights.
+
+  (c) The copyright holder is not obligated to include any contribution.
+
+--------------------------------------------------------------------------------
+  7. PATENTS
+--------------------------------------------------------------------------------
+
+  Each contributor grants you a non-exclusive, worldwide, royalty-free patent
+  licence under any patent claims they hold that are necessarily infringed by
+  their contribution to the Software, to make, use, and distribute that
+  contribution as permitted by this licence. This licence does not extend to
+  any claims infringed only by combination of the contribution with other
+  software or hardware not part of the Software.
+
+  If you initiate patent litigation against any party alleging that the
+  Software infringes a patent, your rights under this licence terminate
+  automatically on the date such litigation is filed.
+
+--------------------------------------------------------------------------------
+  8. TRADEMARKS
+--------------------------------------------------------------------------------
+
+  This licence does not grant permission to use the project name, logo,
+  or trademarks of the copyright holder. You may not use the project name
+  or marks in a way that implies endorsement of your product or service
+  by the copyright holder without prior written permission.
+
+--------------------------------------------------------------------------------
+  9. DISCLAIMER OF WARRANTIES
+--------------------------------------------------------------------------------
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY
+  CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT,
+  OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR
+  THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+  IN PARTICULAR: THE COPYRIGHT HOLDER MAKES NO WARRANTY THAT THE SOFTWARE
+  IS FREE FROM SECURITY VULNERABILITIES. YOU ARE RESPONSIBLE FOR EVALUATING
+  THE SUITABILITY OF THE SOFTWARE FOR YOUR USE CASE, INCLUDING ANY SECURITY
+  OR CRYPTOGRAPHIC REQUIREMENTS.
+
+--------------------------------------------------------------------------------
+  10. LIMITATION OF LIABILITY
+--------------------------------------------------------------------------------
+
+  TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+  COPYRIGHT HOLDER BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+  OR CONSEQUENTIAL DAMAGES (INCLUDING BUT NOT LIMITED TO LOSS OF DATA, LOSS
+  OF REVENUE, OR BUSINESS INTERRUPTION) ARISING OUT OF THE USE OR INABILITY
+  TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+  THE TOTAL CUMULATIVE LIABILITY OF THE COPYRIGHT HOLDER TO ANY PARTY FOR ALL
+  CLAIMS ARISING UNDER OR RELATED TO THIS LICENCE SHALL NOT EXCEED THE GREATER
+  OF (A) THE AMOUNT PAID BY THAT PARTY FOR A COMMERCIAL LICENCE IN THE TWELVE
+  MONTHS PRECEDING THE CLAIM, OR (B) ONE HUNDRED EUROS (EUR 100).
+
+--------------------------------------------------------------------------------
+  11. GOVERNING LAW AND JURISDICTION
+--------------------------------------------------------------------------------
+
+  This licence shall be governed by and construed in accordance with the
+  laws of Bulgaria, without regard to its conflict of law provisions.
+
+  Any dispute arising out of or in connection with this licence shall be
+  subject to the exclusive jurisdiction of the courts of Bulgaria.
+
+--------------------------------------------------------------------------------
+  12. SEVERABILITY
+--------------------------------------------------------------------------------
+
+  If any provision of this licence is held to be invalid, illegal, or
+  unenforceable, that provision shall be modified to the minimum extent
+  necessary to make it enforceable, and the remaining provisions shall
+  continue in full force and effect.
+
+--------------------------------------------------------------------------------
+  13. ENTIRE AGREEMENT
+--------------------------------------------------------------------------------
+
+  This licence, together with any Commercial Licence Agreement entered into
+  separately, constitutes the entire agreement between you and the copyright
+  holder with respect to the Software, and supersedes all prior agreements,
+  representations, and understandings.
+
+--------------------------------------------------------------------------------
+  14. FUTURE VERSIONS OF THIS LICENCE
+--------------------------------------------------------------------------------
+
+  The copyright holder may publish revised versions of this licence from time
+  to time. Each version will be given a distinguishing version number.
+  You may use the Software under the terms of the version of the licence
+  under which you originally received it, or under any later version published
+  by the copyright holder.
+
+--------------------------------------------------------------------------------
+  15. CONTACT FOR COMMERCIAL LICENSING
+--------------------------------------------------------------------------------
+
+  To obtain a Commercial Licence, report a licence compliance issue, or ask
+  any question regarding permitted use, contact:
+
+      The Kant Project
+      licensing@kant.network
+      https://kant.network
+
+================================================================================
+  END OF LICENCE
+================================================================================
