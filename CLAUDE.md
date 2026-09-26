@@ -91,7 +91,7 @@ See `tests/lab/README.md` for the Docker-compose based workflow (`tests/lab/scri
 - Relay URL resolution: `VITE_RELAY_URL` (preferred) or legacy `VITE_RELAY_HTTP_PORT`, see `packages/app/.env.example`.
 
 ### Licensing / feature gating
-`packages/core/src/license.ts` defines `COMMUNITY_FEATURES` / `PROFESSIONAL_FEATURES` / `ENTERPRISE_FEATURES` and gating helpers (`isFeatureAvailable`, `getLicenseTier`, etc.). The repo's free/community build vs. paid "corporate bundle" (admin, governance, audit tooling) split described in `README.md` and `LICENSE` is implemented through this module — the `packages/admin` package is intentionally a placeholder that only ships in the paid bundle.
+`packages/core/src/license.ts` defines `COMMUNITY_FEATURES` / `PROFESSIONAL_FEATURES` / `ENTERPRISE_FEATURES` and gating helpers (`isFeatureAvailable`, `getLicenseTier`, etc.). The repo is open core: everything except `packages/admin` is `AGPL-3.0-only` (root `LICENSE`); `packages/admin` (the paid "corporate bundle": admin, governance, audit tooling) is under the Kant Dual-Use Licence in `packages/admin/LICENSE` and is intentionally a placeholder here. Since core is AGPL, these gates are a product boundary, not a legal one.
 
 ## Deployment
 Two deployment patterns, both centered on `packages/relay` sitting behind a TLS terminator (Caddy config at repo root: `Caddyfile`, `Dockerfile.caddy`):

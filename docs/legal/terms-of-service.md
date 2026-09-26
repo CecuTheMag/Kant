@@ -1,12 +1,12 @@
 # Kant Terms of Service
 
-Version 1.0 — Effective 2026-09-22
+Version 1.1 — Effective 2026-09-26
 
 This document is a general legal reference prepared for release readiness. It is not a substitute for advice from a qualified lawyer in your jurisdiction, and the Kant Project makes no representation that it is complete or sufficient for any particular regulatory regime. If you operate Kant commercially or at scale, have it reviewed by your own counsel before relying on it — Section 11 in particular.
 
 These Terms of Service ("**Terms**") govern your access to and use of the Kant software, protocol, client applications, documentation, website, and any relay infrastructure operated by the Kant Project (together, the "**Software**" or the "**Service**"). By downloading, installing, accessing, or using the Software, or by clicking "I Agree" on a consent screen presented by the Software or the website, you agree to be bound by these Terms. If you do not agree, do not use the Software.
 
-These Terms incorporate by reference the [Kant Dual-Use Licence](../../LICENSE) (the "**Licence**"), which governs your rights to use, copy, modify, and distribute the Software's source code, and the [Privacy and Data-Residency Policy](../security/privacy-data-policy.md). Where these Terms and the Licence conflict on matters of copyright and permitted use of the code, the Licence controls; on all other matters — including liability, acceptable use, and your relationship with the Kant Project as a user of the Software — these Terms control.
+These Terms incorporate by reference the licences the Software is published under (together, the "**Licence**"): the [GNU Affero General Public License v3.0](../../LICENSE) for everything except the admin bundle, and the [Kant Dual-Use Licence](../../packages/admin/LICENSE) for the admin bundle (`packages/admin`). The Licence governs your rights to use, copy, modify, and distribute the Software's source code, and the [Privacy and Data-Residency Policy](../security/privacy-data-policy.md). Where these Terms and the Licence conflict on matters of copyright and permitted use of the code, the Licence controls; on all other matters — including liability, acceptable use, and your relationship with the Kant Project as a user of the Software — these Terms control.
 
 ---
 
@@ -39,10 +39,13 @@ You represent that:
 
 ## 4. Licence to Use the Software
 
-Your rights to use, copy, modify, and distribute the Software's source code and binaries are governed exclusively by the [Kant Dual-Use Licence](../../LICENSE):
+Your rights to use, copy, modify, and distribute the Software's source code and binaries are governed exclusively by the Licence:
 
-- **Non-commercial use** (personal, academic/research, journalism, and security research, as defined in the Licence) is free under Part I.
-- **Commercial use** of any kind requires a separate written Commercial Licence Agreement under Part II — see Section 11 for the terms that apply to commercial and enterprise users in addition to the Licence.
+- **The messenger, core library, relay, and clients** are licensed under the [AGPL-3.0](../../LICENSE). Anyone may use, modify, and share them, including commercially, on the AGPL-3.0's terms.
+- **A Commercial Licence Agreement** is available for anyone who would rather not meet the AGPL-3.0's obligations — see Section 11 for the terms that apply to commercial and enterprise users.
+- **The admin bundle** (`packages/admin`) is governed by the [Kant Dual-Use Licence](../../packages/admin/LICENSE).
+
+Nothing in these Terms restricts the rights the AGPL-3.0 grants you.
 
 Acceptance of these Terms does not itself grant you any licence to the Software; it governs your conduct and the Kant Project's obligations (or lack of them) once you are using the Software under whichever Licence applies to you.
 
@@ -68,7 +71,7 @@ You agree not to use the Software to:
 - infringe the intellectual property, privacy, or other legal rights of any third party; or
 - interfere with, degrade, or attempt unauthorized access to relay infrastructure not under your own control (for example, denial-of-service traffic against a relay you do not operate, or attempts to exploit or bypass a relay's admin authentication).
 
-This list is illustrative, not exhaustive, and does not create any monitoring or enforcement obligation on the Kant Project's part given the architectural limits described in Section 2 — see Section 7. Violating this Section is, independently, a material breach of the Licence and of these Terms and may result in the remedies described in Section 12.
+This list is illustrative, not exhaustive, and does not create any monitoring or enforcement obligation on the Kant Project's part given the architectural limits described in Section 2 — see Section 7. Violating this Section is a material breach of these Terms and may result in the remedies described in Section 12.
 
 ## 7. No Monitoring; Abuse of Relay Infrastructure
 
@@ -96,12 +99,12 @@ The Software includes cryptographic functionality and may be subject to export c
 
 ## 11. Additional Terms for Commercial and Enterprise Users
 
-If you use the Software under a Commercial Licence (Part II of the Licence), or otherwise use the Software in a commercial or organizational capacity, the following additional terms apply on top of Sections 1–10:
+If you use the Software under a Commercial Licence, or otherwise use the Software in a commercial or organizational capacity, the following additional terms apply on top of Sections 1–10:
 
 1. **You are the data controller for your deployment.** If your organization self-hosts a relay or otherwise operates infrastructure using the Software, you — not the Kant Project — determine the purposes and means of any data processing that occurs on your infrastructure, and you are solely responsible for compliance with data protection law applicable to your organization and your users (e.g., GDPR, CCPA, or sector-specific regulation), including any required privacy notices, lawful bases, and data subject rights processes.
 2. **No SLA or support commitment absent a signed agreement.** The Kant Project provides no uptime, availability, response-time, or support commitment for the Software or for any relay it operates, unless such commitments are set out in a separate, signed Commercial Licence Agreement or support contract.
 3. **Indemnification.** You agree to indemnify, defend, and hold harmless the Kant Project and its contributors from and against any claim, liability, damage, loss, and expense (including reasonable legal fees) arising out of or in connection with: (a) your or your personnel's use of the Software; (b) your violation of these Terms, the Licence, or applicable law; or (c) content transmitted, stored, or relayed by you or through infrastructure you operate.
-4. **Audit rights.** As set out in the Licence, the Kant Project may audit your Commercial Licence compliance on reasonable written notice. This is a licence-compliance audit only and does not grant the Kant Project access to your message content, which remains architecturally inaccessible to it.
+4. **Audit rights.** If you hold a Commercial Licence, the Kant Project may audit your compliance with it on reasonable written notice. This is a licence-compliance audit only and does not grant the Kant Project access to your message content, which remains architecturally inaccessible to it.
 5. **No agency or partnership.** Nothing in these Terms creates an agency, joint venture, partnership, or employment relationship between you and the Kant Project.
 6. **Internal acceptable-use enforcement is your responsibility.** Where you deploy the Software within your organization, you are responsible for ensuring your own personnel comply with Section 6; the Kant Project has no visibility into or ability to enforce your internal deployment's usage.
 
@@ -109,7 +112,7 @@ Nothing in this Section limits Sections 8 and 9, which apply equally to commerci
 
 ## 12. Breach and Termination
 
-A breach of Section 6 (Acceptable Use) or of the Licence is a material breach of these Terms. Where the Kant Project operates relay infrastructure you rely on, the Kant Project may, at its discretion and without liability, suspend or terminate a specific client's access to that infrastructure (for example, by revoking a registry entry) for a breach of these Terms, to the extent it can do so without inspecting message content. This does not affect your rights and obligations under the Licence, which are governed by the Licence's own termination terms, nor does it affect your ability to continue running self-hosted Kant infrastructure you control.
+A breach of Section 6 (Acceptable Use) is a material breach of these Terms. Where the Kant Project operates relay infrastructure you rely on, the Kant Project may, at its discretion and without liability, suspend or terminate a specific client's access to that infrastructure (for example, by revoking a registry entry) for a breach of these Terms, to the extent it can do so without inspecting message content. This does not affect your rights and obligations under the Licence, which are governed by the Licence's own termination terms, nor does it affect your ability to continue running self-hosted Kant infrastructure you control.
 
 ## 13. Changes to These Terms
 
@@ -117,7 +120,7 @@ The Kant Project may revise these Terms from time to time. Material revisions wi
 
 ## 14. Governing Law and Jurisdiction
 
-These Terms are governed by and construed in accordance with the laws of Bulgaria, without regard to conflict-of-law provisions. Any dispute arising out of or in connection with these Terms is subject to the exclusive jurisdiction of the courts of Bulgaria, consistent with the Licence.
+These Terms are governed by and construed in accordance with the laws of Bulgaria, without regard to conflict-of-law provisions. Any dispute arising out of or in connection with these Terms is subject to the exclusive jurisdiction of the courts of Bulgaria.
 
 ## 15. Severability, Entire Agreement, and Contact
 
@@ -133,4 +136,4 @@ https://kant.network
 
 ---
 
-*This document is published for transparency alongside the Software's source code. It supplements, and does not replace, the [Kant Dual-Use Licence](../../LICENSE) and the [privacy and data-residency policy](../security/privacy-data-policy.md).*
+*This document is published for transparency alongside the Software's source code. It supplements, and does not replace, the [AGPL-3.0](../../LICENSE), the [Kant Dual-Use Licence](../../packages/admin/LICENSE) for the admin bundle, and the [privacy and data-residency policy](../security/privacy-data-policy.md).*

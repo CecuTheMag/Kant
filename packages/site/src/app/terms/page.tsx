@@ -17,7 +17,7 @@ export default function Terms() {
           <span className="eyebrow">Legal</span>
           <h1 className="h-1">Terms of Service</h1>
           <p className="lede" style={{ fontSize: "1.125rem" }}>
-            Version 1.0 — Effective 2026-09-22. This is the plain reference for
+            Version 1.1 — Effective 2026-09-26. This is the plain reference for
             what governs your use of Kant. The canonical copy lives in the
             repository at{" "}
             <a
@@ -55,11 +55,17 @@ export default function Terms() {
               agree, do not use the Software.
             </p>
             <p>
-              These Terms incorporate by reference the{" "}
+              These Terms incorporate by reference the licences the Software
+              is published under (together, the &ldquo;Licence&rdquo;): the{" "}
               <a href={`${SITE.githubUrl}/blob/main/LICENSE`} target="_blank" rel="noreferrer">
+                GNU Affero General Public License v3.0
+              </a>{" "}
+              for everything except the admin bundle, and the{" "}
+              <a href={`${SITE.githubUrl}/blob/main/packages/admin/LICENSE`} target="_blank" rel="noreferrer">
                 Kant Dual-Use Licence
               </a>{" "}
-              and the{" "}
+              for the admin bundle (<code>packages/admin</code>). They also
+              incorporate the{" "}
               <a href={`${SITE.githubUrl}/blob/main/docs/security/privacy-data-policy.md`} target="_blank" rel="noreferrer">
                 privacy and data-residency policy
               </a>
@@ -104,11 +110,14 @@ export default function Terms() {
             <p>
               Your rights to use, copy, modify, and distribute the
               Software&apos;s source code and binaries are governed exclusively
-              by the Licence. Non-commercial use (personal, academic/research,
-              journalism, and security research) is free under Part I.
-              Commercial use of any kind requires a separate written Commercial
-              Licence Agreement under Part II — see Section 11 for additional
-              terms that apply to commercial and enterprise users.
+              by the Licence. The messenger, core library, relay, and clients
+              are free for anyone to use, modify, and share under the AGPL-3.0,
+              including commercially. If you would rather not meet the
+              AGPL-3.0&apos;s obligations, a separate written Commercial Licence
+              Agreement is available. The admin bundle is governed by the Kant
+              Dual-Use Licence. See Section 11 for additional terms that apply
+              to commercial and enterprise users. Nothing in these Terms
+              restricts the rights the AGPL-3.0 grants you.
             </p>
 
             <h2>5. Your Responsibility for Use</h2>
@@ -153,8 +162,8 @@ export default function Terms() {
               This list is illustrative, not exhaustive, and does not create
               any monitoring or enforcement obligation on the Kant
               Project&apos;s part given the architectural limits described
-              above — see Section 7. Violating this section is independently a
-              material breach of the Licence and of these Terms.
+              above — see Section 7. Violating this section is a material
+              breach of these Terms.
             </p>
 
             <h2>7. No Monitoring; Abuse of Relay Infrastructure</h2>
@@ -212,15 +221,14 @@ export default function Terms() {
               <li>you are the data controller for your own deployment, and are solely responsible for data-protection compliance applicable to your organization (e.g. GDPR, CCPA);</li>
               <li>the Kant Project provides no uptime, availability, or support commitment absent a separate signed agreement;</li>
               <li>you agree to indemnify, defend, and hold harmless the Kant Project and its contributors from claims arising out of your use of the Software, your violation of these Terms or applicable law, or content transmitted through infrastructure you operate;</li>
-              <li>the Kant Project may audit your Commercial Licence compliance on reasonable notice — a licence-compliance audit only, with no access to your message content; and</li>
+              <li>if you hold a Commercial Licence, the Kant Project may audit your compliance with it on reasonable notice — a licence-compliance audit only, with no access to your message content; and</li>
               <li>you are responsible for enforcing Section 6 within your own organization&apos;s deployment.</li>
             </ul>
             <p>Sections 8 and 9 apply equally to commercial and enterprise users.</p>
 
             <h2>12. Breach and Termination</h2>
             <p>
-              A breach of Section 6 or of the Licence is a material breach of
-              these Terms. Where the Kant Project operates relay infrastructure
+              A breach of Section 6 is a material breach of these Terms. Where the Kant Project operates relay infrastructure
               you rely on, it may suspend or terminate a specific client&apos;s
               access to that infrastructure for a breach, to the extent it can
               do so without inspecting content. This does not affect your
@@ -240,8 +248,7 @@ export default function Terms() {
             <p>
               These Terms are governed by the laws of Bulgaria, without regard
               to conflict-of-law provisions, and any dispute is subject to the
-              exclusive jurisdiction of the courts of Bulgaria — consistent
-              with the Licence.
+              exclusive jurisdiction of the courts of Bulgaria.
             </p>
 
             <h2>15. Contact</h2>
