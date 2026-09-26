@@ -57,7 +57,7 @@ const audiences = [
     tone: "violet",
     title: "Teams & organisations",
     body: "Run Kant on infrastructure you control, so company conversations stay on company terms.",
-    note: "Commercial licence available",
+    note: "Admin tools available",
   },
 ];
 

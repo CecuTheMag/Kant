@@ -77,10 +77,9 @@ export default function Community() {
               <span className="tile-icon green" style={{ marginBottom: 20 }}><IconHeart size={22} /></span>
               <h2 className="h-3" style={{ marginBottom: 10 }}>Free for the people it was built for</h2>
               <p className="body-text">
-                Kant is free for personal, academic, journalism and security
-                research use — and it stays that way. Organisations that use it
-                commercially get a separate licence with admin and governance
-                tools on top. It’s never a paywall on the messenger itself.
+                Kant is free and open source under the AGPL-3.0 — and it stays
+                that way. Organisations can add paid admin and governance tools
+                on top, but there’s never a paywall on the messenger itself.
               </p>
             </div>
             <div className="card">

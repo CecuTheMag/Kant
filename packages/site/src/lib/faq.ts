@@ -3,7 +3,7 @@
 export const FAQ = [
   {
     q: "Is Kant really free?",
-    a: "Yes, for personal use. Kant is free for personal, academic, journalism and security research use. Companies that use it commercially need a commercial licence — but the messenger itself is never paywalled.",
+    a: "Yes. Kant is free and open source under the AGPL-3.0, for anyone. Organisations can buy optional admin and governance tools, or a commercial licence if they'd rather not publish their changes, but the messenger itself is never paywalled.",
   },
   {
     q: "Do I need a phone number or an email address?",
