@@ -19,6 +19,9 @@ import { Capacitor } from '@capacitor/core';
 
 const SW_PATH = '/sw.js';
 
+/** Whether this build shipped with a Firebase config (set in vite.config.ts). */
+declare const __KANT_FCM__: boolean;
+
 /** True when running inside a Capacitor Android/iOS WebView. */
 function isCapacitor(): boolean {
   return Capacitor.isNativePlatform();
@@ -67,6 +70,14 @@ let pushTarget: { relayHttpUrl: string; identityKeyHex: string } | null = null;
 let listenersInstalled = false;
 
 async function setupCapacitorPush(relayHttpUrl: string, identityKeyHex: string): Promise<void> {
+  // FCM without a Firebase config fails in native code ("Default FirebaseApp is
+  // not initialized"), which no JS try/catch can intercept — the app just
+  // closes. Skip push entirely; the foreground service still keeps the relay
+  // connection alive while Kant is running.
+  if (typeof __KANT_FCM__ === 'undefined' || !__KANT_FCM__) {
+    console.warn('[push] no Firebase config in this build — push wake-ups disabled');
+    return;
+  }
   try {
     // Dynamically import so the desktop build doesn't fail if the plugin
     // isn't installed (it's an optional native dependency).
