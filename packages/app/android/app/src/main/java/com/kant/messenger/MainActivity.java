@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(KantNotificationsPlugin.class);
         registerPlugin(KantConnectionPlugin.class);
+        registerPlugin(KantFilesPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

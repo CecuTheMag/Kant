@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { multiaddr } from '@multiformats/multiaddr';
 import {
-  hasIdentity, createIdentity, unlockIdentity, wipeIdentity,
+  hasIdentity, createIdentity, unlockIdentity,
   createNode, getRelayInfo, sendPing, sendReceipt,
   ratchetEncrypt, ratchetDecrypt,
   initSenderRatchet, initReceiverRatchet,
@@ -19,14 +19,17 @@ import {
   setCoreLogger, burnOPK,
   incrementUnread, clearUnread, getAllUnread,
   generateX25519Keypair,
+  encodeContent, decodeContent, addContactCaps, sanitizeCaps,
+  CAP_CONTENT_ENVELOPE, SUPPORTED_CAPS, scrubQueuedLegacyWireFields,
 } from '@kant/core';
 import type { Libp2p } from 'libp2p';
-import type { RatchetState, UnlockedIdentity, Contact, MessageStatus, DiscoveredPeer, MessageAttachment, FileMeta } from '@kant/core';
+import type { RatchetState, UnlockedIdentity, Contact, MessageStatus, DiscoveredPeer, MessageAttachment, FileMeta, ReplyRef } from '@kant/core';
 import {
   AI_CONTACT_PUBKEY, loadAiSettings, saveAiSettings, chatCompletion,
   type AiSettings, type ChatMsg,
 } from '../lib/aiClient';
 import { processImage, isProcessableImage } from '../lib/imageProcessor';
+import { eraseAllLocalData } from '../lib/eraseDevice';
 import { exportAndroidFile, readFileBytes } from '../lib/fileExport';
 import { showLocalNotification, appIsHidden, ensureNotificationPermission } from '../lib/localNotify';
 import {
@@ -127,8 +130,6 @@ export function useKant() {
   const identityRef      = useRef<UnlockedIdentity | null>(null);
   // publicKeyHex → live circuit addr (in-memory, updated on presence)
   const contactAddrRef   = useRef<Map<string, string>>(new Map());
-  // peerId → contactPubkeyHex (for queue retry)
-  const peerToContactRef = useRef<Map<string, string>>(new Map());
   const stopDiscoveryRef = useRef<(() => void) | null>(null);
   const stopQueueRef     = useRef<(() => void) | null>(null);
   // publicKeyHex → { circuitAddr, ed25519PubHex } — populated from relay lookups,
@@ -325,6 +326,15 @@ export function useKant() {
     });
     const all = await getContacts();
     setContacts(all);
+    // Messages queued by an older build carry the quoted reply snippet in the
+    // clear next to the ciphertext. Strip it before the queue can drain.
+    // Awaited so the queue cannot start draining before the rewrite finishes.
+    try {
+      const scrubbed = await scrubQueuedLegacyWireFields();
+      if (scrubbed) addLog(`🧹 Removed plaintext reply metadata from ${scrubbed} queued message(s)`);
+    } catch (e: any) {
+      addLog(`⚠️ Queue scrub failed: ${e?.message ?? e}`);
+    }
     // Restore the double-ratchet chains. Without this every restart forces a
     // fresh X3DH with every contact, and messages sent in the meantime cannot
     // be decrypted at all.
@@ -374,22 +384,14 @@ export function useKant() {
     addLog('🔌 Disconnected');
   }
 
+  /**
+   * Erase everything on this device, then reload into a clean process.
+   * Networking stops FIRST: a message arriving mid-wipe would otherwise be
+   * written back into the freshly emptied database. The reload guarantees no
+   * key material, ratchet state or plaintext survives in memory either.
+   */
   async function deleteIdentity(): Promise<void> {
-    await wipeIdentity();
-    setIdentity(null);
-    identityRef.current = null;
-    setContacts([]);
-    setSelectedContact(null);
-    setMessages([]);
-    setUnreadCounts(new Map());
-    setCircuitAddr('');
-    setScreen('setup');
-    contactAddrRef.current.clear();
-    peerToContactRef.current.clear();
-    ratchetMapRef.current.clear();
-    selectedContactRef.current = null;
-    setDiscoveredPeers([]);
-    setOnlineContacts(new Map());
+    shouldReconnectRef.current = false;
     if (nodeRef.current) {
       try { await nodeRef.current.stop(); } catch { /* best-effort */ }
       nodeRef.current = null;
@@ -410,8 +412,17 @@ export function useKant() {
       clearTimeout(coverTrafficRef.current);
       coverTrafficRef.current = null;
     }
+    identityRef.current = null;
     ephemeralKeyRef.current = null;
     ratchetRef.current = null;
+    ratchetMapRef.current.clear();
+    try {
+      await eraseAllLocalData();
+    } finally {
+      // If the erase failed, the reload lands on the unlock screen again —
+      // an honest signal that nothing was deleted, never a false "done".
+      location.reload();
+    }
   }
 
   // ── Auto-session init ─────────────────────────────────────────────────────
@@ -608,6 +619,22 @@ export function useKant() {
     deliveryPendingRef.current.set(msgId, timer);
   }
 
+  /**
+   * The exact string handed to the ratchet for one outbound message. A reply
+   * quote is message content, so it travels inside the ciphertext (envelope.ts)
+   * — but only to peers that advertised they can decode it; an older client
+   * would otherwise show the raw envelope JSON. For those the message goes out
+   * without the quote: degraded context, never a plaintext leak.
+   */
+  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef): Promise<string> {
+    if (!replyTo) return text;
+    let caps: string[] = [];
+    try { caps = (await getContact(peerHex))?.caps ?? []; } catch { /* unknown → the safe no-quote path */ }
+    if (caps.includes(CAP_CONTENT_ENVELOPE)) return encodeContent(text, replyTo);
+    addLog(`↩️ ${peerHex.slice(0, 12)}… runs an older Kant — reply sent without the quote`);
+    return text;
+  }
+
   async function flushPendingPlaintext(contact: Contact, ratchet: RatchetState, peerCircuitAddr: string) {
     const pending = pendingPlaintextRef.current.get(contact.publicKeyHex);
     const node = nodeRef.current;
@@ -624,11 +651,11 @@ export function useKant() {
     for (const { id, text, replyTo } of pending) {
       if (flushed.has(id)) continue;
       try {
-        const encrypted = await ratchetEncrypt(ratchet, text);
+        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo);
+        const encrypted = await ratchetEncrypt(ratchet, plaintext);
         const wire = JSON.stringify({
           id,
           fromPubKeyHex: kp.publicKeyHex,
-          replyTo,
           header: {
             dhPublic: Array.from(encrypted.header.dhPublic),
             msgNum: encrypted.header.msgNum,
@@ -772,6 +799,7 @@ export function useKant() {
             // Update in-memory and IDB addr
             contactAddrRef.current.set(fromPubKeyHex, theirAddr);
             await updateContactAddr(fromPubKeyHex, theirAddr);
+            await addContactCaps(fromPubKeyHex, sanitizeCaps(parsed.caps));
             // B1: Store ephemeral key in hop registry if provided, else fall back to identity key.
             hopRegistryRef.current.set(fromPubKeyHex, { circuitAddr: theirAddr, ed25519PubHex: theirEphHex ?? fromPubKeyHex });
             setContacts(await getContacts());
@@ -817,27 +845,39 @@ export function useKant() {
             // both the initial handshake and reconnect re-handshakes.
             if (senderHex) {
               const weWin = identityRef.current.publicKeyHex > senderHex;
+              let acceptAsWinner = false;
               if (weWin) {
-                // We are the sender — they (re)connected and need our init.
-                // Always rebuild so both sides stay in sync.
-                addLog(`🔑 Re-sending x3dh-init to ${senderHex.slice(0, 12)}… (tiebreak winner)`);
-                const theirAddr = contactAddrRef.current.get(senderHex);
-                if (theirAddr && !sessionInFlightRef.current.has(senderHex)) {
-                  const allContacts = await getContacts();
-                  const contact = allContacts.find(c => c.publicKeyHex === senderHex);
-                  if (contact) {
-                    ratchetMapRef.current.delete(senderHex);
-                    flushedPendingRef.current.delete(senderHex);
-                    sessionInFlightRef.current.delete(senderHex);
-                    tryAutoSession(contact, theirAddr).catch(() => {});
-                  }
+                // Our own init is already on its way; that session supersedes theirs.
+                if (sessionInFlightRef.current.has(senderHex)) {
+                  addLog(`🔑 Ignoring x3dh-init from ${senderHex.slice(0, 12)}… — our own init is in flight (tiebreak winner)`);
+                  return;
                 }
-                return;
+                const theirAddr = contactAddrRef.current.get(senderHex);
+                const contact = theirAddr ? (await getContacts()).find(c => c.publicKeyHex === senderHex) : undefined;
+                if (theirAddr && contact) {
+                  // We are the sender — they (re)connected and need our init.
+                  // Always rebuild so both sides stay in sync.
+                  addLog(`🔑 Re-sending x3dh-init to ${senderHex.slice(0, 12)}… (tiebreak winner)`);
+                  ratchetMapRef.current.delete(senderHex);
+                  flushedPendingRef.current.delete(senderHex);
+                  tryAutoSession(contact, theirAddr).catch(() => {});
+                  return;
+                }
+                // We cannot answer with an init of our own: the sender is not a
+                // contact yet (a first message from someone new) or we have no
+                // route to them. Discarding their init here used to leave them
+                // with a session we could never decrypt — every message from a
+                // new contact whose key sorted lower was lost for good. With no
+                // competing session on our side, accepting theirs is safe.
+                addLog(`🔑 Accepting x3dh-init from ${senderHex.slice(0, 12)}… — no contact/route to answer with our own`);
+                acceptAsWinner = true;
               }
-              // We lose the tiebreak → we become the receiver.
-              // Accept unconditionally — replaces any stale ratchet.
-              // Cancel any in-flight tryAutoSession so it won't overwrite.
-              sessionInFlightRef.current.delete(senderHex);
+              if (!acceptAsWinner) {
+                // We lose the tiebreak → we become the receiver.
+                // Accept unconditionally — replaces any stale ratchet.
+                // Cancel any in-flight tryAutoSession so it won't overwrite.
+                sessionInFlightRef.current.delete(senderHex);
+              }
             }
 
             try {
@@ -886,17 +926,24 @@ export function useKant() {
                       let isBootstrap = false;
                       try { isBootstrap = JSON.parse(plain)?.type === 'kant-session-ready'; } catch { /* user text */ }
                       const msgId = originalId || generateId();
-                      if (!isBootstrap) {
+                      // Same rule as the live path: a blocked sender is ACKed
+                      // below (so their retries stop) but never shown or stored.
+                      const blocked = !isBootstrap && !!(await getContact(senderHex))?.blocked;
+                      if (!isBootstrap && !blocked) {
+                        const content = decodeContent(plain);
+                        if (content.enveloped) void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE]);
                         if (senderHex === selectedContactRef.current?.publicKeyHex) {
-                          addMessage('them', plain, 'delivered', msgId, undefined, senderHex);
+                          addMessage('them', content.text, 'delivered', msgId, undefined, senderHex, content.replyTo);
                         } else {
-                          appendThread(senderHex, { id: msgId, from: 'them', text: plain, ts: Date.now(), status: 'delivered' });
+                          appendThread(senderHex, { id: msgId, from: 'them', text: content.text, ts: Date.now(), status: 'delivered', replyTo: content.replyTo });
                           setUnreadCounts(prev => { const n = new Map(prev); n.set(senderHex, (n.get(senderHex) ?? 0) + 1); return n; });
                           void incrementUnread(senderHex);
+                          await notifyIfAway(senderHex, content.text);
                         }
                         if (identityRef.current) {
                           await saveMessage(senderHex, identityRef.current.derivedKey, {
-                            id: msgId, fromMe: false, text: plain, timestamp: Date.now(), status: 'delivered',
+                            id: msgId, fromMe: false, text: content.text, timestamp: Date.now(), status: 'delivered',
+                            replyTo: content.replyTo,
                           } as any);
                         }
                       }
@@ -933,13 +980,24 @@ export function useKant() {
             if (now - last < RESYNC_COOLDOWN_MS) return;
             lastResyncRef.current.set(peerHex, now);
 
-            // The receiver clears its state and waits for the winner's fresh
-            // init. The winner rebuilds and sends that init below.
+            // The tiebreak loser clears its state and re-initiates. Waiting for
+            // the winner's init is not enough: a winner that doesn't have us as
+            // a contact (we messaged them first) has no way to send one. Our
+            // init converges either way — a winner that knows us answers with
+            // its own (which we accept), one that doesn't accepts ours.
             if (identityRef.current.publicKeyHex <= peerHex) {
               ratchetMapRef.current.delete(peerHex);
               flushedPendingRef.current.delete(peerHex);
               if (selectedContactRef.current?.publicKeyHex === peerHex) ratchetRef.current = null;
-              addLog(`🔁 Reset accepted from ${peerHex.slice(0, 12)}…; waiting for fresh init`);
+              sessionInFlightRef.current.delete(peerHex);
+              const loserContact = (await getContacts()).find(c => c.publicKeyHex === peerHex);
+              const loserAddr = contactAddrRef.current.get(peerHex) ?? loserContact?.lastCircuitAddr ?? '';
+              if (loserContact && loserAddr) {
+                addLog(`🔁 Reset accepted from ${peerHex.slice(0, 12)}… — re-initiating session`);
+                await tryAutoSession(loserContact, loserAddr);
+              } else {
+                addLog(`🔁 Reset accepted from ${peerHex.slice(0, 12)}…; waiting for fresh init`);
+              }
               return;
             }
 
@@ -964,11 +1022,10 @@ export function useKant() {
           if (parsed.header && parsed.ciphertext) {
             const messageId = typeof parsed.id === 'string' && parsed.id.length <= 128 ? parsed.id : '';
             const hintedSender = typeof parsed.fromPubKeyHex === 'string' ? parsed.fromPubKeyHex : '';
-            // Wire metadata, not attacker-trusted structure — validate shape before use.
-            const incomingReplyTo = parsed.replyTo && typeof parsed.replyTo === 'object'
-              && typeof parsed.replyTo.id === 'string' && typeof parsed.replyTo.from === 'string' && typeof parsed.replyTo.text === 'string'
-              ? { id: parsed.replyTo.id.slice(0, 128), from: parsed.replyTo.from.slice(0, 128), text: parsed.replyTo.text.slice(0, 500) }
-              : undefined;
+            // A `replyTo` field on the wire (sent by builds before the content
+            // envelope) is deliberately ignored: it is unauthenticated, so any
+            // forwarding hop could have rewritten the quote. Replies are only
+            // trusted from inside the decrypted payload.
             const acknowledge = () => {
               if (!messageId || !hintedSender || !nodeRef.current || !identityRef.current) return;
               void (async () => {
@@ -1077,14 +1134,15 @@ export function useKant() {
                   addLog(`🔁 Buffered undecryptable msg from ${fromHex.slice(0, 12)}… — awaiting address/session`);
                 } else {
                   const weWin = identityRef.current.publicKeyHex > fromHex;
-                  if (weWin) {
-                    const allContacts = await getContacts();
-                    const contact = allContacts.find(c => c.publicKeyHex === fromHex);
-                    if (contact) {
-                      addLog(`🔁 Desync detected — rebuilding session with ${fromHex.slice(0, 12)}…`);
-                      await tryAutoSession(contact, theirAddr);
-                    }
+                  const knownContact = weWin ? (await getContacts()).find(c => c.publicKeyHex === fromHex) : undefined;
+                  if (knownContact) {
+                    addLog(`🔁 Desync detected — rebuilding session with ${fromHex.slice(0, 12)}…`);
+                    await tryAutoSession(knownContact, theirAddr);
                   } else {
+                    // Either they won the tiebreak, or they are someone new we
+                    // can't start a session with ourselves: ask them to rebuild.
+                    // Their fresh x3dh-init is accepted by the handler above in
+                    // both cases, and the buffered ciphertext is retried then.
                     try {
                       await sendPing(nodeRef.current, theirAddr, JSON.stringify({
                         type: 'x3dh-reset', fromPubKeyHex: identityRef.current.publicKeyHex,
@@ -1105,6 +1163,10 @@ export function useKant() {
               if (senderHex) void persistRatchet(senderHex);
               let isSessionBootstrap = false;
               try { isSessionBootstrap = JSON.parse(decrypted)?.type === 'kant-session-ready'; } catch { /* normal user text */ }
+              const content = decodeContent(decrypted);
+              // An envelope proves the sender's build supports them, even if
+              // its presence ping (which advertises caps) hasn't reached us yet.
+              if (content.enveloped && senderHex) void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE]);
               // Messages from a blocked contact are still acknowledged (so the
               // sender's retries stop) but never shown, stored or notified.
               let hideFromUser = isSessionBootstrap;
@@ -1125,7 +1187,7 @@ export function useKant() {
 
               if (!hideFromUser && isOpenConversation) {
                 const fgId = messageId || generateId();
-                addMessage('them', decrypted, 'delivered', fgId, undefined, senderHex, incomingReplyTo);
+                addMessage('them', content.text, 'delivered', fgId, undefined, senderHex, content.replyTo);
                 // On screen and being read — nothing further to announce.
                 // Otherwise fall through to the same unread/notify treatment any
                 // other conversation would get.
@@ -1136,7 +1198,7 @@ export function useKant() {
                     return next;
                   });
                   void incrementUnread(senderHex);
-                  await notifyIfAway(senderHex, decrypted);
+                  await notifyIfAway(senderHex, content.text);
                 }
               } else if (!hideFromUser) {
                 // Someone can message us before we have ever added them — that is
@@ -1154,20 +1216,20 @@ export function useKant() {
 
                 // Background contact: persist + notify; threads mirror keeps the history live
                 const bgId = messageId || generateId();
-                appendThread(senderHex, { id: bgId, from: 'them', text: decrypted, ts: Date.now(), status: 'delivered', replyTo: incomingReplyTo });
+                appendThread(senderHex, { id: bgId, from: 'them', text: content.text, ts: Date.now(), status: 'delivered', replyTo: content.replyTo });
                 setUnreadCounts(prev => {
                   const next = new Map(prev);
                   next.set(senderHex, (next.get(senderHex) ?? 0) + 1);
                   return next;
                 });
                 void incrementUnread(senderHex);
-                await notifyIfAway(senderHex, decrypted);
+                await notifyIfAway(senderHex, content.text);
               }
               if (identityRef.current && senderHex) {
                 if (!hideFromUser) {
                   await saveMessage(senderHex, identityRef.current.derivedKey, {
-                    id: messageId || generateId(), fromMe: false, text: decrypted,
-                    timestamp: Date.now(), status: 'delivered', replyTo: incomingReplyTo,
+                    id: messageId || generateId(), fromMe: false, text: content.text,
+                    timestamp: Date.now(), status: 'delivered', replyTo: content.replyTo,
                   } as any);
                 }
                 if (messageId) {
@@ -1184,7 +1246,7 @@ export function useKant() {
                 if (!hideFromUser) {
                   (window as any).kantDesktop?.ai?.notify({
                     type: 'message', conversationType: 'dm',
-                    fromPubkeyHex: senderHex, text: decrypted, timestamp: Date.now(),
+                    fromPubkeyHex: senderHex, text: content.text, timestamp: Date.now(),
                   });
                 }
               }
@@ -1583,6 +1645,7 @@ export function useKant() {
       fromPubKeyHex: kp.publicKeyHex,
       circuitAddr: myCircuit,
       ...(eph ? { ephemeralPubHex: eph.pubHex } : {}),
+      caps: SUPPORTED_CAPS,
     });
     // Fresh relay lookup before sending — stored addresses may have stale PeerIDs
     // from a previous session. A single batch lookup is cheaper than per-contact.
@@ -1727,6 +1790,7 @@ export function useKant() {
     }
 
     const id       = addMessage('me', text, 'sending', undefined, undefined, contact.publicKeyHex, replyTo);
+    const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo);
     // Resolve immediately before each delivery attempt.  A stored circuit
     // address may outlive the peer's reservation after sleep/reconnect.
     let peerAddr = contactAddrRef.current.get(contact.publicKeyHex) ?? contact.lastCircuitAddr ?? '';
@@ -1743,7 +1807,7 @@ export function useKant() {
     let wire = '';
 
     try {
-      const encrypted = await ratchetEncrypt(ratchet, text);
+      const encrypted = await ratchetEncrypt(ratchet, plaintext);
       // Sending also advances the chain, so persist regardless of whether the
       // transport then succeeds — the peer will decrypt against this state.
       void persistRatchet(contact.publicKeyHex);
@@ -1754,11 +1818,8 @@ export function useKant() {
         // for a resync (consistent with x3dh-init / presence, which already
         // carry the pubkey in plaintext — this protocol is not anonymous).
         fromPubKeyHex: identityRef.current.publicKeyHex,
-        // Reply reference travels as wire metadata (same trust tier as id/
-        // fromPubKeyHex above) rather than inside the ratchet payload — it
-        // never touches the chain-advancing encrypt/decrypt state that the
-        // desync-recovery machinery depends on being exactly `text`.
-        replyTo,
+        // Message content (the text AND any reply quote) lives only inside
+        // the ratchet ciphertext — see outboundPlaintext / envelope.ts.
         header: {
           dhPublic:     Array.from(encrypted.header.dhPublic),
           msgNum:       encrypted.header.msgNum,
@@ -2078,6 +2139,13 @@ export function useKant() {
     return URL.createObjectURL(new Blob([blob.data as BlobPart], { type: blob.mimeType }));
   }
 
+  /** Decrypt an attachment's bytes into memory (preview, "Open with…"). Nothing is written to disk. */
+  async function readAttachmentData(att: MessageAttachment): Promise<{ data: Uint8Array; fileName: string; mimeType: string } | null> {
+    if (!identityRef.current || !att.fileId || att.fileId === 'pending') return null;
+    const blob = await getFileBlob(att.fileId, identityRef.current.derivedKey);
+    return blob ? { data: blob.data, fileName: blob.fileName, mimeType: blob.mimeType } : null;
+  }
+
   /** Export on Android through scoped storage; use a browser download elsewhere. */
   async function downloadAttachment(att: MessageAttachment): Promise<boolean> {
     if (!identityRef.current || att.fileId === 'pending') return false;
@@ -2239,7 +2307,7 @@ export function useKant() {
     aiSettings, updateAiSettings,
     onionEnabled, toggleOnion,
     checkIdentity, configureRelay, setup, unlock, deleteIdentity,
-    startNode, disconnectNode, initSession, sendMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment,
+    startNode, disconnectNode, initSession, sendMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment, readAttachmentData,
     addNewContact, renameContact, acceptContact, blockContact, removeContact, selectContact,
     setConversationVisible,
     setMessages,

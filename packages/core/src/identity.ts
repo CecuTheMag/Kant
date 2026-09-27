@@ -98,9 +98,16 @@ export async function unlockIdentity(password: string): Promise<UnlockedIdentity
   }
 }
 
+/**
+ * Erase every object store in the Kant database. The list is read from the
+ * database itself rather than hard-coded, so a store added later (as `ratchets`
+ * and `delivery_queue` were) can never be silently left behind by a wipe.
+ */
 export async function wipeIdentity(): Promise<void> {
-  const db     = await openDB();
-  const stores = ['identity', 'contacts', 'messages', 'prekeys', 'queue', 'groups', 'groupmsgs', 'files', 'unread'];
-  await Promise.all(stores.map(s => idbClear(db, s)));
-  db.close();
+  const db = await openDB();
+  try {
+    await Promise.all(Array.from(db.objectStoreNames).map(s => idbClear(db, s)));
+  } finally {
+    db.close();
+  }
 }
