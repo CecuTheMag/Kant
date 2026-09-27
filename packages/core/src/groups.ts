@@ -32,6 +32,8 @@ import { withSendLock, getOrDialPeer } from './send-lock.js';
 import { burnOPK, getOPK } from './prekey.js';
 import type { X3DHPublicBundle } from './ratchet.js';
 import { buildPrivateBundle } from './prekey.js';
+import { decodeContent, encodeContent } from './envelope.js';
+import type { ReplyRef } from './envelope.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -799,27 +801,21 @@ export async function registerGroupHandler(
 
 // ── Send a group message ──────────────────────────────────────────────────────
 
-export interface GroupReplyRef { id: string; from: string; text: string }
+export type GroupReplyRef = ReplyRef;
 
 /** Wrap a reply reference into the plaintext that actually gets encrypted —
  *  a quoted snippet is message content, so it rides inside the same AEAD seal
  *  as the body rather than as unauthenticated wire metadata. */
 export function encodeGroupText(text: string, replyTo?: GroupReplyRef): string {
-  return replyTo ? JSON.stringify({ __kantReply: 1, text, replyTo }) : text;
+  return encodeContent(text, replyTo);
 }
 
 /** Reverse of encodeGroupText. Anything that isn't a recognised envelope is
- *  treated as plain legacy text — keeps old stored/received messages readable. */
+ *  treated as plain legacy text — keeps old stored/received messages readable.
+ *  The reply reference is validated: a group member controls it. */
 export function decodeGroupText(raw: string): { text: string; replyTo?: GroupReplyRef } {
-  if (raw.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.__kantReply === 1 && typeof parsed.text === 'string') {
-        return { text: parsed.text, replyTo: parsed.replyTo };
-      }
-    } catch { /* not an envelope — fall through to plain text */ }
-  }
-  return { text: raw };
+  const { text, replyTo } = decodeContent(raw);
+  return replyTo ? { text, replyTo } : { text };
 }
 
 /**

@@ -17,11 +17,20 @@ export function displayName(c: Pick<Contact, 'nickname' | 'publicKeyHex'> | unde
   return c.nickname?.trim() || `Kant ${shortId(c.publicKeyHex)}`;
 }
 
+/** First user-perceived character: `s[0]` would split an emoji ("🌸") into half a surrogate pair. */
+function firstGrapheme(s: string): string {
+  if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+    const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s)[Symbol.iterator]().next();
+    return seg.done ? '' : seg.value.segment;
+  }
+  return Array.from(s)[0] ?? '';
+}
+
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '';
-  const first = parts[0][0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? '' : '';
+  const first = firstGrapheme(parts[0]);
+  const last = parts.length > 1 ? firstGrapheme(parts[parts.length - 1]) : '';
   return (first + last).toUpperCase();
 }
 

@@ -24,10 +24,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Contact as CoreContact } from '@kant/core';
-import { getConversation, setContactTrust, wipeIdentity } from '@kant/core';
+import { getConversation, setContactTrust } from '@kant/core';
 import { setupPushNotifications } from '../../lib/pushNotifications';
 import { AI_CONTACT_PUBKEY } from '../../lib/aiClient';
-import type { Settings, State, Store, ThemePref } from './store';
+import type { AttachmentData, OpenAttachmentResult, Settings, State, Store, ThemePref } from './store';
+import { canOpenExternally, openExternally } from '../../lib/fileActions';
 import { deriveIdentity, pairWords } from './fingerprint';
 import type { Identity } from './fingerprint';
 import type { Contact, Group, MessageAttachment as DesignAttachment, NodeStatus, PlainMessage, TrustState } from './types';
@@ -82,6 +83,19 @@ function toDesignGroupMsg(m: import('../../hooks/useGroups').PlainGroupMessage):
       thumbnail: m.attachment.thumbnail,
       display: m.attachment.display,
     }] : undefined,
+  };
+}
+
+/** Design-shape attachment → the core record the file store is keyed by. */
+function toCoreAttachment(attachment: DesignAttachment): import('@kant/core').MessageAttachment {
+  return {
+    fileId: attachment.fileId ?? '',
+    fileName: attachment.name,
+    mimeType: attachment.mime,
+    fileSize: attachment.size,
+    sha256: attachment.sha256 ?? '',
+    thumbnail: attachment.thumbnail,
+    display: attachment.display ?? (attachment.mime.startsWith('image/') ? 'inline' : 'attachment'),
   };
 }
 
@@ -403,29 +417,27 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
 
   const loadAttachment = useCallback((attachment: DesignAttachment) => {
     if (!attachment.fileId) return Promise.resolve(null);
-    return kant.loadAttachmentUrl({
-      fileId: attachment.fileId,
-      fileName: attachment.name,
-      mimeType: attachment.mime,
-      fileSize: attachment.size,
-      sha256: attachment.sha256 ?? '',
-      thumbnail: attachment.thumbnail,
-      display: attachment.display ?? (attachment.mime.startsWith('image/') ? 'inline' : 'attachment'),
-    });
+    return kant.loadAttachmentUrl(toCoreAttachment(attachment));
   }, [kant]);
 
   const downloadAttachment = useCallback((attachment: DesignAttachment) => {
     if (!attachment.fileId) return Promise.resolve(false);
-    return kant.downloadAttachment({
-      fileId: attachment.fileId,
-      fileName: attachment.name,
-      mimeType: attachment.mime,
-      fileSize: attachment.size,
-      sha256: attachment.sha256 ?? '',
-      thumbnail: attachment.thumbnail,
-      display: attachment.display ?? (attachment.mime.startsWith('image/') ? 'inline' : 'attachment'),
-    });
+    return kant.downloadAttachment(toCoreAttachment(attachment));
   }, [kant]);
+
+  const readAttachment = useCallback(async (attachment: DesignAttachment): Promise<AttachmentData | null> => {
+    const blob = await kant.readAttachmentData(toCoreAttachment(attachment));
+    // The name/type shown in the bubble is what the user chose to open; the
+    // stored blob metadata is only a fallback for older records.
+    return blob ? { bytes: blob.data, name: attachment.name || blob.fileName, mime: attachment.mime || blob.mimeType } : null;
+  }, [kant]);
+
+  const openAttachment = useCallback(async (attachment: DesignAttachment): Promise<OpenAttachmentResult> => {
+    if (!canOpenExternally()) return 'unavailable';
+    const data = await readAttachment(attachment);
+    if (!data) return 'missing';
+    return openExternally(data.name, data.mime, data.bytes);
+  }, [readAttachment]);
 
   const selectGroup = useCallback((groupId: string) => {
     const group = groupsApi.groups.find(candidate => candidate.id === groupId);
@@ -533,19 +545,14 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     }
   }, [kant, groupsApi]);
 
-  const reset = useCallback(() => {
-    void (async () => {
-      try { await wipeIdentity(); } catch { /* ignore */ }
-      try { localStorage.removeItem('kant_relay_url'); } catch { /* ignore */ }
-      location.reload();
-    })();
-  }, []);
+  const reset = useCallback(() => { void kant.deleteIdentity(); }, [kant]);
 
   const identity = useCallback((hex: string) => identities[hex], [identities]);
   const ceremonyWords = useCallback((contactId: string) => ceremony[contactId], [ceremony]);
 
   return {
     state, send, selectContact, setConversationVisible, sendFile, loadAttachment, downloadAttachment,
+    readAttachment, openAttachment, canOpenAttachments: canOpenExternally(),
     createGroup, leaveGroup, selectGroup, sendGroup, sendGroupFile, setTrust, addContact, renameContact,
     acceptRequest, blockContact, removeContact, connect, disconnect, setSettings, reset, identity, ceremonyWords,
   };
