@@ -1,13 +1,24 @@
 /**
  * Live QR scanner. Uses the platform BarcodeDetector when it exists and falls
  * back to jsQR on a downscaled canvas frame, so it works in every WebView.
+ *
+ * Never the native detector inside the Android app: Android WebView implements
+ * it through Google Play services, and on a phone without them (GrapheneOS,
+ * LineageOS, emulator images) creating one aborts the whole app natively —
+ * there is no JavaScript error to catch. jsQR keeps frames on the device.
  */
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 
 type Detector = { detect: (src: CanvasImageSource) => Promise<Array<{ rawValue: string }>> };
 
+function inAndroidApp(): boolean {
+  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+  try { return cap?.getPlatform?.() === 'android'; } catch { return false; }
+}
+
 function nativeDetector(): Detector | null {
+  if (inAndroidApp()) return null;
   const BD = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => Detector }).BarcodeDetector;
   try { return BD ? new BD({ formats: ['qr_code'] }) : null; } catch { return null; }
 }

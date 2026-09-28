@@ -84,6 +84,28 @@ export const More = ({ size = 20, style, className }: IconProps) => (
 export const Key = (p: IconProps) => <Svg {...p}><circle cx="8" cy="15" r="4" /><path d="M11 12l8.5-8.5M16 7l2.5 2.5M14 9l2 2" /></Svg>;
 export const Camera = (p: IconProps) => <Svg {...p}><path d="M4 8.5A2 2 0 0 1 6 6.5h1.8l1.5-2h5.4l1.5 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" /><circle cx="12" cy="12.5" r="3.4" /></Svg>;
 
+export const Mic = (p: IconProps) => <Svg {...p}><rect x="9" y="3" width="6" height="11.5" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" /></Svg>;
+export const Play = ({ size = 22, style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={style} className={className}>
+    <path d="M8 5.6v12.8a1 1 0 0 0 1.5.86l10.4-6.4a1 1 0 0 0 0-1.72L9.5 4.74A1 1 0 0 0 8 5.6z" />
+  </svg>
+);
+export const Pause = ({ size = 22, style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={style} className={className}>
+    <rect x="6.5" y="5" width="4" height="14" rx="1.2" /><rect x="13.5" y="5" width="4" height="14" rx="1.2" />
+  </svg>
+);
+export const Stop = ({ size = 22, style, className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={style} className={className}>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="2.4" />
+  </svg>
+);
+export const TableIcon = (p: IconProps) => <Svg {...p}><rect x="3.5" y="4.5" width="17" height="15" rx="2.4" /><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10" /></Svg>;
+export const DocText = (p: IconProps) => <Svg {...p}><path d="M7 3.5h6.5l4.5 4.5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13.5a2 2 0 0 1 2-2z" /><path d="M13.5 3.5V8H18M8.5 12.5h7M8.5 16h5" /></Svg>;
+export const Undo = (p: IconProps) => <Svg {...p}><path d="M9 14L4 9l5-5" /><path d="M4.5 9H14a6 6 0 0 1 0 12h-3" /></Svg>;
+export const Redo = (p: IconProps) => <Svg {...p}><path d="M15 14l5-5-5-5" /><path d="M19.5 9H10a6 6 0 0 0 0 12h3" /></Svg>;
+export const ChevronUp = (p: IconProps) => <Svg stroke={2.4} {...p}><path d="M5 15l7-7 7 7" /></Svg>;
+
 export function Spinner({ size = 18, style, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4}

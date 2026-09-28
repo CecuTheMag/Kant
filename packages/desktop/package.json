@@ -1,6 +1,6 @@
 {
   "name": "kant-desktop",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Kant — desktop app for Linux",
   "license": "AGPL-3.0-only",
   "author": {
@@ -12,14 +12,14 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm --filter @kant/app dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "prepare:relay-runtime": "rm -rf relay-runtime && CI=true pnpm --dir ../.. --filter @kant/relay --prod deploy --legacy packages/desktop/relay-runtime",
-    "build:ci": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json",
-    "build": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux --mac --win",
-    "build:linux": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux",
-    "build:mac": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --mac",
-    "build:win": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --win",
-    "build:appimage": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux AppImage",
-    "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && electron-builder --linux deb"
+    "prepare:relay-runtime": "rm -rf relay-runtime && pnpm --dir ../relay run build && CI=true pnpm --dir ../.. --filter @kant/relay --prod deploy --legacy packages/desktop/relay-runtime",
+    "build:ci": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs",
+    "build": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux --mac --win",
+    "build:linux": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux",
+    "build:mac": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --mac",
+    "build:win": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --win",
+    "build:appimage": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux AppImage",
+    "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux deb"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
@@ -31,6 +31,7 @@
     "dmg-license": "^1.0.11",
     "electron": "33.4.11",
     "electron-builder": "24.13.3",
+    "esbuild": "0.21.5",
     "typescript": "5.9.3",
     "wait-on": "8.0.5"
   },
@@ -45,7 +46,8 @@
     },
     "files": [
       "dist-electron/**/*",
-      "!../app/src/**/*"
+      "!../app/src/**/*",
+      "!node_modules/**/*"
     ],
     "extraResources": [
       {
@@ -88,7 +90,10 @@
       ],
       "icon": "assets/icon.png",
       "category": "public.app-category.social-networking",
-      "darkModeSupport": true
+      "darkModeSupport": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Kant uses the microphone to record voice messages. Recordings are end-to-end encrypted and never leave your device unencrypted."
+      }
     },
     "win": {
       "target": [

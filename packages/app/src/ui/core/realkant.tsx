@@ -27,8 +27,10 @@ import type { Contact as CoreContact } from '@kant/core';
 import { getConversation, setContactTrust } from '@kant/core';
 import { setupPushNotifications } from '../../lib/pushNotifications';
 import { AI_CONTACT_PUBKEY } from '../../lib/aiClient';
-import type { AttachmentData, OpenAttachmentResult, Settings, State, Store, ThemePref } from './store';
+import type { AttachmentData, OpenAttachmentResult, Settings, State, Store, ThemePref, VoiceRecording } from './store';
 import { canOpenExternally, openExternally } from '../../lib/fileActions';
+import { exportAndroidFile } from '../../lib/fileExport';
+import { formatDuration, voiceFileName } from '../voice/waveform';
 import { deriveIdentity, pairWords } from './fingerprint';
 import type { Identity } from './fingerprint';
 import type { Contact, Group, MessageAttachment as DesignAttachment, NodeStatus, PlainMessage, TrustState } from './types';
@@ -41,6 +43,36 @@ type GroupsApi = ReturnType<typeof import('../../hooks/useGroups').useGroups>;
 
 export type { Kant, GroupsApi };
 
+/** Core attachment record → the design's attachment shape. */
+function toDesignAttachment(attachment: import('@kant/core').MessageAttachment): DesignAttachment {
+  return {
+    fileId: attachment.fileId,
+    name: attachment.fileName,
+    mime: attachment.mimeType,
+    size: attachment.fileSize,
+    sha256: attachment.sha256,
+    thumbnail: attachment.thumbnail,
+    display: attachment.display,
+    ...(attachment.voice ? { voice: attachment.voice } : {}),
+  };
+}
+
+/** One-line summary of a message for the chat list. */
+export function previewText(m: PlainMessage): string {
+  if (m.text) return m.text;
+  const a = m.attachments?.[0];
+  if (!a) return '';
+  if (a.voice) return `Voice message · ${formatDuration(a.voice.durationMs)}`;
+  if (a.mime.startsWith('image/')) return 'Photo';
+  if (a.mime.startsWith('video/')) return 'Video';
+  return a.name || 'File';
+}
+
+/** Voice recording → a File for the encrypted transfer. */
+function voiceFile(recording: VoiceRecording): File {
+  return new File([recording.blob], voiceFileName(recording.mime, new Date()), { type: recording.mime });
+}
+
 /** Convert a useKant message into the design's PlainMessage shape. */
 function toDesignMsg(m: import('../../hooks/useKant').PlainMessage): PlainMessage {
   const attachment = (m as any).attachment as import('@kant/core').MessageAttachment | undefined;
@@ -52,15 +84,8 @@ function toDesignMsg(m: import('../../hooks/useKant').PlainMessage): PlainMessag
     status: m.status === 'sending' ? 'pending' : m.status,
     expiresAt: (m as any).expiresAt,
     replyTo: m.replyTo,
-    attachments: attachment ? [{
-      fileId: attachment.fileId,
-      name: attachment.fileName,
-      mime: attachment.mimeType,
-      size: attachment.fileSize,
-      sha256: attachment.sha256,
-      thumbnail: attachment.thumbnail,
-      display: attachment.display,
-    }] : undefined,
+    editedAt: m.editedAt,
+    attachments: attachment ? [toDesignAttachment(attachment)] : undefined,
   };
 }
 
@@ -71,18 +96,11 @@ function toDesignGroupMsg(m: import('../../hooks/useGroups').PlainGroupMessage):
     from: m.fromMe ? 'me' : (m.fromPubKeyHex || 'them'),
     ts: m.ts,
     text: m.text,
-    status: 'read',
+    status: m.status ?? 'read',
     expiresAt: m.expiresAt > 0 ? m.expiresAt : undefined,
     replyTo: m.replyTo,
-    attachments: m.attachment ? [{
-      fileId: m.attachment.fileId,
-      name: m.attachment.fileName,
-      mime: m.attachment.mimeType,
-      size: m.attachment.fileSize,
-      sha256: m.attachment.sha256,
-      thumbnail: m.attachment.thumbnail,
-      display: m.attachment.display,
-    }] : undefined,
+    editedAt: m.editedAt,
+    attachments: m.attachment ? [toDesignAttachment(m.attachment)] : undefined,
   };
 }
 
@@ -96,6 +114,7 @@ function toCoreAttachment(attachment: DesignAttachment): import('@kant/core').Me
     sha256: attachment.sha256 ?? '',
     thumbnail: attachment.thumbnail,
     display: attachment.display ?? (attachment.mime.startsWith('image/') ? 'inline' : 'attachment'),
+    ...(attachment.voice ? { voice: attachment.voice } : {}),
   };
 }
 
@@ -172,6 +191,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
           status: m.status,
           attachment: (m as { attachment?: unknown }).attachment,
           replyTo: (m as { replyTo?: { id: string; from: string; text: string } }).replyTo,
+          editedAt: (m as { editedAt?: number }).editedAt,
         })) as import('../../hooks/useKant').PlainMessage[];
         kant.setThreads((t) => {
           const live = t[hex] ?? [];
@@ -183,6 +203,12 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kant.contacts, meHex]);
+
+  /* ---- group files arrive through useKant's file handler; hand them to the group layer ---- */
+  useEffect(() => {
+    kant._groupFileHandlerRef.current = groupsApi.handleIncomingFile;
+    return () => { kant._groupFileHandlerRef.current = null; };
+  }, [kant._groupFileHandlerRef, groupsApi.handleIncomingFile]);
 
   /* ---- groups + group threads ---- */
   useEffect(() => {
@@ -257,7 +283,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       verifiedAt: t.verifiedAt ?? c.verifiedAt,
       online,
       lastSeen: c.lastSeen,
-      lastMessage: last ? (last.text || (last.attachments?.length ? 'Attachment' : '')) : undefined,
+      lastMessage: last ? previewText(last) : undefined,
       lastMessageTs: last?.ts ?? c.addedAt,
       unread: kant.unreadCounts.get(c.publicKeyHex) ?? 0,
       request: !!c.request,
@@ -272,7 +298,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       name: g.name,
       memberKeys: g.members.map(m => m.publicKeyHex),
       createdAt: g.createdAt,
-      lastMessage: last ? (last.text || (last.attachments?.length ? 'Attachment' : '')) : undefined,
+      lastMessage: last ? previewText(last) : undefined,
       lastMessageTs: last?.ts ?? g.createdAt,
       unread: groupsApi.unreadCounts.get(g.id) ?? 0,
     };
@@ -357,6 +383,13 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     })();
   }, [kant, resolveAndSession]);
 
+  const editMessage = useCallback(async (contactId: string, msgId: string, text: string): Promise<boolean> => {
+    const core = kant.contacts.find(x => (x.id ?? x.publicKeyHex) === contactId);
+    if (!core) return false;
+    if (kant.selectedContact?.publicKeyHex !== core.publicKeyHex) await kant.selectContact(core);
+    return kant.editMessage(msgId, text);
+  }, [kant]);
+
   const selectContact = useCallback((contactId: string) => {
     const core = kant.contacts.find(x => (x.id ?? x.publicKeyHex) === contactId);
     if (core) void kant.selectContact(core);
@@ -402,7 +435,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     if (g) void Promise.resolve(groupsApi.leaveGroup(g)).catch(() => {});
   }, [groupsApi]);
 
-  const sendFile = useCallback((contactId: string, file: File) => {
+  const sendFileWith = useCallback((contactId: string, file: File, voice?: VoiceRecording) => {
     const core = kant.contacts.find(x => (x.id ?? x.publicKeyHex) === contactId);
     if (!core) return;
     void (async () => {
@@ -411,9 +444,33 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       // after the file picker closes the relay link is usually still down, and
       // sendFileMessage waits for it to return rather than dropping the file.
       await resolveAndSession(core);
-      await kant.sendFileMessage(file);
+      await kant.sendFileMessage(file, voice ? { voice: { durationMs: voice.durationMs, waveform: voice.waveform } } : {});
     })();
   }, [kant, resolveAndSession]);
+
+  const sendFile = useCallback((contactId: string, file: File) => sendFileWith(contactId, file), [sendFileWith]);
+  const sendVoice = useCallback(
+    (contactId: string, recording: VoiceRecording) => sendFileWith(contactId, voiceFile(recording), recording),
+    [sendFileWith],
+  );
+
+  const saveFile = useCallback(async (name: string, mime: string, bytes: Uint8Array): Promise<boolean> => {
+    try {
+      const id = crypto.randomUUID?.() ?? `${Date.now()}`;
+      if (await exportAndroidFile(id, name, bytes)) return true;
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: mime || 'application/octet-stream' }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = name;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
 
   const loadAttachment = useCallback((attachment: DesignAttachment) => {
     if (!attachment.fileId) return Promise.resolve(null);
@@ -466,13 +523,26 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     })();
   }, [groupsApi]);
 
-  const sendGroupFile = useCallback((groupId: string, file: File) => {
+  const sendGroupFileWith = useCallback((groupId: string, file: File, voice?: VoiceRecording) => {
     const g = groupsApi.groups.find(x => x.id === groupId);
     if (!g) return;
     void (async () => {
       await groupsApi.selectGroup(g);
-      await groupsApi.sendFileToGroup(file);
-    })();
+      await groupsApi.sendFileToGroup(file, voice ? { voice: { durationMs: voice.durationMs, waveform: voice.waveform } } : {});
+    })().catch(() => { /* reported in the thread as a failed bubble */ });
+  }, [groupsApi]);
+
+  const sendGroupFile = useCallback((groupId: string, file: File) => sendGroupFileWith(groupId, file), [sendGroupFileWith]);
+  const sendGroupVoice = useCallback(
+    (groupId: string, recording: VoiceRecording) => sendGroupFileWith(groupId, voiceFile(recording), recording),
+    [sendGroupFileWith],
+  );
+
+  const editGroupMessage = useCallback(async (groupId: string, msgId: string, text: string): Promise<boolean> => {
+    const g = groupsApi.groups.find(x => x.id === groupId);
+    if (!g) return false;
+    await groupsApi.selectGroup(g);
+    return groupsApi.editGroupMessage(msgId, text);
   }, [groupsApi]);
 
   const createGroup = useCallback((name: string, memberContactIds: string[]) => {
@@ -551,9 +621,9 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
   const ceremonyWords = useCallback((contactId: string) => ceremony[contactId], [ceremony]);
 
   return {
-    state, send, selectContact, setConversationVisible, sendFile, loadAttachment, downloadAttachment,
-    readAttachment, openAttachment, canOpenAttachments: canOpenExternally(),
-    createGroup, leaveGroup, selectGroup, sendGroup, sendGroupFile, setTrust, addContact, renameContact,
+    state, send, editMessage, sendVoice, selectContact, setConversationVisible, sendFile, loadAttachment, downloadAttachment,
+    readAttachment, openAttachment, canOpenAttachments: canOpenExternally(), saveFile,
+    createGroup, leaveGroup, selectGroup, sendGroup, sendGroupFile, editGroupMessage, sendGroupVoice, setTrust, addContact, renameContact,
     acceptRequest, blockContact, removeContact, connect, disconnect, setSettings, reset, identity, ceremonyWords,
   };
 }

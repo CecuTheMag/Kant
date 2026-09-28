@@ -17,6 +17,7 @@ import { getSodium } from './sodium.js';
 import type { Libp2p } from 'libp2p';
 import { openDB, idbGet as sharedIdbGet, idbPut as sharedIdbPut } from './db.js';
 import { getOrDialPeer, withSendLock } from './send-lock.js';
+import type { VoiceMeta } from './voice.js';
 
 function generateId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -62,6 +63,10 @@ export interface FileMeta {
   thumbnail?: string;
   display: 'inline' | 'attachment';
   senderPubkeyHex?: string;
+  /** Present when the file is a recorded voice note (see voice.ts). Unvalidated on receipt. */
+  voice?: VoiceMeta;
+  /** Present when the file was sent to a group, so it lands in the group thread. Unvalidated on receipt. */
+  groupId?: string;
   /** Optional v1 extensions. Old receivers ignore this and keep using arrays. */
   capabilities?: {
     base64Chunks?: boolean;
@@ -327,6 +332,8 @@ export interface SendFileOptions {
   thumbnail?: string;
   maxFileSize?: number;
   senderPubkeyHex?: string;
+  voice?: VoiceMeta;
+  groupId?: string;
   onProgress?: FileProgressCallback;
 }
 
@@ -383,6 +390,8 @@ async function sendFileUnlocked(node: Libp2p, options: SendFileOptions): Promise
     thumbnail,
     display: mimeType.startsWith('image/') ? 'inline' : 'attachment',
     senderPubkeyHex: options.senderPubkeyHex,
+    ...(options.voice ? { voice: options.voice } : {}),
+    ...(options.groupId ? { groupId: options.groupId } : {}),
     capabilities: { base64Chunks: true, chunkAcks: true },
   };
 

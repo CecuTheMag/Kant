@@ -307,6 +307,17 @@ export function parseMarkdown(src: string, opts: MarkdownOptions = {}): Block[] 
 
 const ESCAPABLE = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
 const RE_WS = /\s/;
+
+/**
+ * Whitespace test for hot scanning loops: ASCII is checked directly and only
+ * other characters fall back to the regex. A regex call per character made
+ * `[a](` repeated thousands of times take seconds to preview.
+ */
+function isWhitespace(c: string): boolean {
+  const code = c.charCodeAt(0);
+  if (code < 0x80) return code === 0x20 || (code >= 0x09 && code <= 0x0d);
+  return RE_WS.test(c);
+}
 const RE_PUNCT = /[\p{P}\p{S}]/u;
 
 const NAMED_ENTITIES: Record<string, string> = {
@@ -486,7 +497,7 @@ function parseLinkAt(sc: Scan, i: number): { label: string; dest: string; end: n
       if (c === '\\') { k++; continue; }
       if (c === '(') parens++;
       else if (c === ')') { if (parens === 0) break; parens--; }
-      else if (RE_WS.test(c)) break;
+      else if (isWhitespace(c)) break;
     }
     dest = s.slice(startDest, k);
   }

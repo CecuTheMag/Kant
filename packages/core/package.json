@@ -9,7 +9,7 @@
     "build": "tsc",
     "build:test": "tsc -p tsconfig.test.json",
     "dev": "tsc --watch",
-    "test": "pnpm run build && pnpm run build:test && node --loader ./sodium-loader.mjs keypair.test.mjs && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs ./dist-test/x3dh-opk.test.js && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --test ./dist-test/groups.test.js ./dist-test/files-limits.test.js ./dist-test/files-transfer.test.js ./dist-test/ratchetStore.test.js ./dist-test/envelope.test.js ./dist-test/storage-hygiene.test.js",
+    "test": "pnpm run build && pnpm run build:test && node --loader ./sodium-loader.mjs keypair.test.mjs && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs ./dist-test/x3dh-opk.test.js && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --test ./dist-test/groups.test.js ./dist-test/files-limits.test.js ./dist-test/files-transfer.test.js ./dist-test/ratchetStore.test.js ./dist-test/envelope.test.js ./dist-test/storage-hygiene.test.js ./dist-test/edits-voice.test.js",
     "test:coverage": "pnpm run build:test && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --experimental-test-coverage --test-coverage-include='dist-test/*.js' --test-coverage-exclude='dist-test/*.test.js' --test-coverage-lines=40 --test-coverage-branches=65 --test-coverage-functions=40 --test ./dist-test/groups.test.js && node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --experimental-test-coverage --test-coverage-include='dist-test/files.js' --test-coverage-lines=45 --test-coverage-branches=50 --test-coverage-functions=50 --test ./dist-test/files-limits.test.js"
   },
   "dependencies": {
