@@ -15,6 +15,8 @@ import {
 import { copyText, displayName, isTouch, seenLabel, shortId, useLongPress } from './lib';
 import { Avatar, Menu, useToast } from './parts';
 import type { MenuItem } from './parts';
+import { FilePreview } from './FilePreview';
+import { displayFileName } from './preview/sanitize';
 
 type Target = { kind: 'dm'; contact: Contact } | { kind: 'group'; groupId: string };
 
@@ -36,6 +38,7 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
   const [replyTo, setReplyTo] = useState<ReplyRef | null>(null);
   const [menu, setMenu] = useState<{ at: { x: number; y: number }; items: MenuItem[] } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [preview, setPreview] = useState<MessageAttachment | null>(null);
   const [ackKeyChange, setAckKeyChange] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
@@ -142,7 +145,7 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
               <MessageRow key={m.id} m={m} grouped={grouped} last={last} newDay={newDay}
                 senderName={!isDm && m.from !== 'me' && !grouped ? nameOf(m.from) : undefined}
                 showStatus={isDm && isLastOutgoing}
-                onMenu={(at) => openMenu(m, at)} onOpenImage={setLightbox}
+                onMenu={(at) => openMenu(m, at)} onOpenImage={setLightbox} onOpenFile={setPreview}
                 onRetry={isDm ? () => store.send(contact!.id!, m.text) : undefined} />
             );
             });
@@ -159,15 +162,17 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
 
       {menu && <Menu at={menu.at} items={menu.items} onClose={() => setMenu(null)} />}
       {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
+      {preview && <FilePreview attachment={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }
 
 /* ── Message ──────────────────────────────────────────────────────── */
 
-function MessageRow({ m, grouped, last, newDay, senderName, showStatus, onMenu, onOpenImage, onRetry }: {
+function MessageRow({ m, grouped, last, newDay, senderName, showStatus, onMenu, onOpenImage, onOpenFile, onRetry }: {
   m: PlainMessage; grouped: boolean; last: boolean; newDay: boolean; senderName?: string; showStatus: boolean;
-  onMenu: (at: { x: number; y: number }) => void; onOpenImage: (src: string) => void; onRetry?: () => void;
+  onMenu: (at: { x: number; y: number }) => void; onOpenImage: (src: string) => void;
+  onOpenFile: (attachment: MessageAttachment) => void; onRetry?: () => void;
 }) {
   const out = m.from === 'me';
   const { pressed, handlers, justFired } = useLongPress(onMenu);
@@ -187,7 +192,11 @@ function MessageRow({ m, grouped, last, newDay, senderName, showStatus, onMenu, 
               <span className="k-quote"><b>{m.replyTo.from}</b><span>{m.replyTo.text}</span></span>
             )}
             {image && <ImageAttachment attachment={image} onOpen={onOpenImage} />}
-            {files.map((a) => <FileAttachment key={a.fileId ?? a.name} attachment={a} />)}
+            {files.map((a) => (
+              <FileAttachment key={a.fileId ?? a.name} attachment={a}
+                // A long-press that just opened the menu must not also open the preview.
+                onOpen={() => { if (!justFired()) onOpenFile(a); }} />
+            ))}
             {m.text && (image ? <span className="k-image-caption" style={{ display: 'block' }}>{m.text}</span> : m.text)}
           </div>
           <button type="button" className="k-msg-more" aria-label="Message actions"
@@ -266,7 +275,7 @@ function ImageAttachment({ attachment, onOpen }: { attachment: MessageAttachment
   return <img className="k-image" src={url} alt={attachment.name || 'Photo'} onClick={() => onOpen(url)} />;
 }
 
-function FileAttachment({ attachment }: { attachment: MessageAttachment }) {
+function FileAttachment({ attachment, onOpen }: { attachment: MessageAttachment; onOpen: () => void }) {
   const store = useStore();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -277,14 +286,17 @@ function FileAttachment({ attachment }: { attachment: MessageAttachment }) {
       toast(ok ? 'Saved' : 'Couldn’t save the file', ok ? <Check size={18} /> : <Alert size={18} />);
     } finally { setBusy(false); }
   };
+  const name = displayFileName(attachment.name);
   return (
     <span className="k-attach">
-      <span className="k-attach-icon"><Doc size={20} /></span>
-      <span style={{ minWidth: 0 }}>
-        <span className="k-attach-name" style={{ display: 'block' }}>{attachment.name || 'File'}</span>
-        <span className="k-attach-size">{fileSize(attachment.size)}</span>
-      </span>
-      <button type="button" className="k-attach-dl" onClick={download} disabled={busy} aria-label={`Save ${attachment.name || 'file'}`}>
+      <button type="button" className="k-attach-open" onClick={onOpen} aria-label={`Preview ${name}`}>
+        <span className="k-attach-icon"><Doc size={20} /></span>
+        <span style={{ minWidth: 0 }}>
+          <span className="k-attach-name" style={{ display: 'block' }}>{name}</span>
+          <span className="k-attach-size">{fileSize(attachment.size)}</span>
+        </span>
+      </button>
+      <button type="button" className="k-attach-dl" onClick={download} disabled={busy} aria-label={`Save ${name}`}>
         {busy ? <Spinner size={16} /> : <Download size={17} />}
       </button>
     </span>

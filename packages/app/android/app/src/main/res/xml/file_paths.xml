@@ -2,4 +2,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
+    <!-- Decrypted copies handed to another app via "Open with" (KantFilesPlugin). -->
+    <cache-path name="kant_open" path="kant-open/" />
 </paths>

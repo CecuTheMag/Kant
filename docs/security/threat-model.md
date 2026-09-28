@@ -24,6 +24,12 @@ Security assumptions:
 - the app is expected to be run on a trusted endpoint
 - the relay does not hold plaintext message content
 
+Client invariants:
+- **All message content travels inside the end-to-end encryption.** That includes structured content such as a quoted reply (`packages/core/src/envelope.ts`). The outer wire JSON (`id`, `fromPubKeyHex`, ratchet header) is visible to the last onion hop and is not authenticated, so no content may be placed there, and receivers ignore any legacy content field found there.
+- **Received files are untrusted.** Previews decrypt to memory and render only through inert elements (text nodes, `<img>`, `<audio>`, `<video>`): no HTML is rendered, remote images inside documents are never fetched, and links leave the app only for `http(s)`/`mailto` after the user confirms. Plaintext touches disk only for "Open with…", under `cache/kant-open/`, which is swept at cold start, on resume and on erase.
+- **"Erase this device" clears every IndexedDB store** (enumerated from the database, not a hard-coded list), identifying local settings and temporary files, with networking stopped first.
+- **No OS backup on Android.** `allowBackup` is off and the data-extraction rules exclude everything: a restored copy would put the encrypted identity in a cloud account and fork every double-ratchet session.
+
 ### 2. Relay service
 The relay operates as a public bootstrapping and route registry service. It exposes HTTP registry endpoints and a libp2p WebSocket listener for peer transport.
 

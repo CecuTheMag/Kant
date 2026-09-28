@@ -22,6 +22,12 @@ export interface Settings {
 
 export interface ReplyRef { id: string; from: string; text: string }
 
+/** A decrypted attachment held in memory. */
+export interface AttachmentData { bytes: Uint8Array; name: string; mime: string }
+
+/** 'unavailable': this platform has no "Open with…"; 'no-app': nothing installed can open the type. */
+export type OpenAttachmentResult = 'opened' | 'no-app' | 'unavailable' | 'missing';
+
 export interface State {
   ready: boolean;
   meHex: string;
@@ -65,6 +71,12 @@ export interface Store {
   sendFile: (contactId: string, file: File) => void;
   loadAttachment: (attachment: MessageAttachment) => Promise<string | null>;
   downloadAttachment: (attachment: MessageAttachment) => Promise<boolean>;
+  /** Decrypt an attachment into memory for preview. null while it is still arriving or if it is missing. */
+  readAttachment: (attachment: MessageAttachment) => Promise<AttachmentData | null>;
+  /** Hand the file to another app. Rejects only on unexpected platform errors. */
+  openAttachment: (attachment: MessageAttachment) => Promise<OpenAttachmentResult>;
+  /** Whether openAttachment can work on this platform at all. */
+  canOpenAttachments: boolean;
   selectGroup: (groupId: string) => void;
   sendGroup: (groupId: string, text: string, replyTo?: ReplyRef) => void;
   sendGroupFile: (groupId: string, file: File) => void;

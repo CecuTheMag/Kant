@@ -270,9 +270,13 @@ function createWindow() {
 
   mainWindow.on('closed', () => { mainWindow = null; });
 
-  // Open external links in system browser
+  // Open external links in the system browser — but only web and mail links.
+  // shell.openExternal hands the URL to the OS, so a file:, smb: or custom
+  // scheme URL from message or file content could launch local programs.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    let protocol = '';
+    try { protocol = new URL(url).protocol; } catch { /* malformed — refuse */ }
+    if (protocol === 'https:' || protocol === 'http:' || protocol === 'mailto:') void shell.openExternal(url);
     return { action: 'deny' };
   });
 }
