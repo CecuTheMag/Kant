@@ -23,9 +23,10 @@ export {
 } from './ratchet.js';
 export type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle, RatchetState, EncryptedMessage } from './ratchet.js';
 export { saveRatchet, loadRatchets, deleteRatchet } from './ratchetStore.js';
+export { DB_NAME } from './db.js';
 export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, findSPKByPublicKey, replenishOPKPool, reserveOPK, getOPK, burnOPK, PREKEY_PROTOCOL } from './prekey.js';
 
-export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactTrust, normalizeContact } from './contacts.js';
+export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactTrust, normalizeContact, addContactCaps } from './contacts.js';
 export type { Contact } from './contacts.js';
 
 export { saveMessage, setMessageStatus, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
@@ -34,7 +35,10 @@ export type { StoredMessage, ConversationHeader, Conversation, MessageStatus, Me
 export { startDiscovery, getKnownPeers } from './discovery.js';
 export type { DiscoveredPeer, PeerDiscoveryHandler } from './discovery.js';
 
-export { enqueue, dequeue, getPendingForContact, startQueueRetry } from './queue.js';
+export { enqueue, dequeue, getPendingForContact, startQueueRetry, stripLegacyWireFields, scrubQueuedLegacyWireFields } from './queue.js';
+
+export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeCaps, CAP_CONTENT_ENVELOPE, SUPPORTED_CAPS, REPLY_LIMITS } from './envelope.js';
+export type { ReplyRef, DecodedContent } from './envelope.js';
 export type { QueuedMessage, SendFn } from './queue.js';
 
 export {

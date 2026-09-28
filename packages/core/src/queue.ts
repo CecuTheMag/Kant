@@ -116,3 +116,46 @@ export function startQueueRetry(
     inFlight.clear();
   };
 }
+
+/**
+ * Wire fields that older builds placed OUTSIDE the ratchet ciphertext even
+ * though they are message content (the quoted reply snippet). They leak to the
+ * last onion hop and are unauthenticated, so current builds neither send nor
+ * trust them.
+ */
+const LEGACY_PLAINTEXT_WIRE_FIELDS = ['replyTo'] as const;
+
+/** Remove legacy plaintext content fields from one serialised wire payload. */
+export function stripLegacyWireFields(wirePayload: string): string {
+  let parsed: unknown;
+  try { parsed = JSON.parse(wirePayload); } catch { return wirePayload; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return wirePayload;
+  const record = parsed as Record<string, unknown>;
+  if (!LEGACY_PLAINTEXT_WIRE_FIELDS.some(field => field in record)) return wirePayload;
+  for (const field of LEGACY_PLAINTEXT_WIRE_FIELDS) delete record[field];
+  return JSON.stringify(record);
+}
+
+/**
+ * One-shot migration for messages queued by an older build: rewrite them so
+ * the plaintext reply snippet is not sent when the queue finally drains. The
+ * ciphertext, message id and ordering are untouched, so delivery and ACKs are
+ * unaffected. Returns how many queued messages were rewritten.
+ */
+export async function scrubQueuedLegacyWireFields(): Promise<number> {
+  const db = await openDB();
+  try {
+    const all = await idbGetAll<QueuedMessage>(db, STORE);
+    let rewritten = 0;
+    for (const msg of all) {
+      const scrubbed = stripLegacyWireFields(msg.wirePayload);
+      if (scrubbed !== msg.wirePayload) {
+        await idbPut(db, STORE, { ...msg, wirePayload: scrubbed });
+        rewritten += 1;
+      }
+    }
+    return rewritten;
+  } finally {
+    db.close();
+  }
+}

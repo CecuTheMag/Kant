@@ -53,6 +53,12 @@ node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs --test ./dist-tes
 ```
 Test sources are colocated as `*.test.ts` next to the module under test (e.g. `groups.ts` / `groups.test.ts`) and compiled via `tsconfig.test.json` into `dist-test/`.
 
+### App unit tests
+`packages/app` runs pure-logic tests (`src/**/*.test.ts`) with Node's built-in TypeScript support and `node --test` — no build step. `test/ts-resolve.mjs` lets the extension-less sibling imports Vite uses resolve under Node, so test-covered modules must stay free of DOM/Capacitor imports (see `src/ui/preview/`). From `packages/app`:
+```bash
+pnpm test
+```
+
 ### Root-level lab / E2E tests
 `tests/lab` is a disposable Docker-based lab (protocol, relay, network, browser UI, desktop smoke tests) — **not** run locally by default, designed to run on a dedicated test node:
 ```bash
@@ -81,6 +87,7 @@ See `tests/lab/README.md` for the Docker-compose based workflow (`tests/lab/scri
 - Direct peer messaging uses a custom length-prefixed framing protocol over two libp2p protocols: `PING_PROTOCOL` (`/kant/ping/1.0.0`, encrypted payloads/group messages) and `RECEIPT_PROTOCOL` (`/kant/receipt/1.0.0`, delivery/read receipts). Frames are unidirectional — the sender closes the write side rather than expecting a reply.
 - `transportManager.faultTolerance = NO_FATAL` is deliberate: circuit-relay reservation handshakes are intermittently flaky, and letting a single failed reservation abort startup would drop the whole node to "Offline"; the reservation store keeps retrying in the background instead.
 - Group messaging, file transfer (chunked, encrypted, resumable), and onion routing (`onion.ts`, cover traffic via `COVER_TYPE`) are each separate protocols/handlers registered on the same node, all exported from `packages/core/src/index.ts`.
+- DM and group payloads carry structured content (currently reply quotes) in the content envelope (`packages/core/src/envelope.ts`) *inside* the encryption. Never add content fields to the outer wire JSON. DMs only send the envelope to peers that advertised `content-envelope-1` in `kant-presence` (`caps`, persisted on the contact); older peers get the text without the quote.
 - All core logging goes through `clog()` / `setCoreLogger()` so the app can surface low-level transport events (dial retries, onion forwarding, inbound frames) in its in-app `DebugLog` component, not just the browser devtools console.
 
 ### App layer (`packages/app`)
@@ -88,6 +95,7 @@ See `tests/lab/README.md` for the Docker-compose based workflow (`tests/lab/scri
 - `App.tsx` routes between onboarding (`ui/Onboarding.tsx`: welcome + terms → network step only when no `VITE_RELAY_URL` was baked in → create password), unlock, and the signed-in app (`ui/KantApp.tsx`).
 - All screens live in `src/ui/` (Apple-style design system in `ui/kant.css`, light/dark following the OS). The UI talks only to the `Store` interface in `ui/core/store.tsx`; `ui/core/realkant.tsx` implements it on top of `useKant` + `useGroups`. Add new backend capabilities there rather than calling the hooks from components.
 - Contacts created by an inbound message from an unknown sender are flagged `request` (shown as message requests); `blocked` contacts have their messages dropped on arrival (see `hideFromUser` in `useKant.ts`).
+- File preview (`ui/FilePreview.tsx`, pure parsers in `ui/preview/`) renders attachments in-app; "Open with…" and external links go through `lib/fileActions.ts`, which detects the native `KantFiles` plugin by availability, not platform. That file documents the plugin contract an iOS implementation must satisfy (Android: `KantFilesPlugin.java`).
 - Relay URL resolution: `VITE_RELAY_URL` (preferred) or legacy `VITE_RELAY_HTTP_PORT`, see `packages/app/.env.example`.
 
 ### Licensing / feature gating

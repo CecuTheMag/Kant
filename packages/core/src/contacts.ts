@@ -26,6 +26,8 @@ export interface Contact {
   request?: boolean;
   /** Messages from blocked contacts are dropped on arrival. */
   blocked?: boolean;
+  /** Protocol capabilities the peer has advertised (see envelope.ts). Absent = legacy client. */
+  caps?: string[];
 }
 
 /** Normalize a stored record: backfill id + trust for legacy rows (no backfill to verified). */
@@ -83,6 +85,25 @@ export async function updateContactAddr(publicKeyHex: string, circuitAddr: strin
   if (!existing) { db.close(); return; }
   await dbPutContact(db, STORE, { ...existing, lastCircuitAddr: circuitAddr, lastSeen: Date.now() });
   db.close();
+}
+
+/**
+ * Record the capabilities a contact advertised. Only ever widens the set: a
+ * peer is not downgraded by a presence ping that omits caps (an old build
+ * running on another of their devices, or a stripped ping), because the only
+ * consequence of a stale "supported" is that they see a reply envelope as JSON.
+ * Returns true when the stored record changed.
+ */
+export async function addContactCaps(publicKeyHex: string, caps: string[]): Promise<boolean> {
+  if (!caps.length) return false;
+  const db       = await openDB();
+  const existing = await dbGetContact<Contact>(db, STORE, publicKeyHex);
+  const known    = existing?.caps ?? [];
+  const merged   = [...known, ...caps.filter(cap => !known.includes(cap))].slice(0, 32);
+  if (!existing || merged.length === known.length) { db.close(); return false; }
+  await dbPutContact(db, STORE, { ...existing, caps: merged });
+  db.close();
+  return true;
 }
 
 /** Get all contacts (normalized: id + trust backfilled for legacy rows) */
