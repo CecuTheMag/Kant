@@ -33,6 +33,8 @@ import { burnOPK, getOPK } from './prekey.js';
 import type { X3DHPublicBundle } from './ratchet.js';
 import { buildPrivateBundle } from './prekey.js';
 import { decodeContent, encodeContent } from './envelope.js';
+import type { ContentOptions, EditRef } from './envelope.js';
+import type { MessageAttachment } from './messages.js';
 import type { ReplyRef } from './envelope.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -117,6 +119,12 @@ export interface GroupMessage {
   keyGeneration: number;
   /** Unix ms when this message should be deleted. 0 = never. */
   expiresAt: number;
+  /**
+   * A file sent or received in this group (see saveGroupFileRecord). Only ever
+   * written locally — handleIncomingGroupMsg never copies it from the wire, so
+   * a member cannot make a group message point at one of our stored blobs.
+   */
+  attachment?: MessageAttachment;
 }
 
 export interface StoredGroupConversation {
@@ -612,6 +620,9 @@ export async function saveGroupMessage(msg: GroupMessage): Promise<void> {
   const db   = await openDB();
   const conv = await idbGet<StoredGroupConversation>(db, 'groupmsgs', msg.groupId)
     ?? { groupId: msg.groupId, publicKeyHex: msg.groupId, messages: [] };
+  // Senders retry a group-msg with the same id until every member has it, and
+  // a slow first attempt can still land — store each message once.
+  if (conv.messages.some(existing => existing.id === msg.id)) { db.close(); return; }
   conv.messages.push(msg);
   await idbPut(db, 'groupmsgs', conv);
   db.close();
@@ -806,16 +817,16 @@ export type GroupReplyRef = ReplyRef;
 /** Wrap a reply reference into the plaintext that actually gets encrypted —
  *  a quoted snippet is message content, so it rides inside the same AEAD seal
  *  as the body rather than as unauthenticated wire metadata. */
-export function encodeGroupText(text: string, replyTo?: GroupReplyRef): string {
-  return encodeContent(text, replyTo);
+export function encodeGroupText(text: string, replyTo?: GroupReplyRef, options?: ContentOptions): string {
+  return encodeContent(text, replyTo, options);
 }
 
 /** Reverse of encodeGroupText. Anything that isn't a recognised envelope is
  *  treated as plain legacy text — keeps old stored/received messages readable.
  *  The reply reference is validated: a group member controls it. */
-export function decodeGroupText(raw: string): { text: string; replyTo?: GroupReplyRef } {
-  const { text, replyTo } = decodeContent(raw);
-  return replyTo ? { text, replyTo } : { text };
+export function decodeGroupText(raw: string): { text: string; replyTo?: GroupReplyRef; edit?: EditRef } {
+  const { text, replyTo, edit } = decodeContent(raw);
+  return { text, ...(replyTo ? { replyTo } : {}), ...(edit ? { edit } : {}) };
 }
 
 /**
@@ -831,9 +842,10 @@ export async function sendGroupMessage(
   sendPingFn: (node: Libp2p, addr: string, msg: string) => Promise<any>,
   liveAddrs?: Map<string, string>,
   ttlMs?: number,
-  replyTo?: GroupReplyRef
+  replyTo?: GroupReplyRef,
+  options?: ContentOptions
 ): Promise<GroupMessage> {
-  const { ciphertext, nonce } = await encryptGroupMessage(encodeGroupText(text, replyTo), group, identity);
+  const { ciphertext, nonce } = await encryptGroupMessage(encodeGroupText(text, replyTo, options), group, identity);
   const now = Date.now();
 
   const msg: GroupMessage = {
@@ -887,6 +899,35 @@ export async function sendGroupMessage(
     failed = await attemptSend(failed);
   }
 
+  await saveGroupMessage(msg);
+  return msg;
+}
+
+/**
+ * Persist a file message in a group's history.
+ *
+ * Group files travel over the file protocol, one transfer per member, so there
+ * is no group-msg to store for them. The row keeps the usual encrypted body
+ * (empty text under the group key) plus the attachment reference, exactly as
+ * direct-message attachments are stored.
+ */
+export async function saveGroupFileRecord(
+  record: { id: string; groupId: string; fromPubKeyHex: string; timestamp: number; attachment: MessageAttachment },
+  group: Group,
+  identity: UnlockedIdentity,
+): Promise<GroupMessage> {
+  const { ciphertext, nonce } = await encryptGroupMessage('', group, identity);
+  const msg: GroupMessage = {
+    id:            record.id,
+    groupId:       record.groupId,
+    fromPubKeyHex: record.fromPubKeyHex,
+    ciphertext,
+    nonce,
+    timestamp:     record.timestamp,
+    keyGeneration: group.keyGeneration,
+    expiresAt:     0,
+    attachment:    record.attachment,
+  };
   await saveGroupMessage(msg);
   return msg;
 }

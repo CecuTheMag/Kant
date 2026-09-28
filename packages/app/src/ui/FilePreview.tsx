@@ -7,13 +7,16 @@
  * home: HTML is shown as source, remote images in Markdown are never fetched,
  * and links ask before leaving the app. PDFs and anything else unpreviewable go
  * to "Open with…" (another app) or Save.
+ *
+ * Tables and text files can be edited (FileEditor); the edited copy is sent as
+ * a new attachment, never written over the original.
  */
 import { useEffect, useState } from 'react';
 import { useStore } from './core/store';
 import type { AttachmentData } from './core/store';
 import type { MessageAttachment } from './core/types';
 import { fileSize } from './core/format';
-import { Alert, Check, Doc, Download, Share, Spinner } from './icons';
+import { Alert, Check, Doc, Download, Pencil, Share, Spinner } from './icons';
 import { Confirm, Segmented, Sheet, SheetHead, useToast } from './parts';
 import { csvDelimiterHint, isTextKind, kindLabel, previewKind, PREVIEW_LIMITS } from './preview/fileKind';
 import type { PreviewKind } from './preview/fileKind';
@@ -25,15 +28,21 @@ import type { Block } from './preview/markdown';
 import { Markdown } from './preview/Markdown';
 import { displayFileName, sanitizeMime } from './preview/sanitize';
 import { openExternalUrl } from '../lib/fileActions';
+import { FileEditor } from './FileEditor';
+import type { EditorSource } from './FileEditor';
+import { tableForEditing } from './preview/tableEdit';
 
 /** Beyond this many cells a phone WebView stalls laying out the table. */
 const MAX_TABLE_CELLS = 50_000;
 
+/** How the original file wrote text, so an edited copy is written the same way. */
+interface TextFormat { lineEnding: '\n' | '\r\n'; bom: boolean }
+
 type Content =
-  | { kind: 'markdown'; text: string; blocks: Block[] | null; truncated: boolean }
-  | { kind: 'csv'; text: string; table: CsvTable; truncated: boolean }
-  | { kind: 'json'; text: string; valid: boolean; truncated: boolean }
-  | { kind: 'code' | 'text'; text: string; truncated: boolean }
+  | ({ kind: 'markdown'; text: string; blocks: Block[] | null; truncated: boolean } & TextFormat)
+  | ({ kind: 'csv'; text: string; table: CsvTable; truncated: boolean } & TextFormat)
+  | ({ kind: 'json'; text: string; raw: string; valid: boolean; truncated: boolean } & TextFormat)
+  | ({ kind: 'code' | 'text'; text: string; truncated: boolean } & TextFormat)
   | { kind: 'image' | 'audio' | 'video'; url: string }
   | { kind: 'binary' }
   | { kind: 'external'; previewKind: PreviewKind };
@@ -43,9 +52,10 @@ function buildContent(kind: PreviewKind, data: AttachmentData, name: string): Co
     const decoded = decodeTextPreview(data.bytes, PREVIEW_LIMITS.textBytes);
     if (decoded.binary) return { kind: 'binary' };
     const { text, truncated } = decoded;
+    const format: TextFormat = { lineEnding: decoded.lineEnding, bom: decoded.bom };
     switch (kind) {
       case 'markdown':
-        return { kind, text, truncated, blocks: text.length <= PREVIEW_LIMITS.markdownChars ? parseMarkdown(text) : null };
+        return { kind, text, truncated, ...format, blocks: text.length <= PREVIEW_LIMITS.markdownChars ? parseMarkdown(text) : null };
       case 'csv': {
         const table = parseCsv(text, {
           delimiter: csvDelimiterHint(name),
@@ -55,15 +65,15 @@ function buildContent(kind: PreviewKind, data: AttachmentData, name: string): Co
         });
         const rowCap = Math.max(1, Math.floor(MAX_TABLE_CELLS / Math.max(1, table.columns)));
         if (table.rows.length > rowCap) { table.rows = table.rows.slice(0, rowCap); table.truncatedRows = true; }
-        return { kind, text, table, truncated };
+        return { kind, text, table, truncated, ...format };
       }
       case 'json': {
-        if (truncated || text.length > PREVIEW_LIMITS.jsonPrettyChars) return { kind, text, valid: true, truncated };
-        try { return { kind, text: JSON.stringify(JSON.parse(text), null, 2), valid: true, truncated }; }
-        catch { return { kind, text, valid: false, truncated }; }
+        if (truncated || text.length > PREVIEW_LIMITS.jsonPrettyChars) return { kind, text, raw: text, valid: true, truncated, ...format };
+        try { return { kind, text: JSON.stringify(JSON.parse(text), null, 2), raw: text, valid: true, truncated, ...format }; }
+        catch { return { kind, text, raw: text, valid: false, truncated, ...format }; }
       }
       default:
-        return { kind: kind === 'code' ? 'code' : 'text', text, truncated };
+        return { kind: kind === 'code' ? 'code' : 'text', text, truncated, ...format };
     }
   }
   if (kind === 'image' || kind === 'audio' || kind === 'video') {
@@ -76,7 +86,37 @@ function buildContent(kind: PreviewKind, data: AttachmentData, name: string): Co
   return { kind: 'external', previewKind: kind };
 }
 
-export function FilePreview({ attachment, onClose }: { attachment: MessageAttachment; onClose: () => void }) {
+/**
+ * What the editor should open for this preview, or a reason it can't be edited.
+ * Anything truncated for preview is refused: editing a partial copy would lose data.
+ */
+function editorSourceFor(content: Content | null, name: string): EditorSource | 'too-large' | null {
+  if (!content) return null;
+  switch (content.kind) {
+    case 'csv': {
+      if (content.truncated) return 'too-large';
+      const table = tableForEditing(content.text, name, csvDelimiterHint(name));
+      return table ? { kind: 'table', ...table, lineEnding: content.lineEnding, bom: content.bom } : 'too-large';
+    }
+    case 'markdown':
+    case 'code':
+    case 'text':
+      if (content.truncated) return 'too-large';
+      return { kind: 'text', text: content.text, flavor: content.kind, lineEnding: content.lineEnding, bom: content.bom };
+    case 'json':
+      if (content.truncated) return 'too-large';
+      return { kind: 'text', text: content.raw, flavor: 'json', lineEnding: content.lineEnding, bom: content.bom };
+    default:
+      return null;
+  }
+}
+
+export function FilePreview({ attachment, onClose, onSendEdited }: {
+  attachment: MessageAttachment;
+  onClose: () => void;
+  /** Send an edited copy into the chat this file came from. Absent where you can't send. */
+  onSendEdited?: (file: File) => void;
+}) {
   const store = useStore();
   const toast = useToast();
   const name = displayFileName(attachment.name);
@@ -87,6 +127,7 @@ export function FilePreview({ attachment, onClose }: { attachment: MessageAttach
   const [view, setView] = useState<'rendered' | 'source'>('rendered');
   const [busy, setBusy] = useState<'save' | 'open' | null>(null);
   const [pendingLink, setPendingLink] = useState<string | null>(null);
+  const [editor, setEditor] = useState<EditorSource | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +174,12 @@ export function FilePreview({ attachment, onClose }: { attachment: MessageAttach
     } finally { setBusy(null); }
   };
 
+  const editable = state === 'ready' ? editorSourceFor(content, attachment.name) : null;
+  const startEdit = () => {
+    if (editable === 'too-large') { toast('This file is too large to edit here', <Alert size={18} />); return; }
+    if (editable) setEditor(editable);
+  };
+
   const hasRendered = content?.kind === 'markdown' ? !!content.blocks : content?.kind === 'csv';
   const truncated = content && 'truncated' in content && content.truncated;
   const external = state === 'ready' && (content?.kind === 'external' || content?.kind === 'binary' || mediaFailed);
@@ -150,6 +197,12 @@ export function FilePreview({ attachment, onClose }: { attachment: MessageAttach
         title={<span title={name}>{name}</span>}
         right={
           <div className="k-preview-actions">
+            {editable && (
+              <button type="button" className="k-icon-btn" onClick={startEdit} disabled={!!busy}
+                aria-label={content?.kind === 'csv' ? `Edit table ${name}` : `Edit ${name}`} title="Edit">
+                <Pencil size={20} />
+              </button>
+            )}
             {store.canOpenAttachments && (
               <button type="button" className="k-icon-btn" onClick={openWith} disabled={!!busy || state !== 'ready'} aria-label="Open with another app">
                 {busy === 'open' ? <Spinner size={18} /> : <Share size={21} />}
@@ -184,6 +237,13 @@ export function FilePreview({ attachment, onClose }: { attachment: MessageAttach
               mediaFailed={mediaFailed} canOpen={store.canOpenAttachments} busy={busy} onOpen={openWith} onSave={save} />
           : <PreviewContent content={content} view={view} onLink={setPendingLink} onMediaError={() => setMediaFailed(true)} />)}
       </div>
+
+      {editor && (
+        <FileEditor source={editor} name={name} mime={attachment.mime}
+          title={editor.kind === 'table' ? 'Edit table' : 'Edit file'}
+          onSend={onSendEdited ? (file) => { onSendEdited(file); onClose(); } : undefined}
+          onClose={() => setEditor(null)} />
+      )}
 
       {pendingLink && (
         <Confirm title="Open this link?" confirmLabel="Open link" onClose={() => setPendingLink(null)}

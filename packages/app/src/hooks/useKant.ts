@@ -20,10 +20,11 @@ import {
   incrementUnread, clearUnread, getAllUnread,
   generateX25519Keypair,
   encodeContent, decodeContent, addContactCaps, sanitizeCaps,
-  CAP_CONTENT_ENVELOPE, SUPPORTED_CAPS, scrubQueuedLegacyWireFields,
+  CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, SUPPORTED_CAPS, scrubQueuedLegacyWireFields,
+  editStoredMessage, sanitizeVoiceMeta, sanitizeGroupRef,
 } from '@kant/core';
 import type { Libp2p } from 'libp2p';
-import type { RatchetState, UnlockedIdentity, Contact, MessageStatus, DiscoveredPeer, MessageAttachment, FileMeta, ReplyRef } from '@kant/core';
+import type { RatchetState, UnlockedIdentity, Contact, MessageStatus, DiscoveredPeer, MessageAttachment, FileMeta, ReplyRef, EditRef, VoiceMeta } from '@kant/core';
 import {
   AI_CONTACT_PUBKEY, loadAiSettings, saveAiSettings, chatCompletion,
   type AiSettings, type ChatMsg,
@@ -65,7 +66,19 @@ export interface PlainMessage {
   attachment?: MessageAttachment;
   /** Quoted-message reference, when this message was sent as a reply. */
   replyTo?: { id: string; from: string; text: string };
+  /** When the text was last replaced by an edit. */
+  editedAt?: number;
 }
+
+/** A file that arrived for a group; useGroups files it into the group thread. */
+export interface IncomingGroupFile {
+  groupId: string;
+  senderHex: string;
+  attachment: MessageAttachment;
+}
+
+/** Fallback for peers that can't apply edits: the correction arrives as a new message. */
+export const EDIT_FALLBACK_PREFIX = '✎ ';
 
 export function useKant() {
   const [screen, setScreen]                   = useState<Screen>('loading');
@@ -177,7 +190,8 @@ export function useKant() {
   // Per-contact in-memory queue for messages that couldn't be encrypted yet
   // because the receiver-side ratchet sending chain wasn't initialised.
   // Flushed after the first successful decrypt triggers the DH ratchet step.
-  const pendingPlaintextRef = useRef<Map<string, Array<{ id: string; text: string; replyTo?: { id: string; from: string; text: string } }>>>(new Map());
+  // An entry with `edit` is an edit of an earlier message, not a new message.
+  const pendingPlaintextRef = useRef<Map<string, Array<{ id: string; text: string; replyTo?: { id: string; from: string; text: string }; edit?: EditRef }>>>(new Map());
   // message ids already encrypted+sent under the CURRENT ratchet for a contact.
   // Cleared whenever that ratchet is replaced (tiebreak re-handshake, resync)
   // so held plaintext gets re-encrypted under the new session instead of being
@@ -212,6 +226,8 @@ export function useKant() {
   // rate-limit peer-to-peer presence traffic to avoid competing with messages
   // for a fragile circuit-relay stream.
   const lastPresenceAtRef = useRef(0);
+  // Per-contact time of the last direct presence ping (see sendPresenceTo).
+  const directPresenceAtRef = useRef<Map<string, number>>(new Map());
   /** Circuit self-heal: once we've had a circuit, losing it for 3 heartbeats (30s)
    *  while still connected means the relay dropped our reservation (e.g. relay
    *  restart / stale reservation store). Restart the node to re-reserve. */
@@ -278,6 +294,9 @@ export function useKant() {
   // Metadata only: core owns the single receive buffer and hands it to the
   // awaited completion callback after integrity verification.
   const incomingFilesRef = useRef<Map<string, FileMeta>>(new Map());
+  // Group files arrive over the same file protocol as direct ones. The group
+  // layer registers here so they land in the group thread, not the sender's DM.
+  const groupFileHandlerRef = useRef<((file: IncomingGroupFile) => Promise<void>) | null>(null);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -529,6 +548,7 @@ export function useKant() {
         : [];
       await sendOnion(node, bootstrapHops, addr, bootstrapWire);
       addLog(`🔒 Session ready: ${contact.nickname ?? contact.publicKeyHex.slice(0, 12)}…`);
+      void sendPresenceTo(contact.publicKeyHex, addr);
       sessionRetryCountRef.current.delete(contact.publicKeyHex);
 
       if (selectedContactRef.current?.publicKeyHex === contact.publicKeyHex) {
@@ -626,10 +646,17 @@ export function useKant() {
    * would otherwise show the raw envelope JSON. For those the message goes out
    * without the quote: degraded context, never a plaintext leak.
    */
-  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef): Promise<string> {
-    if (!replyTo) return text;
+  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef, edit?: EditRef): Promise<string> {
+    if (!replyTo && !edit) return text;
     let caps: string[] = [];
     try { caps = (await getContact(peerHex))?.caps ?? []; } catch { /* unknown → the safe no-quote path */ }
+    if (edit) {
+      if (caps.includes(CAP_MESSAGE_EDIT)) return encodeContent(text, undefined, { edit });
+      // An older build would show the envelope's text as a brand-new message
+      // anyway; mark it so the reader can tell it is a correction.
+      addLog(`✏️ ${peerHex.slice(0, 12)}… runs an older Kant — edit sent as a correction message`);
+      return `${EDIT_FALLBACK_PREFIX}${text}`;
+    }
     if (caps.includes(CAP_CONTENT_ENVELOPE)) return encodeContent(text, replyTo);
     addLog(`↩️ ${peerHex.slice(0, 12)}… runs an older Kant — reply sent without the quote`);
     return text;
@@ -648,10 +675,10 @@ export function useKant() {
     const flushed = flushedPendingRef.current.get(contact.publicKeyHex) ?? new Set<string>();
     flushedPendingRef.current.set(contact.publicKeyHex, flushed);
     let sentCount = 0;
-    for (const { id, text, replyTo } of pending) {
+    for (const { id, text, replyTo, edit } of pending) {
       if (flushed.has(id)) continue;
       try {
-        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo);
+        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo, edit);
         const encrypted = await ratchetEncrypt(ratchet, plaintext);
         const wire = JSON.stringify({
           id,
@@ -670,17 +697,22 @@ export function useKant() {
         await sendOnion(node, hops, peerCircuitAddr, wire);
         flushed.add(id);
         sentCount += 1;
-        setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sent' } : m));
-        patchThread(contact.publicKeyHex, id, { status: 'sent' });
-        await saveMessage(contact.publicKeyHex, kp.derivedKey, {
-          id, fromMe: true, text, timestamp: Date.now(), status: 'sent', replyTo,
-        } as any);
+        // An edit has no bubble of its own — the original was updated when it was made.
+        if (!edit) {
+          setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sent' } : m));
+          patchThread(contact.publicKeyHex, id, { status: 'sent' });
+          await saveMessage(contact.publicKeyHex, kp.derivedKey, {
+            id, fromMe: true, text, timestamp: Date.now(), status: 'sent', replyTo,
+          } as any);
+        }
         scheduleDeliveryRetry(id, contact, peerCircuitAddr, wire);
       } catch (error: any) {
         // Preserve the message as a visible retryable failure if the just-made
         // session dies before its first payload can leave the client.
-        setMessages(p => p.map(m => m.id === id ? { ...m, status: 'failed' } : m));
-        patchThread(contact.publicKeyHex, id, { status: 'failed' });
+        if (!edit) {
+          setMessages(p => p.map(m => m.id === id ? { ...m, status: 'failed' } : m));
+          patchThread(contact.publicKeyHex, id, { status: 'failed' });
+        }
         addLog(`⚠️ Held-message flush failed: ${error?.message ?? error}`);
       }
     }
@@ -913,6 +945,10 @@ export function useKant() {
                 setNodeStatus('chatting');
               }
               addLog('🔑 Ratchet ready (receiver)');
+              if (senderHex) {
+                const senderAddr = contactAddrRef.current.get(senderHex);
+                if (senderAddr) void sendPresenceTo(senderHex, senderAddr);
+              }
 
               // Flush any ciphertexts that arrived before this ratchet was ready.
               if (senderHex) {
@@ -929,8 +965,12 @@ export function useKant() {
                       // Same rule as the live path: a blocked sender is ACKed
                       // below (so their retries stop) but never shown or stored.
                       const blocked = !isBootstrap && !!(await getContact(senderHex))?.blocked;
-                      if (!isBootstrap && !blocked) {
-                        const content = decodeContent(plain);
+                      const bufferedContent = !isBootstrap && !blocked ? decodeContent(plain) : null;
+                      if (bufferedContent?.edit) {
+                        void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT]);
+                        await applyInboundEdit(senderHex, bufferedContent.edit, bufferedContent.text);
+                      } else if (bufferedContent) {
+                        const content = bufferedContent;
                         if (content.enveloped) void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE]);
                         if (senderHex === selectedContactRef.current?.publicKeyHex) {
                           addMessage('them', content.text, 'delivered', msgId, undefined, senderHex, content.replyTo);
@@ -1174,6 +1214,15 @@ export function useKant() {
                 hideFromUser = true;
                 addLog(`🚫 Dropped message from blocked contact ${senderHex.slice(0, 12)}…`);
               }
+              // An edit replaces the text of an earlier message from the same
+              // sender; it is never shown, counted or notified as a new one.
+              if (!hideFromUser && content.edit) {
+                hideFromUser = true;
+                if (senderHex) {
+                  void addContactCaps(senderHex, [CAP_MESSAGE_EDIT]);
+                  await applyInboundEdit(senderHex, content.edit, content.text);
+                }
+              }
               // The bootstrap advances the receiver chain but is protocol
               // control traffic, never a user-visible/persisted message.
               // "Is this conversation the one on screen right now?" — which is a
@@ -1407,23 +1456,50 @@ export function useKant() {
             const meta = incomingFilesRef.current.get(fileId);
             incomingFilesRef.current.delete(fileId);
             if (!meta || !verified || !identityRef.current) return;
+            const senderHex = meta.senderPubkeyHex ?? '';
+            // Same rule as text: a blocked sender's file is dropped unseen.
+            if (senderHex && (await getContact(senderHex))?.blocked) {
+              addLog(`🚫 Dropped file from blocked contact ${senderHex.slice(0, 12)}…`);
+              return;
+            }
             await saveFileBlob(fileId, data, { fileName: meta.fileName, mimeType: meta.mimeType, fileSize: meta.fileSize }, identityRef.current.derivedKey);
+            const voice = sanitizeVoiceMeta(meta.voice);
             const attachment: MessageAttachment = {
               fileId, fileName: meta.fileName, mimeType: meta.mimeType,
               fileSize: meta.fileSize, sha256: meta.sha256,
               thumbnail: meta.thumbnail, display: meta.display,
+              ...(voice ? { voice } : {}),
             };
-            const senderHex = meta.senderPubkeyHex ?? '';
+            const groupId = sanitizeGroupRef(meta.groupId);
+            if (groupId && senderHex && groupFileHandlerRef.current) {
+              await groupFileHandlerRef.current({ groupId, senderHex, attachment });
+              addLog(`✅ Group file received: ${meta.fileName}`);
+              return;
+            }
+            const msgId = generateId();
             if (senderHex) {
+              // A file can be the first thing someone new sends; give it a
+              // contact (as a message request) so the thread is reachable.
+              if (!(await getContact(senderHex))) {
+                await addContact(senderHex, undefined, undefined, { request: true });
+                setContacts(await getContacts());
+              }
               await saveMessage(senderHex, identityRef.current.derivedKey, {
-                id: generateId(), fromMe: false, text: '',
+                id: msgId, fromMe: false, text: '',
                 timestamp: Date.now(), status: 'delivered', attachment,
               } as any);
             }
-            if (!senderHex || senderHex === selectedContactRef.current?.publicKeyHex) {
-              addMessage('them', '', 'delivered', undefined, attachment, senderHex);
+            const isOpen = !senderHex || senderHex === selectedContactRef.current?.publicKeyHex;
+            if (isOpen) {
+              addMessage('them', '', 'delivered', msgId, attachment, senderHex);
             } else {
-              appendThread(senderHex, { id: generateId(), from: 'them', text: '', ts: Date.now(), status: 'delivered', attachment });
+              appendThread(senderHex, { id: msgId, from: 'them', text: '', ts: Date.now(), status: 'delivered', attachment });
+            }
+            const looking = isOpen && !appIsHidden() && conversationVisibleRef.current;
+            if (senderHex && !looking) {
+              setUnreadCounts(prev => { const n = new Map(prev); n.set(senderHex, (n.get(senderHex) ?? 0) + 1); return n; });
+              void incrementUnread(senderHex);
+              await notifyIfAway(senderHex, voice ? '🎤 Voice message' : `📎 ${meta.fileName}`);
             }
             (window as any).kantDesktop?.ai?.notify({
               type: 'file', conversationType: 'dm', fromPubkeyHex: senderHex,
@@ -1633,6 +1709,34 @@ export function useKant() {
   }
 
   // ── Broadcast presence to all known contacts ──────────────────────────────
+
+  /**
+   * Presence (our address and capabilities) straight to one contact.
+   *
+   * The periodic broadcast runs at most once a minute, so two people who have
+   * just added each other would otherwise not know each other's capabilities
+   * yet — and an edit sent in that window reaches a current build as a ✎
+   * correction message instead of changing the original. Sent whenever a
+   * session is set up; rate-limited per contact so reconnect churn can't storm.
+   */
+  async function sendPresenceTo(contactHex: string, addr: string): Promise<void> {
+    const node = nodeRef.current;
+    const kp = identityRef.current;
+    const myCircuit = node?.getMultiaddrs().map((a: any) => a.toString()).find((a: string) => a.includes('/p2p-circuit'));
+    if (!node || !kp || !addr || !myCircuit) return;
+    const last = directPresenceAtRef.current.get(contactHex) ?? 0;
+    if (Date.now() - last < 30_000) return;
+    directPresenceAtRef.current.set(contactHex, Date.now());
+    const eph = ephemeralKeyRef.current;
+    const presence = JSON.stringify({
+      type: 'kant-presence',
+      fromPubKeyHex: kp.publicKeyHex,
+      circuitAddr: myCircuit,
+      ...(eph ? { ephemeralPubHex: eph.pubHex } : {}),
+      caps: SUPPORTED_CAPS,
+    });
+    try { await sendPing(node, addr, presence); } catch { /* best effort — the periodic broadcast still runs */ }
+  }
 
   async function broadcastPresence(node: Libp2p, myCircuit: string) {
     const kp = identityRef.current;
@@ -1880,6 +1984,120 @@ export function useKant() {
   }
 
   /**
+   * Replace the text of one of our own messages in the open conversation.
+   *
+   * The change is applied locally at once, then an edit envelope travels the
+   * same ratchet path as a normal message (with the same hold/queue/retry
+   * handling), so the peer's copy converges even across a reconnect.
+   */
+  async function editMessage(msgId: string, rawText: string): Promise<boolean> {
+    const contact = selectedContactRef.current;
+    const kp = identityRef.current;
+    const text = rawText.trim();
+    if (!contact || !kp || !text) return false;
+    const hex = contact.publicKeyHex;
+    const original = (threads[hex] ?? messages).find(m => m.id === msgId);
+    if (original && (original.from !== 'me' || original.text === text)) return false;
+
+    const editedAt = Date.now();
+    const patch = (m: PlainMessage) => (m.id === msgId && m.from === 'me' ? { ...m, text, editedAt } : m);
+    setMessages(p => p.map(patch));
+    setThreads(t => (t[hex] ? { ...t, [hex]: t[hex].map(patch) } : t));
+    await editStoredMessage(hex, kp.derivedKey, msgId, text, editedAt, true).catch(() => false);
+
+    // The AI contact is a local conversation: nothing to transmit.
+    if (hex === AI_CONTACT_PUBKEY) return true;
+
+    // Still held before the session was up? Then the peer has never seen it —
+    // just change what will be sent.
+    const held = pendingPlaintextRef.current.get(hex)?.find(p => p.id === msgId && !p.edit);
+    if (held && !flushedPendingRef.current.get(hex)?.has(msgId)) {
+      held.text = text;
+      return true;
+    }
+
+    const id = generateId();
+    const edit: EditRef = { id: msgId };
+    const hold = () => {
+      const pending = pendingPlaintextRef.current.get(hex) ?? [];
+      pending.push({ id, text, edit });
+      pendingPlaintextRef.current.set(hex, pending);
+    };
+    const ratchet = ratchetMapRef.current.get(hex) ?? ratchetRef.current;
+    let peerAddr = contactAddrRef.current.get(hex) ?? contact.lastCircuitAddr ?? '';
+    if (!ratchet) {
+      addLog('⏳ No session yet — holding the edit while the secure session starts');
+      hold();
+      if (peerAddr) void tryAutoSession(contact, peerAddr);
+      return true;
+    }
+    try {
+      const fresh = await lookupPeers(relayHttpPort, [hex], activeRelayUrl, kp);
+      if (fresh[hex]) {
+        peerAddr = fresh[hex];
+        contactAddrRef.current.set(hex, peerAddr);
+        void updateContactAddr(hex, peerAddr);
+      }
+    } catch { /* keep the last known route */ }
+
+    let wire = '';
+    try {
+      const plaintext = await outboundPlaintext(hex, text, undefined, edit);
+      const encrypted = await ratchetEncrypt(ratchet, plaintext);
+      void persistRatchet(hex);
+      wire = JSON.stringify({
+        id,
+        fromPubKeyHex: kp.publicKeyHex,
+        header: {
+          dhPublic:     Array.from(encrypted.header.dhPublic),
+          msgNum:       encrypted.header.msgNum,
+          prevChainLen: encrypted.header.prevChainLen,
+        },
+        ciphertext: Array.from(encrypted.ciphertext),
+        nonce:      Array.from(encrypted.nonce),
+      });
+      if (nodeRef.current && peerAddr) {
+        const hops = onionEnabled
+          ? await pickHops(nodeRef.current, [nodeRef.current.peerId.toString()], hopRegistryRef.current, [kp.publicKeyHex])
+          : [];
+        await sendOnion(nodeRef.current, hops, peerAddr, wire);
+        scheduleDeliveryRetry(id, contact, peerAddr, wire);
+        addLog('✏️ Edit sent; waiting for delivery ACK');
+      } else {
+        await enqueue({ id, contactPubkeyHex: hex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
+        addLog('📥 Edit queued — peer not reachable right now');
+      }
+    } catch (e: any) {
+      if ((e as Error).message?.includes('sending chain not yet initialised')) {
+        hold();
+      } else if (wire) {
+        await enqueue({ id, contactPubkeyHex: hex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
+        addLog(`📥 Edit queued — send failed: ${e?.message ?? e}`);
+      } else {
+        addLog(`⚠️ Edit failed: ${e?.message ?? e}`);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Apply an edit a contact made to one of their own earlier messages.
+   * Only a message they sent can change — the stored record decides authorship.
+   */
+  async function applyInboundEdit(senderHex: string, edit: EditRef, rawText: string): Promise<void> {
+    const kp = identityRef.current;
+    if (!kp) return;
+    const text = rawText;
+    const editedAt = Date.now();
+    const patch = (m: PlainMessage) => (m.id === edit.id && m.from === 'them' ? { ...m, text, editedAt } : m);
+    if (selectedContactRef.current?.publicKeyHex === senderHex) setMessages(p => p.map(patch));
+    setThreads(t => (t[senderHex] ? { ...t, [senderHex]: t[senderHex].map(patch) } : t));
+    const applied = await editStoredMessage(senderHex, kp.derivedKey, edit.id, text, editedAt, false).catch(() => false);
+    addLog(applied ? `✏️ ${senderHex.slice(0, 12)}… edited a message` : `✏️ Ignored an edit for an unknown message from ${senderHex.slice(0, 12)}…`);
+  }
+
+  /**
    * Wait for the transport to be usable again, up to `timeoutMs`.
    *
    * Picking a file hands the foreground to the system picker, which suspends
@@ -1926,9 +2144,10 @@ export function useKant() {
     }
   }
 
-  async function sendFileMessage(file: File) {
+  async function sendFileMessage(file: File, options: { voice?: VoiceMeta } = {}) {
     const contact = selectedContactRef.current;
     if (!contact || !identityRef.current) return;
+    const voice = options.voice ? sanitizeVoiceMeta(options.voice) : undefined;
 
     const peerAddr = await waitForSendableAddr(contact);
     const node = nodeRef.current;
@@ -1939,6 +2158,7 @@ export function useKant() {
       addMessage('me', '', 'failed', undefined, {
         fileId: 'failed', fileName: file.name, mimeType: failedMime, fileSize: file.size,
         sha256: '', display: failedMime.startsWith('image/') ? 'inline' : 'attachment',
+        ...(voice ? { voice } : {}),
       }, contact.publicKeyHex);
       addLog('❌ File not sent — no relay circuit. Reconnect and try again.');
       return;
@@ -1948,6 +2168,7 @@ export function useKant() {
     let pendingAttachment: MessageAttachment = {
       fileId: 'pending', fileName: file.name, mimeType, fileSize: file.size,
       sha256: '', display: mimeType.startsWith('image/') ? 'inline' : 'attachment',
+      ...(voice ? { voice } : {}),
     };
     const id = addMessage('me', '', 'sending', undefined, pendingAttachment, contact.publicKeyHex);
 
@@ -1971,6 +2192,7 @@ export function useKant() {
       pendingAttachment = {
         fileId: 'pending', fileName: file.name, mimeType, fileSize: fileData.length,
         sha256: '', display: mimeType.startsWith('image/') ? 'inline' : 'attachment', thumbnail,
+        ...(voice ? { voice } : {}),
       };
       setMessages(p => p.map(m => m.id === id ? { ...m, attachment: pendingAttachment } : m));
       patchThread(contact.publicKeyHex, id, { attachment: pendingAttachment });
@@ -1981,12 +2203,14 @@ export function useKant() {
         recipientX25519Pub, senderPubkeyHex: identityRef.current.publicKeyHex,
         maxFileSize: COMMUNITY_MAX_FILE_SIZE,
         thumbnail,
+        voice,
       });
       await saveFileBlob(fileId, fileData, { fileName: file.name, mimeType, fileSize: fileData.length }, identityRef.current.derivedKey);
       const attachment: MessageAttachment = {
         fileId, fileName: file.name, mimeType, fileSize: fileData.length,
         sha256: '', display: mimeType.startsWith('image/') ? 'inline' : 'attachment',
         thumbnail,
+        ...(voice ? { voice } : {}),
       };
       setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sent', attachment } : m));
       patchThread(contact.publicKeyHex, id, { status: 'sent', attachment });
@@ -2112,6 +2336,7 @@ export function useKant() {
         status: m.status,
         attachment: (m as any).attachment,
         replyTo: (m as any).replyTo,
+        editedAt: (m as any).editedAt,
       })) ?? [];
       // Merge IDB history with any in-memory messages not yet persisted,
       // deduplicating by id to prevent duplicate keys in the message list.
@@ -2307,7 +2532,7 @@ export function useKant() {
     aiSettings, updateAiSettings,
     onionEnabled, toggleOnion,
     checkIdentity, configureRelay, setup, unlock, deleteIdentity,
-    startNode, disconnectNode, initSession, sendMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment, readAttachmentData,
+    startNode, disconnectNode, initSession, sendMessage, editMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment, readAttachmentData,
     addNewContact, renameContact, acceptContact, blockContact, removeContact, selectContact,
     setConversationVisible,
     setMessages,
@@ -2316,5 +2541,6 @@ export function useKant() {
     _addLog: addLog,
     _contactAddrRef: contactAddrRef,
     _ratchetMapRef: ratchetMapRef,
+    _groupFileHandlerRef: groupFileHandlerRef,
   };
 }

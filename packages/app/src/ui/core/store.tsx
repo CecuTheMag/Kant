@@ -8,7 +8,7 @@
 import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { Identity } from './fingerprint';
-import type { Contact, Group, MessageAttachment, NodeStatus, PeerInfo, PlainMessage, TrustState } from './types';
+import type { Contact, Group, MessageAttachment, NodeStatus, PeerInfo, PlainMessage, TrustState, VoiceInfo } from './types';
 
 export type ThemePref = 'system' | 'light' | 'dark';
 
@@ -24,6 +24,12 @@ export interface ReplyRef { id: string; from: string; text: string }
 
 /** A decrypted attachment held in memory. */
 export interface AttachmentData { bytes: Uint8Array; name: string; mime: string }
+
+/** A finished voice recording, ready to send. */
+export interface VoiceRecording extends VoiceInfo {
+  blob: Blob;
+  mime: string;
+}
 
 /** 'unavailable': this platform has no "Open with…"; 'no-app': nothing installed can open the type. */
 export type OpenAttachmentResult = 'opened' | 'no-app' | 'unavailable' | 'missing';
@@ -51,6 +57,9 @@ export interface State {
 export interface Store {
   state: State;
   send: (contactId: string, text: string, replyTo?: ReplyRef) => void;
+  /** Replace the text of one of your own messages. Resolves false if it could not be changed. */
+  editMessage: (contactId: string, msgId: string, text: string) => Promise<boolean>;
+  sendVoice: (contactId: string, recording: VoiceRecording) => void;
   selectContact: (contactId: string) => void;
   /** Whether a conversation is the view on screen (drives unread + notifications). */
   setConversationVisible: (visible: boolean) => void;
@@ -77,9 +86,13 @@ export interface Store {
   openAttachment: (attachment: MessageAttachment) => Promise<OpenAttachmentResult>;
   /** Whether openAttachment can work on this platform at all. */
   canOpenAttachments: boolean;
+  /** Save bytes produced in the app (an edited copy) to the device. */
+  saveFile: (name: string, mime: string, bytes: Uint8Array) => Promise<boolean>;
   selectGroup: (groupId: string) => void;
   sendGroup: (groupId: string, text: string, replyTo?: ReplyRef) => void;
   sendGroupFile: (groupId: string, file: File) => void;
+  editGroupMessage: (groupId: string, msgId: string, text: string) => Promise<boolean>;
+  sendGroupVoice: (groupId: string, recording: VoiceRecording) => void;
 }
 
 const Ctx = createContext<Store | null>(null);

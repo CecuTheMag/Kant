@@ -9,22 +9,32 @@ const LIMITS = { maxRows: 2000, maxCols: 64, maxCellChars: 1000 };
 describe('decodeTextPreview', () => {
   test('plain UTF-8, Cyrillic included', () => {
     const r = decodeTextPreview(enc('Здравей, свят\nhello'), 1024);
-    assert.deepEqual(r, { text: 'Здравей, свят\nhello', truncated: false, binary: false, encoding: 'utf-8' });
+    assert.deepEqual(r, { text: 'Здравей, свят\nhello', truncated: false, binary: false, encoding: 'utf-8', lineEnding: '\n', bom: false });
   });
 
   test('line endings are normalised', () => {
     assert.equal(decodeTextPreview(enc('a\r\nb\rc\n'), 1024).text, 'a\nb\nc\n');
   });
 
+  test('the file\'s own line break is reported so an edited copy can keep it', () => {
+    assert.equal(decodeTextPreview(enc('a\r\nb\r\n'), 1024).lineEnding, '\r\n');
+    assert.equal(decodeTextPreview(enc('a\nb\n'), 1024).lineEnding, '\n');
+    assert.equal(decodeTextPreview(enc('one line'), 1024).lineEnding, '\n');
+    assert.equal(decodeTextPreview(enc('\nstarts with a break'), 1024).lineEnding, '\n');
+  });
+
   test('UTF-8 BOM is dropped', () => {
-    assert.equal(decodeTextPreview(new Uint8Array([0xef, 0xbb, 0xbf, 0x68, 0x69]), 1024).text, 'hi');
+    const withBom = decodeTextPreview(new Uint8Array([0xef, 0xbb, 0xbf, 0x68, 0x69]), 1024);
+    assert.equal(withBom.text, 'hi');
+    assert.equal(withBom.bom, true);
+    assert.equal(decodeTextPreview(enc('hi'), 1024).bom, false);
   });
 
   test('UTF-16 LE and BE with BOM', () => {
     const le = new Uint8Array([0xff, 0xfe, 0x68, 0x00, 0x69, 0x00]);
     const be = new Uint8Array([0xfe, 0xff, 0x00, 0x68, 0x00, 0x69]);
-    assert.deepEqual(decodeTextPreview(le, 1024), { text: 'hi', truncated: false, binary: false, encoding: 'utf-16le' });
-    assert.deepEqual(decodeTextPreview(be, 1024), { text: 'hi', truncated: false, binary: false, encoding: 'utf-16be' });
+    assert.deepEqual(decodeTextPreview(le, 1024), { text: 'hi', truncated: false, binary: false, encoding: 'utf-16le', lineEnding: '\n', bom: true });
+    assert.deepEqual(decodeTextPreview(be, 1024), { text: 'hi', truncated: false, binary: false, encoding: 'utf-16be', lineEnding: '\n', bom: true });
   });
 
   test('truncation never splits a multi-byte character', () => {
@@ -51,7 +61,7 @@ describe('decodeTextPreview', () => {
   });
 
   test('empty input', () => {
-    assert.deepEqual(decodeTextPreview(new Uint8Array(), 10), { text: '', truncated: false, binary: false, encoding: 'utf-8' });
+    assert.deepEqual(decodeTextPreview(new Uint8Array(), 10), { text: '', truncated: false, binary: false, encoding: 'utf-8', lineEnding: '\n', bom: false });
   });
 });
 

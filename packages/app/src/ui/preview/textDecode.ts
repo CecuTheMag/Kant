@@ -13,6 +13,10 @@ export interface DecodedText {
   /** Looks like binary data — do not show `text`. */
   binary: boolean;
   encoding: 'utf-8' | 'utf-16le' | 'utf-16be';
+  /** The file's own line break (`text` always uses \n), so an edited copy can keep it. */
+  lineEnding: '\n' | '\r\n';
+  /** The file started with a byte-order mark (spreadsheet apps rely on it to read UTF-8). */
+  bom: boolean;
 }
 
 const SNIFF_BYTES = 8192;
@@ -39,7 +43,7 @@ export function decodeTextPreview(bytes: Uint8Array, maxBytes: number): DecodedT
 
   const body = bytes.subarray(start);
   // NUL bytes are normal in UTF-16, so only sniff UTF-8 input.
-  if (encoding === 'utf-8' && looksBinary(body)) return { text: '', truncated: false, binary: true, encoding };
+  if (encoding === 'utf-8' && looksBinary(body)) return { text: '', truncated: false, binary: true, encoding, lineEnding: '\n', bom: start > 0 };
 
   const truncated = body.length > maxBytes;
   let cut = Math.min(body.length, maxBytes);
@@ -56,7 +60,8 @@ export function decodeTextPreview(bytes: Uint8Array, maxBytes: number): DecodedT
     }
   }
 
-  const text = new TextDecoder(encoding, { fatal: false }).decode(body.subarray(0, cut))
-    .replace(/\r\n?/g, '\n');
-  return { text, truncated, binary: false, encoding };
+  const raw = new TextDecoder(encoding, { fatal: false }).decode(body.subarray(0, cut));
+  const firstBreak = raw.indexOf('\n');
+  const lineEnding = firstBreak > 0 && raw[firstBreak - 1] === '\r' ? '\r\n' : '\n';
+  return { text: raw.replace(/\r\n?/g, '\n'), truncated, binary: false, encoding, lineEnding, bom: start > 0 };
 }

@@ -1,22 +1,44 @@
 /**
  * A single conversation — one-to-one or group. Header, message thread,
- * request / key-change prompts and the composer.
+ * request / key-change prompts and the composer (text, replies, edits,
+ * attachments, voice notes, new tables and documents).
  */
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useStore } from './core/store';
-import type { ReplyRef } from './core/store';
+import type { ReplyRef, VoiceRecording } from './core/store';
 import type { Contact, MessageAttachment, NodeStatus, PlainMessage } from './core/types';
 import { dayLabel, fileSize, formatTime, expiryLabel } from './core/format';
 import {
-  Alert, ArrowUp, Block, ChevronLeft, Close, Copy, Doc, Download, Info, LockFill, Plus, Reply, ShieldAlert,
-  Spinner, VerifiedSeal, Check, Clock, More, Photo,
+  Alert, ArrowUp, Block, ChevronLeft, ChevronUp, Close, Copy, Doc, DocText, Download, Info, Lock, LockFill, Mic, Pencil, Plus,
+  Reply, ShieldAlert, Spinner, TableIcon, Trash, VerifiedSeal, Check, Clock, More, Photo,
 } from './icons';
 import { copyText, displayName, isTouch, seenLabel, shortId, useLongPress } from './lib';
 import { Avatar, Menu, useToast } from './parts';
 import type { MenuItem } from './parts';
 import { FilePreview } from './FilePreview';
+import { FileEditor } from './FileEditor';
+import type { EditorSource } from './FileEditor';
 import { displayFileName } from './preview/sanitize';
+import { blankGrid } from './preview/tableEdit';
+import { VoiceNote } from './VoiceNote';
+import { LOCK_DISTANCE, RecordingPanel, ReviewPanel, useVoiceCapture } from './VoiceComposer';
+import { canRecordVoice } from './voice/recorder';
+
+type EditTarget = { id: string; text: string };
+
+/** Your own text message that is out of the sending pipeline can be edited. */
+function canEdit(m: PlainMessage): boolean {
+  return m.from === 'me' && !!m.text && !m.attachments?.length && !m.system
+    && (m.status === 'sent' || m.status === 'delivered' || m.status === 'read');
+}
+
+const isAudio = (a: MessageAttachment) => !!a.voice || a.mime.startsWith('audio/');
+
+const NEW_FILES: Record<'table' | 'document', { source: EditorSource; name: string; title: string }> = {
+  table: { source: { kind: 'table', grid: blankGrid(4, 3), delimiter: ',', lineEnding: '\r\n' }, name: 'Table.csv', title: 'New table' },
+  document: { source: { kind: 'text', text: '', flavor: 'markdown' }, name: 'Document.md', title: 'New document' },
+};
 
 type Target = { kind: 'dm'; contact: Contact } | { kind: 'group'; groupId: string };
 
@@ -36,9 +58,12 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
   const messages: PlainMessage[] = (isDm ? state.threads[threadKey] : state.groupThreads[threadKey]) ?? [];
 
   const [replyTo, setReplyTo] = useState<ReplyRef | null>(null);
+  const [editing, setEditing] = useState<EditTarget | null>(null);
   const [menu, setMenu] = useState<{ at: { x: number; y: number }; items: MenuItem[] } | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [preview, setPreview] = useState<MessageAttachment | null>(null);
+  const [creating, setCreating] = useState<'table' | 'document' | null>(null);
+  const [autoplayId, setAutoplayId] = useState<string | null>(null);
   const [ackKeyChange, setAckKeyChange] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickRef = useRef(true);
@@ -52,7 +77,9 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
     const el = scrollRef.current;
     if (el && stickRef.current) el.scrollTop = el.scrollHeight;
   }, [messages.length, threadKey]);
-  useEffect(() => { stickRef.current = true; setReplyTo(null); setAckKeyChange(false); }, [threadKey]);
+  useEffect(() => {
+    stickRef.current = true; setReplyTo(null); setEditing(null); setAutoplayId(null); setAckKeyChange(false);
+  }, [threadKey]);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -68,11 +95,25 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
     return c ? displayName(c) : `Kant ${shortId(from)}`;
   }, [isDm, contact, state.contacts]);
 
+  const quoteText = (m: PlainMessage) => {
+    if (m.text) return m.text;
+    const a = m.attachments?.[0];
+    if (a?.voice) return 'Voice message';
+    if (a?.mime.startsWith('image/')) return 'Photo';
+    return a ? displayFileName(a.name) : 'Attachment';
+  };
+
+  const startEdit = (m: PlainMessage) => {
+    setReplyTo(null);
+    setEditing({ id: m.id, text: m.text });
+  };
+
   const openMenu = (m: PlainMessage, at: { x: number; y: number }) => {
     const items: MenuItem[] = [];
-    if (!isRequest) items.push({ label: 'Reply', icon: <Reply size={20} />, onSelect: () => setReplyTo({ id: m.id, from: nameOf(m.from), text: m.text || 'Attachment' }) });
+    if (!isRequest) items.push({ label: 'Reply', icon: <Reply size={20} />, onSelect: () => { setEditing(null); setReplyTo({ id: m.id, from: nameOf(m.from), text: quoteText(m) }); } });
+    if (!isRequest && canEdit(m)) items.push({ label: 'Edit', icon: <Pencil size={20} />, onSelect: () => startEdit(m) });
     if (m.text) items.push({ label: 'Copy', icon: <Copy size={20} />, onSelect: () => { void copyText(m.text); toast('Copied', <Check size={18} />); } });
-    if (m.status === 'failed' && isDm) items.push({ label: 'Try again', icon: <ArrowUp size={20} />, onSelect: () => store.send(contact!.id!, m.text) });
+    if (m.status === 'failed' && isDm && m.text) items.push({ label: 'Try again', icon: <ArrowUp size={20} />, onSelect: () => store.send(contact!.id!, m.text) });
     if (items.length) setMenu({ at, items });
   };
 
@@ -85,6 +126,33 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
   const sendFile = (file: File) => {
     if (isDm) store.sendFile(contact!.id!, file); else store.sendGroupFile(target.groupId, file);
     stickRef.current = true;
+  };
+  const sendVoice = (recording: VoiceRecording) => {
+    if (isDm) store.sendVoice(contact!.id!, recording); else store.sendGroupVoice(target.groupId, recording);
+    stickRef.current = true;
+  };
+  const submitEdit = (text: string) => {
+    const target0 = editing;
+    setEditing(null);
+    if (!target0 || text === target0.text) return;
+    const done = isDm ? store.editMessage(contact!.id!, target0.id, text) : store.editGroupMessage(target.groupId, target0.id, text);
+    void done.then((ok) => { if (!ok) toast('Couldn’t edit the message', <Alert size={18} />); })
+      .catch(() => toast('Couldn’t edit the message', <Alert size={18} />));
+  };
+  /** Desktop: ↑ in an empty composer edits your last message, as in most chat apps. */
+  const editLast = () => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (canEdit(messages[i])) { startEdit(messages[i]); return true; }
+      if (messages[i].from === 'me') return false;
+    }
+    return false;
+  };
+
+  /** When a voice note finishes, play the one right after it (like a playlist of replies). */
+  const playNextAfter = (id: string) => {
+    const i = messages.findIndex(m => m.id === id);
+    const next = i >= 0 ? messages[i + 1] : undefined;
+    setAutoplayId(next?.attachments?.some(a => !!a.voice) ? next.id : null);
   };
 
   const sub = isDm
@@ -145,8 +213,11 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
               <MessageRow key={m.id} m={m} grouped={grouped} last={last} newDay={newDay}
                 senderName={!isDm && m.from !== 'me' && !grouped ? nameOf(m.from) : undefined}
                 showStatus={isDm && isLastOutgoing}
+                isEditing={editing?.id === m.id}
+                autoPlay={autoplayId === m.id}
+                onVoiceEnded={() => playNextAfter(m.id)}
                 onMenu={(at) => openMenu(m, at)} onOpenImage={setLightbox} onOpenFile={setPreview}
-                onRetry={isDm ? () => store.send(contact!.id!, m.text) : undefined} />
+                onRetry={isDm && m.text ? () => store.send(contact!.id!, m.text) : undefined} />
             );
             });
           })()}
@@ -156,48 +227,63 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
       {isRequest ? (
         <RequestBar contact={contact!} />
       ) : (
-        <Composer key={threadKey} draftKey={threadKey} connected={connected} status={status} replyTo={replyTo} onCancelReply={() => setReplyTo(null)}
-          onSend={send} onSendFile={sendFile} />
+        <Composer key={threadKey} draftKey={threadKey} connected={connected} status={status}
+          replyTo={replyTo} onCancelReply={() => setReplyTo(null)}
+          editing={editing} onCancelEdit={() => setEditing(null)} onSubmitEdit={submitEdit} onEditLast={editLast}
+          onSend={send} onSendFile={sendFile} onSendVoice={sendVoice} onCreate={setCreating} />
       )}
 
       {menu && <Menu at={menu.at} items={menu.items} onClose={() => setMenu(null)} />}
       {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
-      {preview && <FilePreview attachment={preview} onClose={() => setPreview(null)} />}
+      {preview && <FilePreview attachment={preview} onClose={() => setPreview(null)} onSendEdited={isRequest ? undefined : sendFile} />}
+      {creating && (
+        <FileEditor source={NEW_FILES[creating].source} name={NEW_FILES[creating].name} title={NEW_FILES[creating].title} isNew
+          onSend={connected ? sendFile : undefined} onClose={() => setCreating(null)} />
+      )}
     </div>
   );
 }
 
 /* ── Message ──────────────────────────────────────────────────────── */
 
-function MessageRow({ m, grouped, last, newDay, senderName, showStatus, onMenu, onOpenImage, onOpenFile, onRetry }: {
+function MessageRow({ m, grouped, last, newDay, senderName, showStatus, isEditing, autoPlay, onVoiceEnded, onMenu, onOpenImage, onOpenFile, onRetry }: {
   m: PlainMessage; grouped: boolean; last: boolean; newDay: boolean; senderName?: string; showStatus: boolean;
+  isEditing: boolean; autoPlay: boolean; onVoiceEnded: () => void;
   onMenu: (at: { x: number; y: number }) => void; onOpenImage: (src: string) => void;
   onOpenFile: (attachment: MessageAttachment) => void; onRetry?: () => void;
 }) {
   const out = m.from === 'me';
   const { pressed, handlers, justFired } = useLongPress(onMenu);
   const image = m.attachments?.find((a) => a.mime.startsWith('image/'));
-  const files = m.attachments?.filter((a) => !a.mime.startsWith('image/')) ?? [];
+  const audio = m.attachments?.filter(isAudio) ?? [];
+  const files = m.attachments?.filter((a) => !a.mime.startsWith('image/') && !isAudio(a)) ?? [];
+  const voiceOnly = audio.length > 0 && !m.text && !m.replyTo && !image && !files.length;
 
   return (
     <>
       {newDay && <div className="k-day">{dayLabel(m.ts)}</div>}
       {senderName && <div className="k-sender">{senderName}</div>}
-      <div className={`k-msg ${out ? 'out' : 'in'}${grouped ? ' is-grouped' : ''}${last ? ' is-last' : ''}${m.status === 'failed' ? ' is-failed' : ''}`}>
+      <div className={`k-msg ${out ? 'out' : 'in'}${grouped ? ' is-grouped' : ''}${last ? ' is-last' : ''}${m.status === 'failed' ? ' is-failed' : ''}${isEditing ? ' is-editing' : ''}`}>
         <div className="k-bubble-row">
-          <div className={`k-bubble${image && !m.text && !m.replyTo ? ' has-image' : ''}${pressed ? ' is-pressed' : ''}`}
+          <div className={`k-bubble${image && !m.text && !m.replyTo ? ' has-image' : ''}${voiceOnly ? ' has-voice' : ''}${pressed ? ' is-pressed' : ''}`}
             {...(isTouch() ? handlers : {})}
             onContextMenu={(e) => { e.preventDefault(); if (!justFired()) onMenu({ x: e.clientX, y: e.clientY }); }}>
             {m.replyTo && (
               <span className="k-quote"><b>{m.replyTo.from}</b><span>{m.replyTo.text}</span></span>
             )}
             {image && <ImageAttachment attachment={image} onOpen={onOpenImage} />}
+            {audio.map((a) => (
+              <VoiceNote key={a.fileId ?? a.name} attachment={a} out={out} autoPlay={autoPlay && !!a.voice}
+                onEnded={a.voice ? onVoiceEnded : undefined} ignoreClick={justFired}
+                onOpenFile={a.voice ? undefined : () => { if (!justFired()) onOpenFile(a); }} />
+            ))}
             {files.map((a) => (
               <FileAttachment key={a.fileId ?? a.name} attachment={a}
                 // A long-press that just opened the menu must not also open the preview.
                 onOpen={() => { if (!justFired()) onOpenFile(a); }} />
             ))}
             {m.text && (image ? <span className="k-image-caption" style={{ display: 'block' }}>{m.text}</span> : m.text)}
+            {m.editedAt && m.text && <span className="k-edited" title={`Edited ${formatTime(m.editedAt)}`}>edited</span>}
           </div>
           <button type="button" className="k-msg-more" aria-label="Message actions"
             onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onMenu({ x: r.left, y: r.bottom + 4 }); }}>
@@ -344,24 +430,92 @@ function RequestBar({ contact }: { contact: Contact }) {
 
 /* ── Composer ─────────────────────────────────────────────────────── */
 
-function Composer({ draftKey, connected, status, replyTo, onCancelReply, onSend, onSendFile }: {
-  draftKey: string; connected: boolean; status: NodeStatus; replyTo: ReplyRef | null; onCancelReply: () => void;
-  onSend: (text: string) => void; onSendFile: (file: File) => void;
+function Composer({
+  draftKey, connected, status, replyTo, onCancelReply, editing, onCancelEdit, onSubmitEdit, onEditLast,
+  onSend, onSendFile, onSendVoice, onCreate,
+}: {
+  draftKey: string; connected: boolean; status: NodeStatus;
+  replyTo: ReplyRef | null; onCancelReply: () => void;
+  editing: EditTarget | null; onCancelEdit: () => void; onSubmitEdit: (text: string) => void; onEditLast: () => boolean;
+  onSend: (text: string) => void; onSendFile: (file: File) => void; onSendVoice: (recording: VoiceRecording) => void;
+  onCreate: (kind: 'table' | 'document') => void;
 }) {
+  const toast = useToast();
   const [value, setValueState] = useState(() => drafts.get(draftKey) ?? '');
-  const setValue = (v: string) => { setValueState(v); if (v) drafts.set(draftKey, v); else drafts.delete(draftKey); };
+  const editingRef = useRef(editing);
+  editingRef.current = editing;
+  // While editing, the box holds the message being edited — never save that as the chat's draft.
+  const setValue = (v: string) => {
+    setValueState(v);
+    if (editingRef.current) return;
+    if (v) drafts.set(draftKey, v); else drafts.delete(draftKey);
+  };
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const [attachMenu, setAttachMenu] = useState<{ x: number; y: number } | null>(null);
+  const canRecord = useMemo(canRecordVoice, []);
+
+  const capture = useVoiceCapture({
+    onSend: (recording) => onSendVoice(recording),
+    onError: (message) => toast(message, <Alert size={18} />),
+    onNotice: (message) => toast(message, <Mic size={18} />),
+  });
+  // The click that trails a mic press/release must not act on the button the mic just turned into.
+  const micPress = useRef(false);
+  const ignoreClicksUntil = useRef(0);
+  const endMicPress = () => { if (micPress.current) { micPress.current = false; ignoreClicksUntil.current = performance.now() + 400; } };
+  const recording = capture.phase === 'starting' || capture.phase === 'recording' || capture.phase === 'stopping';
+  const reviewing = capture.phase === 'review' && !!capture.review;
+  const capturing = recording || reviewing;
+  const holding = recording && !capture.locked;
+
+  const resize = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  };
 
   useEffect(() => { if (replyTo) taRef.current?.focus(); }, [replyTo]);
 
-  const resize = (el: HTMLTextAreaElement) => { el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 140)}px`; };
+  // Entering edit mode loads the message into the box; leaving it restores the draft.
+  const editingId = editing?.id;
+  useEffect(() => {
+    if (editing) {
+      setValueState(editing.text);
+      requestAnimationFrame(() => {
+        const el = taRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+        resize(el);
+      });
+    } else {
+      setValueState(drafts.get(draftKey) ?? '');
+      requestAnimationFrame(() => resize(taRef.current));
+    }
+    // Keyed by which message is being edited, not by its text.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId]);
+
+  // Escape abandons a recording in progress.
+  useEffect(() => {
+    if (!capturing) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); capture.cancel(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [capturing, capture]);
+
+  const trimmed = value.trim();
   const submit = () => {
-    const text = value.trim();
-    if (!text || !connected) return;
-    onSend(text);
+    if (editing) {
+      if (!trimmed) return;
+      onSubmitEdit(trimmed);
+      if (taRef.current) { taRef.current.style.height = 'auto'; taRef.current.focus(); }
+      return;
+    }
+    if (!trimmed || !connected) return;
+    onSend(trimmed);
     setValue('');
     if (taRef.current) { taRef.current.style.height = 'auto'; taRef.current.focus(); }
   };
@@ -372,35 +526,92 @@ function Composer({ draftKey, connected, status, replyTo, onCancelReply, onSend,
     if (f) onSendFile(f);
   };
 
+  // One button to the right of the box: mic when empty, send when there's text,
+  // a check while editing — and the same element all through a held recording,
+  // so the pointer capture that drives slide-to-cancel is never lost.
+  const mode: 'send' | 'edit' | 'mic' | 'hold' | 'send-voice' =
+    capturing ? (holding ? 'hold' : 'send-voice')
+      : editing ? 'edit'
+      : trimmed || !canRecord ? 'send' : 'mic';
+  const actionDisabled =
+    mode === 'send' ? !trimmed || !connected
+      : mode === 'edit' ? !trimmed || trimmed === editing?.text
+      : mode === 'mic' ? !connected
+      : mode === 'send-voice' ? capture.phase === 'starting' || capture.phase === 'stopping' || !connected
+      : false;
+  const actionLabel = mode === 'edit' ? 'Save edit' : mode === 'mic' ? 'Record voice message — hold to talk, tap to record hands-free'
+    : mode === 'hold' ? 'Recording — release to send' : mode === 'send-voice' ? 'Send voice message' : 'Send';
+
   return (
-    <div className="k-composer">
+    <div className={`k-composer${capturing ? ' is-capturing' : ''}`}>
       {!connected && (
         <p className="k-composer-note">
           {status === 'connecting' ? 'Connecting… you can send in a moment.' : 'You’re offline. Messages can be sent once you reconnect.'}
         </p>
       )}
-      {replyTo && (
+      {editing ? (
+        <div className="k-reply-preview is-edit">
+          <Pencil size={17} />
+          <div><b>Edit message</b><span>{editing.text}</span></div>
+          <button type="button" className="k-icon-btn is-muted" style={{ width: 30, height: 30 }} onClick={onCancelEdit} aria-label="Cancel editing"><Close size={18} /></button>
+        </div>
+      ) : replyTo && (
         <div className="k-reply-preview">
           <div><b>Replying to {replyTo.from}</b><span>{replyTo.text}</span></div>
           <button type="button" className="k-icon-btn is-muted" style={{ width: 30, height: 30 }} onClick={onCancelReply} aria-label="Cancel reply"><Close size={18} /></button>
         </div>
       )}
       <div className="k-composer-inner">
-        <button type="button" className="k-attach-btn" aria-label="Attach" disabled={!connected}
-          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setAttachMenu({ x: r.left, y: r.top - 110 }); }}>
-          <Plus size={20} stroke={2.4} />
-        </button>
+        {capturing && (capture.locked || reviewing) ? (
+          <button type="button" className="k-attach-btn is-danger" aria-label="Delete recording" onClick={capture.cancel}>
+            <Trash size={19} />
+          </button>
+        ) : (
+          <button type="button" className="k-attach-btn" aria-label="Attach" disabled={!connected || !!editing || capturing}
+            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setAttachMenu({ x: r.left, y: r.top - 206 }); }}>
+            <Plus size={20} stroke={2.4} />
+          </button>
+        )}
         <input ref={photoRef} type="file" accept="image/*" hidden onChange={onFiles} />
         <input ref={fileRef} type="file" hidden onChange={onFiles} />
-        <div className="k-input-pill">
-          <textarea ref={taRef} rows={1} value={value} placeholder="Message" aria-label="Message"
-            onChange={(e) => { setValue(e.target.value); resize(e.target); }}
-            onKeyDown={(e) => {
-              // Desktop: Enter sends, Shift+Enter adds a line. Phones keep Return for new lines.
-              if (e.key === 'Enter' && !e.shiftKey && !isTouch() && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); }
-            }} />
-          <button type="button" className="k-send" onClick={submit} disabled={!value.trim() || !connected} aria-label="Send">
-            <ArrowUp size={17} />
+        {recording ? (
+          <RecordingPanel capture={capture} onStop={capture.stopToReview} />
+        ) : reviewing ? (
+          <ReviewPanel recording={capture.review!} />
+        ) : (
+          <div className="k-input-pill">
+            <textarea ref={taRef} rows={1} value={value} placeholder={editing ? 'Edit message' : 'Message'} aria-label={editing ? 'Edit message' : 'Message'}
+              onChange={(e) => { setValue(e.target.value); resize(e.target); }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === 'Escape' && editing) { e.preventDefault(); e.stopPropagation(); onCancelEdit(); return; }
+                if (e.key === 'ArrowUp' && !value && !editing && !isTouch()) { if (onEditLast()) e.preventDefault(); return; }
+                // Desktop: Enter sends, Shift+Enter adds a line. Phones keep Return for new lines.
+                if (e.key === 'Enter' && !e.shiftKey && !isTouch()) { e.preventDefault(); submit(); }
+              }} />
+          </div>
+        )}
+        <div className="k-composer-action">
+          {holding && capture.phase === 'recording' && (
+            <span className="k-rec-lock" aria-hidden="true"
+              style={{ transform: `translateY(${Math.max(-LOCK_DISTANCE, capture.dragY)}px)`, opacity: 0.55 + Math.min(0.45, -capture.dragY / LOCK_DISTANCE) }}>
+              <Lock size={15} /><ChevronUp size={13} />
+            </span>
+          )}
+          <button type="button" className={`k-action k-action-${mode}`} disabled={actionDisabled} aria-label={actionLabel}
+            onPointerDown={mode === 'mic' ? (e) => { micPress.current = true; capture.pointer.onPointerDown(e); } : undefined}
+            onPointerMove={capture.pointer.onPointerMove}
+            onPointerUp={(e) => { endMicPress(); capture.pointer.onPointerUp(e); }}
+            onPointerCancel={(e) => { endMicPress(); capture.pointer.onPointerCancel(e); }}
+            onContextMenu={(e) => { if (mode === 'mic' || mode === 'hold') e.preventDefault(); }}
+            onClick={(e) => {
+              if (performance.now() < ignoreClicksUntil.current) return;
+              if (mode === 'send' || mode === 'edit') submit();
+              else if (mode === 'send-voice') capture.send();
+              // Keyboard activation of the mic (no pointer involved) starts a hands-free recording.
+              else if (mode === 'mic' && e.detail === 0) capture.start(true);
+            }}>
+            {mode === 'edit' ? <Check size={18} /> : mode === 'mic' || mode === 'hold' ? <Mic size={19} stroke={2.1} /> : <ArrowUp size={17} />}
           </button>
         </div>
       </div>
@@ -408,6 +619,8 @@ function Composer({ draftKey, connected, status, replyTo, onCancelReply, onSend,
         <Menu at={attachMenu} onClose={() => setAttachMenu(null)} items={[
           { label: 'Photo', icon: <Photo size={20} />, onSelect: () => pick(photoRef.current) },
           { label: 'File', icon: <Doc size={20} />, onSelect: () => pick(fileRef.current) },
+          { label: 'New table', icon: <TableIcon size={20} />, onSelect: () => onCreate('table') },
+          { label: 'New document', icon: <DocText size={20} />, onSelect: () => onCreate('document') },
         ]} />
       )}
     </div>

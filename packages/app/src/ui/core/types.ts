@@ -42,6 +42,14 @@ export interface MessageAttachment {
   sha256?: string;
   thumbnail?: string;
   display?: 'inline' | 'attachment';
+  /** Set when the attachment is a recorded voice note. */
+  voice?: VoiceInfo;
+}
+
+export interface VoiceInfo {
+  durationMs: number;
+  /** Peak levels 0–100, one per bar. */
+  waveform: number[];
 }
 
 export interface Contact {
@@ -90,6 +98,8 @@ export interface PlainMessage {
   system?: 'key-changed' | 'session-reset' | 'verified' | 'joined' | 'left';
   /** Quoted-message reference, when this message was sent as a reply. */
   replyTo?: { id: string; from: string; text: string };
+  /** When the text was last replaced by an edit. */
+  editedAt?: number;
 }
 
 export interface Group {

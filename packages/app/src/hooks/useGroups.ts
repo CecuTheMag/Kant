@@ -19,10 +19,12 @@ import {
   decodeGroupText,
   sendPing, lookupPeers,
   sendFile, saveFileBlob, ed25519PubToX25519, COMMUNITY_MAX_FILE_SIZE,
+  saveGroupFileRecord, sanitizeVoiceMeta,
 } from '@kant/core';
 import type {
-  Group, GroupMember, GroupEvent, UnlockedIdentity,
+  Group, GroupMember, GroupEvent, GroupMessage, UnlockedIdentity, VoiceMeta, MessageAttachment,
 } from '@kant/core';
+import type { IncomingGroupFile } from './useKant';
 
 import { processImage, isProcessableImage } from '../lib/imageProcessor';
 import { readFileBytes } from '../lib/fileExport';
@@ -38,15 +40,75 @@ export interface PlainGroupMessage {
   expiresAt: number;
   readBy: string[]; // publicKeyHex[]
   replyTo?: { id: string; from: string; text: string };
-  attachment?: {
-    fileId: string;
-    fileName: string;
-    mimeType: string;
-    fileSize: number;
-    sha256: string;
-    display: 'inline' | 'attachment';
-    thumbnail?: string;
-  };
+  attachment?: MessageAttachment;
+  /** When the text was last replaced by an edit. */
+  editedAt?: number;
+  /** Only for our own file sends that are still transferring or never reached anyone. */
+  status?: 'pending' | 'failed';
+}
+
+/** A stored attachment with its voice descriptor re-validated (rows can predate validation). */
+function storedAttachment(raw: MessageAttachment): MessageAttachment {
+  const { voice: rawVoice, ...rest } = raw;
+  const voice = sanitizeVoiceMeta(rawVoice);
+  return voice ? { ...rest, voice } : rest;
+}
+
+/**
+ * Turn stored rows into the visible thread. Edit rows are folded into the
+ * message they edit — only when the editor is that message's author — and
+ * never shown on their own.
+ */
+async function rowsToThread(
+  rows: GroupMessage[],
+  group: Group,
+  identity: UnlockedIdentity,
+  readBy: (id: string) => string[],
+): Promise<PlainGroupMessage[]> {
+  const plain: PlainGroupMessage[] = [];
+  const byId = new Map<string, PlainGroupMessage>();
+  const sorted = [...rows].sort((a, b) => a.timestamp - b.timestamp);
+  for (const msg of sorted) {
+    let text = '[encrypted]';
+    let replyTo: PlainGroupMessage['replyTo'];
+    let edit: { id: string } | undefined;
+    try {
+      // IDB may return Uint8Array as plain object — reconstruct
+      const ct = msg.ciphertext instanceof Uint8Array
+        ? msg.ciphertext
+        : new Uint8Array(Object.values(msg.ciphertext as any));
+      const n = msg.nonce instanceof Uint8Array
+        ? msg.nonce
+        : new Uint8Array(Object.values(msg.nonce as any));
+      const decoded = decodeGroupText(await decryptGroupMessage(ct, n, group, identity));
+      text = decoded.text;
+      replyTo = decoded.replyTo;
+      edit = decoded.edit;
+    } catch {}
+    if (edit && !msg.attachment) {
+      const target = byId.get(edit.id);
+      if (target && target.fromPubKeyHex === msg.fromPubKeyHex && !target.attachment) {
+        target.text = text;
+        target.editedAt = msg.timestamp;
+      }
+      continue;
+    }
+    const entry: PlainGroupMessage = {
+      id:            msg.id,
+      groupId:       msg.groupId,
+      fromPubKeyHex: msg.fromPubKeyHex,
+      text,
+      ts:            msg.timestamp,
+      fromMe:        msg.fromPubKeyHex === identity.publicKeyHex,
+      expiresAt:     (msg as any).expiresAt ?? 0,
+      readBy:        readBy(msg.id),
+      replyTo,
+      ...(msg.attachment ? { attachment: storedAttachment(msg.attachment) } : {}),
+    };
+    byId.set(entry.id, entry);
+    plain.push(entry);
+  }
+  return plain;
 }
 
 export function useGroups(
@@ -70,11 +132,37 @@ export function useGroups(
   const [keyDistStatus, setKeyDistStatus]     = useState<Map<string, string>>(new Map());
 
   const selectedGroupRef = useRef<Group | null>(null);
+  // Recently received group-msg ids, for duplicate suppression independent of the cache.
+  const seenGroupMsgIdsRef = useRef<Set<string>>(new Set());
   // Internal live addr map — merged with liveAddrsRef
   const memberAddrRef = useRef<Map<string, string>>(new Map());
 
-  // groupId → PlainGroupMessage[] cache (avoids re-decrypting on every render)
+  // groupId → PlainGroupMessage[] cache (avoids re-decrypting on every render).
+  // Only ever holds a group's FULL history: an entry is created by selectGroup's
+  // load, and live messages are appended only to groups already loaded —
+  // otherwise opening a group would show just what arrived this session.
   const msgCacheRef = useRef<Map<string, PlainGroupMessage[]>>(new Map());
+
+  /** Apply a change to one message wherever it is held in memory. */
+  function patchGroupMessage(groupId: string, msgId: string, patch: (m: PlainGroupMessage) => PlainGroupMessage) {
+    const cached = msgCacheRef.current.get(groupId);
+    if (cached) msgCacheRef.current.set(groupId, cached.map(m => (m.id === msgId ? patch(m) : m)));
+    if (selectedGroupRef.current?.id === groupId) {
+      setGroupMessages(prev => prev.map(m => (m.id === msgId && m.groupId === groupId ? patch(m) : m)));
+    }
+  }
+
+  /** Add a message to a loaded group's thread (no-op for groups not loaded yet — IDB has it). */
+  function appendGroupMessage(plain: PlainGroupMessage) {
+    const cached = msgCacheRef.current.get(plain.groupId);
+    if (cached) {
+      if (cached.some(m => m.id === plain.id)) return;
+      msgCacheRef.current.set(plain.groupId, [...cached, plain]);
+    }
+    if (selectedGroupRef.current?.id === plain.groupId) {
+      setGroupMessages(prev => (prev.some(m => m.id === plain.id) ? prev : [...prev, plain]));
+    }
+  }
   // msgId → readBy set
   const readByRef = useRef<Map<string, Set<string>>>(new Map());
 
@@ -358,19 +446,31 @@ export function useGroups(
 
     let text = '[encrypted]';
     let replyTo: PlainGroupMessage['replyTo'];
+    let edit: { id: string } | undefined;
     try {
       const decoded = decodeGroupText(await decryptGroupMessage(ciphertext, nonce, group, identity));
       text = decoded.text;
       replyTo = decoded.replyTo;
+      edit = decoded.edit;
     } catch (e) {
       addLog(`Group decrypt fail: ${e}`);
       return;
     }
 
-    // Save to IDB (fire and forget)
+    // Save to IDB (fire and forget). Edits are stored too: loading the group
+    // replays them onto the message they change.
     handleIncomingGroupMsg(payload, identity).catch(e =>
       console.warn('[groups] save msg failed:', e)
     );
+
+    if (edit) {
+      const editedAt = typeof payload.timestamp === 'number' ? payload.timestamp : Date.now();
+      patchGroupMessage(payload.groupId, edit.id, m => (
+        m.fromPubKeyHex === payload.fromPubKeyHex && !m.attachment ? { ...m, text, editedAt } : m
+      ));
+      addLog(`✏️ ${String(payload.fromPubKeyHex).slice(0, 12)}… edited a message in ${group.name}`);
+      return;
+    }
 
     const plain: PlainGroupMessage = {
       id:            payload.msgId,
@@ -384,14 +484,15 @@ export function useGroups(
       replyTo,
     };
 
-    // Update cache (dedupe by msgId — the sender retries failed deliveries with
-    // the same wire payload, and a slow first attempt may still have landed)
-    const cached = msgCacheRef.current.get(payload.groupId) ?? [];
-    if (cached.some(m => m.id === payload.msgId)) {
+    // Dedupe by msgId — the sender retries failed deliveries with the same
+    // wire payload, and a slow first attempt may still have landed.
+    const seenIds = seenGroupMsgIdsRef.current;
+    if (seenIds.has(payload.msgId) || msgCacheRef.current.get(payload.groupId)?.some(m => m.id === payload.msgId)) {
       addLog(`↺ Duplicate group-msg ignored: ${String(payload.msgId).slice(0, 12)}`);
       return;
     }
-    msgCacheRef.current.set(payload.groupId, [...cached, plain]);
+    seenIds.add(payload.msgId);
+    if (seenIds.size > 4096) seenIds.delete(seenIds.values().next().value as string);
 
     const isSelected = selectedGroupRef.current?.id === payload.groupId;
     // Having the group open is not the same as reading it — a backgrounded app
@@ -402,7 +503,7 @@ export function useGroups(
 
     // Keep the open thread live either way, so returning to the app shows the
     // message already in place rather than after a refetch.
-    if (isSelected) setGroupMessages(p => [...p, plain]);
+    appendGroupMessage(plain);
 
     if (isRead) {
       // Send read receipt back to sender
@@ -588,36 +689,13 @@ export function useGroups(
 
     // Load from IDB and decrypt
     const raw = await getGroupMessages(group.id);
-    const plain: PlainGroupMessage[] = [];
-    for (const msg of raw) {
-      let text = '[encrypted]';
-      let replyTo: PlainGroupMessage['replyTo'];
-      try {
-        // IDB may return Uint8Array as plain object — reconstruct
-        const ct = msg.ciphertext instanceof Uint8Array
-          ? msg.ciphertext
-          : new Uint8Array(Object.values(msg.ciphertext as any));
-        const n = msg.nonce instanceof Uint8Array
-          ? msg.nonce
-          : new Uint8Array(Object.values(msg.nonce as any));
-        const decoded = decodeGroupText(await decryptGroupMessage(ct, n, group, identity));
-        text = decoded.text;
-        replyTo = decoded.replyTo;
-      } catch {}
-      plain.push({
-        id:            msg.id,
-        groupId:       msg.groupId,
-        fromPubKeyHex: msg.fromPubKeyHex,
-        text,
-        ts:            msg.timestamp,
-        fromMe:        msg.fromPubKeyHex === identity.publicKeyHex,
-        expiresAt:     (msg as any).expiresAt ?? 0,
-        readBy:        Array.from(readByRef.current.get(msg.id) ?? []),
-        replyTo,
-      });
-    }
-    msgCacheRef.current.set(group.id, plain);
-    setGroupMessages(plain);
+    const plain = await rowsToThread(raw, group, identity, id => Array.from(readByRef.current.get(id) ?? []));
+    // Something may have been sent or received while we were decrypting.
+    const live = msgCacheRef.current.get(group.id) ?? [];
+    const known = new Set(plain.map(m => m.id));
+    const merged = [...plain, ...live.filter(m => !known.has(m.id))];
+    msgCacheRef.current.set(group.id, merged);
+    if (selectedGroupRef.current?.id === group.id) setGroupMessages(merged);
   }
 
   // ── Send a group message ──────────────────────────────────────────────────
@@ -631,21 +709,6 @@ export function useGroups(
     const group = selectedGroupRef.current ?? selectedGroup;
     addLog(`📨 group-send: ${group?.name ?? '?'} node=${!!node} ident=${!!identity} sel=${!!group} len=${text.length}`);
     if (!node || !identity || !group) return;
-
-    // Helper: pre-dial the relay in a member's circuit addr if needed
-    async function dialRelayIfNeeded(addr: string) {
-      const idx = addr.indexOf('/p2p-circuit');
-      if (idx === -1) return;
-      const relayAddr = addr.slice(0, idx);
-      const myAddrs   = node!.getMultiaddrs().map((a: any) => a.toString());
-      const relayId   = relayAddr.split('/p2p/')[1] ?? '';
-      if (relayId && !myAddrs.some(a => a.includes(relayId))) {
-        try {
-          await node!.dial(multiaddr(relayAddr));
-          await new Promise(r => setTimeout(r, 1500));
-        } catch { /* non-fatal */ }
-      }
-    }
 
     try {
       // Refresh member addresses from relay before sending
@@ -671,7 +734,7 @@ export function useGroups(
         node, group, text, identity,
         async (n, addr, wire) => {
           addLog(`📨 → ${addr.split('/p2p/').pop()?.slice(0, 12)}`);
-          await dialRelayIfNeeded(addr);
+          await dialRelayFor(n, addr);
           await sendPing(n, addr, wire);
         },
         liveAddrs,
@@ -691,103 +754,202 @@ export function useGroups(
         replyTo,
       };
 
-      const cached = msgCacheRef.current.get(msg.groupId) ?? [];
-      msgCacheRef.current.set(msg.groupId, [...cached, plain]);
-      setGroupMessages(p => [...p, plain]);
+      appendGroupMessage(plain);
     } catch (e: any) {
       addLog(`Group send fail: ${e.message}`);
     }
   }
 
-  // ── Send a file to all group members ────────────────────────────────────
+  /** Dial the relay a member's circuit address runs through, if we aren't connected to it. */
+  async function dialRelayFor(node: Libp2p, addr: string) {
+    const idx = addr.indexOf('/p2p-circuit');
+    if (idx === -1) return;
+    const relayAddr = addr.slice(0, idx);
+    const myAddrs   = node.getMultiaddrs().map((a: any) => a.toString());
+    const relayId   = relayAddr.split('/p2p/')[1] ?? '';
+    if (relayId && !myAddrs.some(a => a.includes(relayId))) {
+      try {
+        await node.dial(multiaddr(relayAddr));
+        await new Promise(r => setTimeout(r, 1500));
+      } catch { /* non-fatal */ }
+    }
+  }
 
-  async function sendFileToGroup(file: File) {
+  // ── Edit one of our own group messages ─────────────────────────────────────
+
+  /**
+   * Replace the text of a message we sent to the selected group. Applied locally
+   * at once; the edit then goes to every member as an encrypted group-msg
+   * (stored like any other, so a reload replays it onto the original).
+   */
+  async function editGroupMessage(msgId: string, rawText: string): Promise<boolean> {
     const node     = nodeRef.current;
     const identity = identityRef.current;
     const group    = selectedGroupRef.current;
-    if (!node || !identity || !group) return;
+    const text     = rawText.trim();
+    if (!node || !identity || !group || !text) return false;
+    const original = (msgCacheRef.current.get(group.id) ?? []).find(m => m.id === msgId);
+    if (!original || !original.fromMe || original.attachment || original.text === text) return false;
 
-    let fileData = new Uint8Array(await readFileBytes(file));
-    if (fileData.length === 0) throw new Error(`File read returned 0 bytes — content URI may be unreadable (${file.name})`);
-    let mimeType = file.type || 'application/octet-stream';
-    let thumbnail: string | undefined;
+    patchGroupMessage(group.id, msgId, m => ({ ...m, text, editedAt: Date.now() }));
+    try {
+      const memberHexes = group.members.filter(m => m.publicKeyHex !== identity.publicKeyHex).map(m => m.publicKeyHex);
+      if (memberHexes.length) {
+        try {
+          const lookedUp = await lookupPeers(relayHttpPort ?? 3001, memberHexes, relayUrl, identity);
+          for (const [hex, addr] of Object.entries(lookedUp)) memberAddrRef.current.set(hex, addr);
+        } catch { /* keep known addresses */ }
+      }
+      const liveAddrs = new Map<string, string>();
+      for (const m of group.members) {
+        const addr = getMemberAddr(m.publicKeyHex, m.circuitAddr);
+        if (addr) liveAddrs.set(m.publicKeyHex, addr);
+      }
+      await sendGroupMessage(
+        node, group, text, identity,
+        async (n, addr, wire) => { await dialRelayFor(n, addr); await sendPing(n, addr, wire); },
+        liveAddrs, undefined, undefined, { edit: { id: msgId } },
+      );
+      addLog(`✏️ Edit sent to ${group.name}`);
+      return true;
+    } catch (e: any) {
+      addLog(`Group edit fail: ${e?.message ?? e}`);
+      return false;
+    }
+  }
 
-    if (isProcessableImage(mimeType)) {
-      try {
-        const processed = await processImage(file);
-        fileData  = new Uint8Array(processed.data);
-        mimeType  = processed.mimeType;
-        thumbnail = processed.thumbnail;
-      } catch (e: any) {
-        addLog(`⚠️ Image processing failed, sending raw: ${e.message}`);
+  // ── A file arrived for a group (routed here from useKant's file handler) ───
+
+  const handleIncomingFile = useCallback(async ({ groupId, senderHex, attachment }: IncomingGroupFile): Promise<void> => {
+    const identity = identityRef.current;
+    if (!identity) return;
+    const group = (await getGroups()).find(g => g.id === groupId);
+    // Only a member of a group we are in can post files to it.
+    if (!group || !group.members.some(m => m.publicKeyHex === senderHex)) {
+      addLog(`👥 Dropped a file for a group this sender is not in (${groupId.slice(0, 8)})`);
+      return;
+    }
+    const ts = Date.now();
+    await saveGroupFileRecord({ id: attachment.fileId, groupId, fromPubKeyHex: senderHex, timestamp: ts, attachment }, group, identity);
+    const plain: PlainGroupMessage = {
+      id: attachment.fileId, groupId, fromPubKeyHex: senderHex, text: '', ts,
+      fromMe: false, expiresAt: 0, readBy: [], attachment,
+    };
+    appendGroupMessage(plain);
+    const isRead = selectedGroupRef.current?.id === groupId && !appIsHidden();
+    if (!isRead) {
+      setUnreadCounts(prev => new Map(prev).set(groupId, (prev.get(groupId) ?? 0) + 1));
+      if (appIsHidden()) {
+        const body = `${senderHex.slice(0, 12)}…: ${attachment.voice ? '🎤 Voice message' : `📎 ${attachment.fileName}`}`;
+        if (window.kantDesktop) window.kantDesktop.showNotification(group.name, body);
+        else void showLocalNotification(group.name, body, group.id);
       }
     }
+  }, [identityRef, addLog]);
 
-    // Refresh member addresses
-    const httpPort = relayHttpPort ?? 3001;
-    const memberHexes = group.members
-      .filter(m => m.publicKeyHex !== identity.publicKeyHex)
-      .map(m => m.publicKeyHex);
-    if (memberHexes.length) {
-      try {
-        const lookedUp = await lookupPeers(httpPort, memberHexes, relayUrl, identity);
-        for (const [hex, addr] of Object.entries(lookedUp)) {
-          memberAddrRef.current.set(hex, addr);
-        }
-      } catch { /* non-fatal */ }
-    }
+  // ── Send a file to all group members ────────────────────────────────────
 
-    const targets = group.members.filter(m => m.publicKeyHex !== identity.publicKeyHex);
-    const results = await Promise.allSettled(targets.map(async (m) => {
-      const addr = getMemberAddr(m.publicKeyHex, m.circuitAddr);
-      if (!addr) throw new Error(`no address for ${m.publicKeyHex.slice(0, 12)}`);
-      const recipientX25519Pub = await ed25519PubToX25519(m.publicKeyHex);
-      const fileId = await sendFile(node, {
-        peerCircuitAddr: addr,
-        fileData,
-        fileName: file.name,
-        mimeType,
-        recipientX25519Pub,
-        senderPubkeyHex: identity.publicKeyHex,
-        maxFileSize: COMMUNITY_MAX_FILE_SIZE,
-        thumbnail,
-      });
-      return fileId;
-    }));
+  async function sendFileToGroup(file: File, options: { voice?: VoiceMeta } = {}) {
+    const node     = nodeRef.current;
+    const identity = identityRef.current;
+    const group    = selectedGroupRef.current;
+    if (!identity || !group) return;
+    const voice = options.voice ? sanitizeVoiceMeta(options.voice) : undefined;
 
-    const firstSuccess = results.find(r => r.status === 'fulfilled') as PromiseFulfilledResult<string> | undefined;
-    const fileId = firstSuccess?.value ?? crypto.randomUUID?.() ?? `${Date.now()}`;
-
-    // Save blob locally so we can display it
-    await saveFileBlob(fileId, fileData, { fileName: file.name, mimeType, fileSize: fileData.length }, identity.derivedKey);
-
-    const plain: PlainGroupMessage = {
-      id:            fileId,
-      groupId:       group.id,
-      fromPubKeyHex: identity.publicKeyHex,
-      text:          '',
-      ts:            Date.now(),
-      fromMe:        true,
-      expiresAt:     0,
-      readBy:        [],
-      attachment: {
-        fileId,
-        fileName: file.name,
-        mimeType,
-        fileSize: fileData.length,
-        sha256: '',
-        display: mimeType.startsWith('image/') ? 'inline' : 'attachment',
-        thumbnail,
-      },
+    let mimeType = file.type || 'application/octet-stream';
+    const tempId = `pending-file-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const baseAttachment = (fileId: string, size: number, thumbnail?: string): MessageAttachment => ({
+      fileId,
+      fileName: file.name,
+      mimeType,
+      fileSize: size,
+      sha256: '',
+      display: mimeType.startsWith('image/') ? 'inline' : 'attachment',
+      ...(thumbnail ? { thumbnail } : {}),
+      ...(voice ? { voice } : {}),
+    });
+    // Show the file straight away; a transfer to several members takes a while.
+    const pending: PlainGroupMessage = {
+      id: tempId, groupId: group.id, fromPubKeyHex: identity.publicKeyHex, text: '', ts: Date.now(),
+      fromMe: true, expiresAt: 0, readBy: [], attachment: baseAttachment('pending', file.size), status: 'pending',
     };
+    appendGroupMessage(pending);
+    const fail = (reason: string) => {
+      addLog(`⚠️ Group file not sent: ${reason}`);
+      patchGroupMessage(group.id, tempId, m => ({ ...m, status: 'failed', attachment: m.attachment ? { ...m.attachment, fileId: 'failed' } : m.attachment }));
+    };
+    if (!node) { fail('offline'); return; }
 
-    const cached = msgCacheRef.current.get(group.id) ?? [];
-    msgCacheRef.current.set(group.id, [...cached, plain]);
-    setGroupMessages(p => [...p, plain]);
+    try {
+      let fileData = new Uint8Array(await readFileBytes(file));
+      if (fileData.length === 0) throw new Error(`File read returned 0 bytes — content URI may be unreadable (${file.name})`);
+      let thumbnail: string | undefined;
 
-    const failCount = results.filter(r => r.status === 'rejected').length;
-    if (failCount) addLog(`⚠️ File failed for ${failCount}/${targets.length} group member(s)`);
-    else addLog(`✅ File sent to ${targets.length} group member(s)`);
+      if (isProcessableImage(mimeType)) {
+        try {
+          const processed = await processImage(file);
+          fileData  = new Uint8Array(processed.data);
+          mimeType  = processed.mimeType;
+          thumbnail = processed.thumbnail;
+        } catch (e: any) {
+          addLog(`⚠️ Image processing failed, sending raw: ${e.message}`);
+        }
+      }
+
+      // Refresh member addresses
+      const memberHexes = group.members
+        .filter(m => m.publicKeyHex !== identity.publicKeyHex)
+        .map(m => m.publicKeyHex);
+      if (memberHexes.length) {
+        try {
+          const lookedUp = await lookupPeers(relayHttpPort ?? 3001, memberHexes, relayUrl, identity);
+          for (const [hex, addr] of Object.entries(lookedUp)) {
+            memberAddrRef.current.set(hex, addr);
+          }
+        } catch { /* non-fatal */ }
+      }
+
+      const targets = group.members.filter(m => m.publicKeyHex !== identity.publicKeyHex);
+      const results = await Promise.allSettled(targets.map(async (m) => {
+        const addr = getMemberAddr(m.publicKeyHex, m.circuitAddr);
+        if (!addr) throw new Error(`no address for ${m.publicKeyHex.slice(0, 12)}`);
+        await dialRelayFor(node, addr);
+        const recipientX25519Pub = await ed25519PubToX25519(m.publicKeyHex);
+        return sendFile(node, {
+          peerCircuitAddr: addr,
+          fileData,
+          fileName: file.name,
+          mimeType,
+          recipientX25519Pub,
+          senderPubkeyHex: identity.publicKeyHex,
+          maxFileSize: COMMUNITY_MAX_FILE_SIZE,
+          thumbnail,
+          voice,
+          groupId: group.id,
+        });
+      }));
+
+      const failCount = results.filter(r => r.status === 'rejected').length;
+      if (targets.length > 0 && failCount === targets.length) {
+        const first = results.find(r => r.status === 'rejected') as PromiseRejectedResult | undefined;
+        fail(String(first?.reason?.message ?? first?.reason ?? 'no member reachable'));
+        return;
+      }
+
+      const fileId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await saveFileBlob(fileId, fileData, { fileName: file.name, mimeType, fileSize: fileData.length }, identity.derivedKey);
+      const attachment = baseAttachment(fileId, fileData.length, thumbnail);
+      const ts = pending.ts;
+      await saveGroupFileRecord({ id: fileId, groupId: group.id, fromPubKeyHex: identity.publicKeyHex, timestamp: ts, attachment }, group, identity);
+
+      // Swap the placeholder for the stored record, keeping its place in the thread.
+      patchGroupMessage(group.id, tempId, m => ({ ...m, id: fileId, attachment, status: undefined }));
+
+      if (failCount) addLog(`⚠️ File failed for ${failCount}/${targets.length} group member(s)`);
+      else addLog(`✅ File sent to ${targets.length} group member(s)`);
+    } catch (e: any) {
+      fail(e?.message ?? String(e));
+    }
   }
 
   // ── Remove a member and rotate key ───────────────────────────────────────
@@ -864,7 +1026,7 @@ export function useGroups(
     expiryTtl, setExpiryTtl,
     onlineMembers, unreadCounts, keyDistStatus,
     loadGroups, startGroupHandler, handleIncomingMsg,
-    createNewGroup, selectGroup, sendToGroup, sendFileToGroup,
+    createNewGroup, selectGroup, sendToGroup, sendFileToGroup, editGroupMessage, handleIncomingFile,
     removeMember, leaveGroup,
     setSelectedGroup, updateMemberAddr,
   };

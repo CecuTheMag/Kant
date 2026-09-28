@@ -29,7 +29,7 @@ export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSP
 export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactTrust, normalizeContact, addContactCaps } from './contacts.js';
 export type { Contact } from './contacts.js';
 
-export { saveMessage, setMessageStatus, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
+export { saveMessage, setMessageStatus, editStoredMessage, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
 export type { StoredMessage, ConversationHeader, Conversation, MessageStatus, MessageAttachment } from './messages.js';
 
 export { startDiscovery, getKnownPeers } from './discovery.js';
@@ -37,8 +37,10 @@ export type { DiscoveredPeer, PeerDiscoveryHandler } from './discovery.js';
 
 export { enqueue, dequeue, getPendingForContact, startQueueRetry, stripLegacyWireFields, scrubQueuedLegacyWireFields } from './queue.js';
 
-export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeCaps, CAP_CONTENT_ENVELOPE, SUPPORTED_CAPS, REPLY_LIMITS } from './envelope.js';
-export type { ReplyRef, DecodedContent } from './envelope.js';
+export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeEditRef, sanitizeCaps, CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, SUPPORTED_CAPS, REPLY_LIMITS, EDIT_LIMITS } from './envelope.js';
+export type { ReplyRef, EditRef, DecodedContent, ContentOptions } from './envelope.js';
+export { sanitizeVoiceMeta, sanitizeGroupRef, VOICE_LIMITS } from './voice.js';
+export type { VoiceMeta } from './voice.js';
 export type { QueuedMessage, SendFn } from './queue.js';
 
 export {
@@ -51,7 +53,7 @@ export {
   encryptGroupMessage, decryptGroupMessage,
   saveGroupMessage, getGroupMessages,
   handleIncomingGroupKey,
-  encodeGroupText, decodeGroupText,
+  encodeGroupText, decodeGroupText, saveGroupFileRecord,
 } from './groups.js';
 export type { Group, GroupMember, GroupMessage, GroupEvent, GroupEventHandler, StoredGroupConversation, GroupReplyRef } from './groups.js';
 

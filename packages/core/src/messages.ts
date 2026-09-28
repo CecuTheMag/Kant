@@ -8,6 +8,7 @@
 
 import { getSodium } from './sodium.js';
 import { openDB, idbGet, idbPut, idbDelete, idbGetAll } from './db.js';
+import type { VoiceMeta } from './voice.js';
 
 const STORE = 'messages';
 
@@ -28,6 +29,8 @@ export interface MessageAttachment {
   sha256: string;
   thumbnail?: string;
   display: 'inline' | 'attachment';
+  /** Set when the attachment is a recorded voice note. */
+  voice?: VoiceMeta;
 }
 
 export interface StoredMessage {
@@ -42,6 +45,8 @@ export interface StoredMessage {
   /** Quoted-message reference. `ciphertext` here is the quoted snippet, encrypted
    *  the same way as the message body — a reply preview is still message content. */
   replyTo?: { id: string; from: string; ciphertext: Uint8Array };
+  /** When the text was last replaced by an edit. */
+  editedAt?: number;
 }
 
 export interface ConversationHeader {
@@ -126,6 +131,39 @@ export async function setMessageStatus(contactPubkeyHex: string, id: string, sta
     }
   }
   db.close();
+}
+
+/**
+ * Replace a stored message's text after an edit.
+ *
+ * `fromMe` is the authorship the edit claims: an edit we received may only
+ * touch the peer's own messages, and one we sent only ours. Returns false when
+ * the target is unknown or belongs to the other side, so a peer can never
+ * rewrite what we said.
+ */
+export async function editStoredMessage(
+  contactPubkeyHex: string,
+  derivedKey: Uint8Array,
+  id: string,
+  text: string,
+  editedAt: number,
+  fromMe: boolean,
+): Promise<boolean> {
+  const ciphertext = await encryptText(derivedKey, text);
+  const db = await openDB();
+  try {
+    const conv = await idbGet<ConversationHeader>(db, STORE, contactPubkeyHex);
+    const message = conv?.messages.find(value => value.id === id);
+    if (!conv || !message || message.fromMe !== fromMe) return false;
+    // Edits can arrive out of order after a retry; the newest one wins.
+    if (message.editedAt && message.editedAt > editedAt) return false;
+    message.ciphertext = ciphertext;
+    message.editedAt = editedAt;
+    await idbPut(db, STORE, conv);
+    return true;
+  } finally {
+    db.close();
+  }
 }
 
 /** Load and decrypt a full conversation. */

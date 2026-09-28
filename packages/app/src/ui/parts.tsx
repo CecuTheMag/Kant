@@ -40,7 +40,8 @@ export function Sheet({ onClose, children, label, tall }: {
   closeRef.current = onClose;
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
-    const first = ref.current?.querySelector<HTMLElement>('[data-autofocus], input, textarea');
+    const first = ref.current?.querySelector<HTMLElement>('[data-autofocus]')
+      ?? ref.current?.querySelector<HTMLElement>('input, textarea');
     if (!window.matchMedia('(hover: none)').matches) first?.focus();
     // Only the top-most sheet reacts to Escape.
     const onKey = (e: KeyboardEvent) => {
