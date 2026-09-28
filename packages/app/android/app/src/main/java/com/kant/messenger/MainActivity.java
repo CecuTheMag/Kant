@@ -9,6 +9,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(KantNotificationsPlugin.class);
         registerPlugin(KantConnectionPlugin.class);
         registerPlugin(KantFilesPlugin.class);
+        registerPlugin(KantBiometricPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

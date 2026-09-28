@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useKant } from './hooks/useKant';
 import { useGroups } from './hooks/useGroups';
 import { useAiBridge } from './hooks/useAiBridge';
 import { useUnreadTitle } from './hooks/useUnreadTitle';
 import { useTermsAcceptance } from './hooks/useTermsAcceptance';
 import { KantApp } from './ui/KantApp';
-import { Boot, CreateStep, NetworkStep, TermsUpdate, Unlock, Welcome } from './ui/Onboarding';
+import { Boot, CreateStep, MoveInScreen, NetworkStep, RestoreScreen, TermsUpdate, Unlock, Welcome } from './ui/Onboarding';
 import { readThemePref, useAppliedTheme } from './ui/lib';
 import './ui/kant.css';
 
@@ -38,6 +38,14 @@ export default function App() {
 
   useEffect(() => { kant.checkIdentity(); }, []);
 
+  // Onboarding alternative to creating an account: bring an existing one over.
+  const [bringOver, setBringOver] = useState<'move' | 'restore' | null>(null);
+
+  // Stable, so the unlock screen checks fingerprint availability once.
+  const biometric = useMemo(() => ({ block: kant.biometricUnlockBlock, unlock: kant.unlockBiometric }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []);
+
   useEffect(() => {
     if (kant.screen === 'app') groups.loadGroups();
   }, [kant.screen]);
@@ -56,16 +64,18 @@ export default function App() {
     if (kant.screen === 'relay') {
       return <NetworkStep step={2} totalSteps={totalSteps} onConfigured={kant.configureRelay} />;
     }
+    if (bringOver === 'move') return <MoveInScreen receive={kant.receiveMove} onBack={() => setBringOver(null)} />;
+    if (bringOver === 'restore') return <RestoreScreen restore={kant.restoreBackup} onBack={() => setBringOver(null)} />;
     return (
       <CreateStep step={totalSteps} totalSteps={totalSteps} onCreate={async (password, name) => {
         try { localStorage.setItem(PROFILE_KEY, name.trim().slice(0, 40)); } catch { /* storage unavailable */ }
         await kant.setup(password);
-      }} />
+      }} onMoveIn={() => setBringOver('move')} onRestore={() => setBringOver('restore')} />
     );
   }
 
   if (kant.screen === 'unlock') {
-    return <Unlock onUnlock={kant.unlock} onErase={kant.deleteIdentity} />;
+    return <Unlock onUnlock={kant.unlock} onErase={kant.deleteIdentity} biometric={biometric} />;
   }
 
   // Existing users see updated Terms once, after unlocking.

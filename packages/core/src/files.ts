@@ -215,7 +215,8 @@ async function fileHash(data: Uint8Array): Promise<string> {
 
 // ── Frame helpers ─────────────────────────────────────────────────────────────
 
-function frameMessage(msg: unknown): Uint8Array {
+/** @internal Shared with transfer.ts. */
+export function frameMessage(msg: unknown): Uint8Array {
   const bytes = new TextEncoder().encode(JSON.stringify(msg));
   const header = new Uint8Array(4);
   new DataView(header.buffer).setUint32(0, bytes.length, false);
@@ -245,7 +246,8 @@ const streamReadStates = new WeakMap<object, FramedReadState>();
  * Attaches listeners, reads until the full payload arrives, then removes them.
  * Rejects after TRANSFER_TIMEOUT_MS to prevent hung transfers.
  */
-function readFramedMessage<T>(stream: any): Promise<T> {
+/** @internal Shared with transfer.ts. */
+export function readFramedMessage<T>(stream: any): Promise<T> {
   let state = streamReadStates.get(stream);
   if (!state) {
     state = { buffer: new Uint8Array(), queued: [], waiters: [] };
@@ -758,6 +760,21 @@ export async function saveFileBlob(
   const db = await openDB();
   await sharedIdbPut(db, FILE_STORE, blob);
   db.close();
+}
+
+/** Remove a stored attachment (the message it belonged to was deleted). */
+export async function deleteFileBlob(fileId: string): Promise<void> {
+  const db = await openDB();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(FILE_STORE, 'readwrite');
+      tx.objectStore(FILE_STORE).delete(fileId);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
 }
 
 export async function getFileBlob(

@@ -13,8 +13,8 @@ import { multiaddr } from '@multiformats/multiaddr';
 import { FaultTolerance } from '@libp2p/interface';
 import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
 
-export { hasIdentity, createIdentity, unlockIdentity, wipeIdentity, deriveKey } from './identity.js';
-export type { StoredKeypair, UnlockedIdentity } from './identity.js';
+export { hasIdentity, createIdentity, unlockIdentity, unlockIdentityChecked, unlockIdentityWithKey, setDuressPassword, isDuressPasswordSet, wipeIdentity, deriveKey } from './identity.js';
+export type { StoredKeypair, UnlockedIdentity, UnlockResult } from './identity.js';
 export {
   generateX25519Keypair, ed25519ToX25519, ed25519PubToX25519,
   x3dhSend, x3dhReceive,
@@ -23,22 +23,24 @@ export {
 } from './ratchet.js';
 export type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle, RatchetState, EncryptedMessage } from './ratchet.js';
 export { saveRatchet, loadRatchets, deleteRatchet } from './ratchetStore.js';
+export { configureFederation, ensureRelayConnection, routeDialAddr, federatedRelays, parseCircuit, isTunnelMultiaddr } from './federation.js';
+export type { RelayFederationInfo } from './federation.js';
 export { DB_NAME } from './db.js';
 export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, findSPKByPublicKey, replenishOPKPool, reserveOPK, getOPK, burnOPK, PREKEY_PROTOCOL } from './prekey.js';
 
 export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactTrust, normalizeContact, addContactCaps } from './contacts.js';
 export type { Contact } from './contacts.js';
 
-export { saveMessage, setMessageStatus, editStoredMessage, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
-export type { StoredMessage, ConversationHeader, Conversation, MessageStatus, MessageAttachment } from './messages.js';
+export { saveMessage, hasMessage, setMessageStatus, editStoredMessage, setStoredReaction, deleteStoredMessage, removeStoredMessage, markOpSynced, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
+export type { StoredMessage, ConversationHeader, Conversation, MessageStatus, MessageAttachment, SyncKind } from './messages.js';
 
 export { startDiscovery, getKnownPeers } from './discovery.js';
 export type { DiscoveredPeer, PeerDiscoveryHandler } from './discovery.js';
 
 export { enqueue, dequeue, getPendingForContact, startQueueRetry, stripLegacyWireFields, scrubQueuedLegacyWireFields } from './queue.js';
 
-export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeEditRef, sanitizeCaps, CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, SUPPORTED_CAPS, REPLY_LIMITS, EDIT_LIMITS } from './envelope.js';
-export type { ReplyRef, EditRef, DecodedContent, ContentOptions } from './envelope.js';
+export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeEditRef, sanitizeReaction, sanitizeCaps, CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, CAP_MESSAGE_REACT, CAP_MESSAGE_DELETE, SUPPORTED_CAPS, REPLY_LIMITS, EDIT_LIMITS, REACTION_MAX_LENGTH } from './envelope.js';
+export type { ReplyRef, EditRef, ReactRef, DeleteRef, DecodedContent, ContentOptions } from './envelope.js';
 export { sanitizeVoiceMeta, sanitizeGroupRef, VOICE_LIMITS } from './voice.js';
 export type { VoiceMeta } from './voice.js';
 export type { QueuedMessage, SendFn } from './queue.js';
@@ -51,7 +53,7 @@ export {
   sendGroupKeyToMember, registerGroupHandler,
   processDeliveryQueue, getDeliveryQueueStatus,
   encryptGroupMessage, decryptGroupMessage,
-  saveGroupMessage, getGroupMessages,
+  saveGroupMessage, getGroupMessages, purgeGroupMessage,
   handleIncomingGroupKey,
   encodeGroupText, decodeGroupText, saveGroupFileRecord,
 } from './groups.js';
@@ -79,6 +81,7 @@ export {
   registerFileHandler,
   saveFileBlob,
   getFileBlob,
+  deleteFileBlob,
 } from './files.js';
 export type {
   FileMeta,
@@ -232,6 +235,7 @@ import { registerOnionHandler } from './onion.js';
 import { applyTorTransport } from './tor.js';
 import type { TorConfig } from './tor.js';
 import { withSendLock, getOrDialPeer } from './send-lock.js';
+import { relayTunnelTransport, rememberNodeKey, denyDirectFederatedDial, ensureRelayConnection } from './federation.js';
 
 export type ReceiptHandler = (fromPeerId: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string}) => void;
 
@@ -256,6 +260,8 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     ? applyTorTransport(torConfig, {})
     : {};
 
+  // Set once the node exists; the gater consults the node's federation state.
+  let selfNode: Libp2p | undefined;
   const node = await createLibp2p({
     ...(privateKey ? { privateKey } : {}),
     addresses: {
@@ -276,6 +282,9 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     transportManager: { faultTolerance: FaultTolerance.NO_FATAL },
     transports: [
       webSockets(wsOpts),
+      // Dial-only: WebSockets to our home relay's /fed/<peer relay> endpoint
+      // (relay federation — see federation.ts).
+      relayTunnelTransport(wsOpts),
       // We already listen on one configured relay. Suppress topology discovery:
       // if it reserves this relay first, the explicit listener sees an existing
       // reservation but never publishes its /p2p-circuit address.
@@ -286,13 +295,18 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     connectionEncrypters: [noise()],
     streamMuxers: [yamux()],
     services: { identify: identify() },
-    connectionGater: { denyDialMultiaddr: () => false },
+    // Direct dials to a federated relay are refused while federation is on:
+    // those must go through the home relay's tunnel.
+    connectionGater: { denyDialMultiaddr: (ma) => denyDirectFederatedDial(selfNode, ma) },
     // The relay does not speak /ipfs/ping/1.0.0. The default connection monitor
     // pings every peer with that protocol and kills the connection when it gets
     // no response — causing the Android client to drop its relay reservation
     // every 10-30 seconds. Disable it; Kant uses its own PING_PROTOCOL.
     connectionMonitor: { enabled: false },
   });
+
+  selfNode = node;
+  if (privateKey) rememberNodeKey(node, privateKey);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await node.handle(PING_PROTOCOL, async (stream: any, connection: any) => {
@@ -404,7 +418,7 @@ export async function getRelayInfo(httpPort?: number, explicitUrl?: string): Pro
 
 export async function connectToRelay(node: Libp2p, relayAddr: string): Promise<void> {
   console.log('Connecting to relay:', relayAddr);
-  await node.dial(multiaddr(relayAddr));
+  await ensureRelayConnection(node, relayAddr);
   await new Promise(r => setTimeout(r, 1500)); // Wait for identify
 }
 
@@ -510,3 +524,9 @@ export async function lookupPeers(httpPort: number, publicKeyHexes: string[], ex
 export function ping(): string {
   return 'Kant Phase 0: P2P crypto foundation ready';
 }
+
+// Identity backup file and device-to-device move.
+export { createBackupFile, restoreBackupFile, isBackupFile, BundleRestorer, sealedBundle, BUNDLE_VERSION } from './bundle.js';
+export type { BundleOptions, BundleSummary } from './bundle.js';
+export { TRANSFER_PROTOCOL, encodeMoveCode, parseMoveCode, startOutgoingMove, startIncomingMove } from './transfer.js';
+export type { MoveCode, OutgoingMove, IncomingMove, IncomingMoveHandlers } from './transfer.js';

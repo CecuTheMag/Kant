@@ -75,6 +75,16 @@ export const Eye = (p: IconProps) => <Svg {...p}><path d="M2.5 12S6 5.5 12 5.5 2
 export const EyeOff = (p: IconProps) => <Svg {...p}><path d="M3 3l18 18M10.6 5.6A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3 3.8M6.6 6.6C3.9 8.3 2.5 12 2.5 12S6 18.5 12 18.5c1.5 0 2.9-.4 4.1-1" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></Svg>;
 export const Alert = (p: IconProps) => <Svg {...p}><path d="M10.3 4.3L2.9 17.5A2 2 0 0 0 4.6 20.5h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z" /><path d="M12 9.5v4M12 16.8v.2" /></Svg>;
 export const Clock = (p: IconProps) => <Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Svg>;
+export const Fingerprint = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7.5 5.2A8 8 0 0 1 19.6 11" /><path d="M4.4 9a8 8 0 0 1 1.4-2.3" /><path d="M4 13.5v-.5" />
+    <path d="M8.2 19.6A10.6 10.6 0 0 1 7 13.5a5 5 0 0 1 10 0v1" /><path d="M12 13.5a17 17 0 0 0 1.6 7.5" />
+    <path d="M16.8 18.4c.2-1 .2-2 .2-2.9" /><path d="M20 15.8c.1-.8.1-1.5 0-2.3" /><path d="M9.8 21a14 14 0 0 1-1-4" />
+  </Svg>
+);
+export const Smile = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M8.6 14.2a4.2 4.2 0 0 0 6.8 0" /><path d="M9.3 9.6h.01M14.7 9.6h.01" strokeWidth={2.6} /></Svg>
+);
 export const Reply = (p: IconProps) => <Svg {...p}><path d="M9.5 6.5L4 12l5.5 5.5" /><path d="M4.5 12H14a6 6 0 0 1 6 6v1" /></Svg>;
 export const More = ({ size = 20, style, className }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={style} className={className}>

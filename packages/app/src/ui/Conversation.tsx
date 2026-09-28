@@ -11,10 +11,16 @@ import type { Contact, MessageAttachment, NodeStatus, PlainMessage } from './cor
 import { dayLabel, fileSize, formatTime, expiryLabel } from './core/format';
 import {
   Alert, ArrowUp, Block, ChevronLeft, ChevronUp, Close, Copy, Doc, DocText, Download, Info, Lock, LockFill, Mic, Pencil, Plus,
-  Reply, ShieldAlert, Spinner, TableIcon, Trash, VerifiedSeal, Check, Clock, More, Photo,
+  Reply, ShieldAlert, Spinner, TableIcon, Trash, VerifiedSeal, Check, Clock, More, Photo, Smile,
 } from './icons';
+import { CAP_MESSAGE_DELETE } from '@kant/core';
+import { openExternalUrl } from '../lib/fileActions';
+import { ChatText, DeleteSheet, FormatBar, ReactionBar, ReactionChips, useBubbleGestures } from './chat/ChatParts';
+import { applyFormat, formatForShortcut, plainText, toggledReaction } from './chat/chatLogic';
+import type { FormatKind } from './chat/chatLogic';
+import { useChatPrefs } from './chat/prefs';
 import { copyText, displayName, isTouch, seenLabel, shortId, useLongPress } from './lib';
-import { Avatar, Menu, useToast } from './parts';
+import { Avatar, Confirm, Menu, useToast } from './parts';
 import type { MenuItem } from './parts';
 import { FilePreview } from './FilePreview';
 import { FileEditor } from './FileEditor';
@@ -29,7 +35,7 @@ type EditTarget = { id: string; text: string };
 
 /** Your own text message that is out of the sending pipeline can be edited. */
 function canEdit(m: PlainMessage): boolean {
-  return m.from === 'me' && !!m.text && !m.attachments?.length && !m.system
+  return m.from === 'me' && !!m.text && !m.attachments?.length && !m.system && !m.deletedAt
     && (m.status === 'sent' || m.status === 'delivered' || m.status === 'read');
 }
 
@@ -59,7 +65,10 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
 
   const [replyTo, setReplyTo] = useState<ReplyRef | null>(null);
   const [editing, setEditing] = useState<EditTarget | null>(null);
-  const [menu, setMenu] = useState<{ at: { x: number; y: number }; items: MenuItem[] } | null>(null);
+  const [menu, setMenu] = useState<{ at: { x: number; y: number }; items: MenuItem[]; header?: ReactNode } | null>(null);
+  const [pendingLink, setPendingLink] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<PlainMessage | null>(null);
+  const prefs = useChatPrefs();
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [preview, setPreview] = useState<MessageAttachment | null>(null);
   const [creating, setCreating] = useState<'table' | 'document' | null>(null);
@@ -95,12 +104,57 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
     return c ? displayName(c) : `Kant ${shortId(from)}`;
   }, [isDm, contact, state.contacts]);
 
+  /** Who wrote a quoted message, in this reader's words ("You", their name) when we have it. */
+  const byId = useMemo(() => new Map(messages.map((m) => [m.id, m])), [messages]);
+  const quoteAuthor = (ref: { id: string; from: string }) => {
+    const quoted = byId.get(ref.id);
+    return quoted ? nameOf(quoted.from) : ref.from;
+  };
+
   const quoteText = (m: PlainMessage) => {
     if (m.text) return m.text;
     const a = m.attachments?.[0];
     if (a?.voice) return 'Voice message';
     if (a?.mime.startsWith('image/')) return 'Photo';
     return a ? displayFileName(a.name) : 'Attachment';
+  };
+
+  const retry = (m: PlainMessage) => {
+    void store.retryMessage(contact!.id!, m.id).then((r) => {
+      if (r === 'waiting') toast(`${title} isn’t reachable yet — Kant keeps trying`, <Clock size={18} />);
+    }).catch(() => {});
+  };
+
+  const startReply = (m: PlainMessage) => {
+    setEditing(null);
+    setReplyTo({ id: m.id, from: nameOf(m.from), text: quoteText(m) });
+  };
+
+  const canReact = (m: PlainMessage) => !isRequest && !m.deletedAt && !m.system && !m.id.startsWith('pending-');
+  const react = (m: PlainMessage, emoji: string) => {
+    const next = toggledReaction(m.reactions?.me, emoji);
+    const done = isDm ? store.reactToMessage(contact!.id!, m.id, next) : store.reactGroupMessage(target.groupId, m.id, next);
+    void done.then((ok) => { if (!ok) toast('Couldn’t react to that message', <Alert size={18} />); })
+      .catch(() => toast('Couldn’t react to that message', <Alert size={18} />));
+  };
+  const reactionBar = (m: PlainMessage) => (
+    <ReactionBar current={m.reactions?.me} onPick={(emoji) => { setMenu(null); react(m, emoji); }} />
+  );
+
+  const openLink = (href: string) => {
+    if (prefs.confirmLinks) { setPendingLink(href); return; }
+    void openExternalUrl(href).then((ok) => { if (!ok) toast('This link can’t be opened', <Alert size={18} />); })
+      .catch(() => toast('This link can’t be opened', <Alert size={18} />));
+  };
+
+  /** Their Kant must understand deletions for "Delete for everyone" to mean anything. */
+  const peerCanDelete = !isDm || !!contact?.caps?.includes(CAP_MESSAGE_DELETE);
+  const deleteMessage = (m: PlainMessage, forEveryone: boolean) => {
+    const done = isDm ? store.deleteMessage(contact!.id!, m.id, forEveryone) : store.deleteGroupMessage(target.groupId, m.id, forEveryone);
+    void done.then((ok) => { if (!ok) toast('Couldn’t delete the message', <Alert size={18} />); else toast('Deleted', <Trash size={18} />); })
+      .catch(() => toast('Couldn’t delete the message', <Alert size={18} />));
+    if (replyTo?.id === m.id) setReplyTo(null);
+    if (editing?.id === m.id) setEditing(null);
   };
 
   const startEdit = (m: PlainMessage) => {
@@ -110,11 +164,18 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
 
   const openMenu = (m: PlainMessage, at: { x: number; y: number }) => {
     const items: MenuItem[] = [];
-    if (!isRequest) items.push({ label: 'Reply', icon: <Reply size={20} />, onSelect: () => { setEditing(null); setReplyTo({ id: m.id, from: nameOf(m.from), text: quoteText(m) }); } });
-    if (!isRequest && canEdit(m)) items.push({ label: 'Edit', icon: <Pencil size={20} />, onSelect: () => startEdit(m) });
-    if (m.text) items.push({ label: 'Copy', icon: <Copy size={20} />, onSelect: () => { void copyText(m.text); toast('Copied', <Check size={18} />); } });
-    if (m.status === 'failed' && isDm && m.text) items.push({ label: 'Try again', icon: <ArrowUp size={20} />, onSelect: () => store.send(contact!.id!, m.text) });
-    if (items.length) setMenu({ at, items });
+    if (m.id.startsWith('pending-')) return;
+    if (!m.deletedAt) {
+      if (!isRequest) items.push({ label: 'Reply', icon: <Reply size={20} />, onSelect: () => startReply(m) });
+      if (!isRequest && canEdit(m)) items.push({ label: 'Edit', icon: <Pencil size={20} />, onSelect: () => startEdit(m) });
+      if (m.text) items.push({ label: 'Copy', icon: <Copy size={20} />, onSelect: () => { void copyText(m.text); toast('Copied', <Check size={18} />); } });
+      if (m.status === 'failed' && isDm && m.text) items.push({ label: 'Retry now', icon: <ArrowUp size={20} />, onSelect: () => retry(m) });
+    }
+    if (!m.system) items.push({ label: 'Delete', icon: <Trash size={20} />, danger: true, onSelect: () => setDeleting(m) });
+    if (items.length) setMenu({ at, items, header: canReact(m) ? reactionBar(m) : undefined });
+  };
+  const openReactions = (m: PlainMessage, at: { x: number; y: number }) => {
+    if (canReact(m)) setMenu({ at, items: [], header: reactionBar(m) });
   };
 
   const send = (text: string) => {
@@ -217,7 +278,11 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
                 autoPlay={autoplayId === m.id}
                 onVoiceEnded={() => playNextAfter(m.id)}
                 onMenu={(at) => openMenu(m, at)} onOpenImage={setLightbox} onOpenFile={setPreview}
-                onRetry={isDm && m.text ? () => store.send(contact!.id!, m.text) : undefined} />
+                onReactMenu={canReact(m) ? (at) => openReactions(m, at) : undefined}
+                onReact={canReact(m) ? (emoji) => react(m, emoji) : undefined}
+                onReply={!isRequest && !m.deletedAt && !m.id.startsWith('pending-') ? () => startReply(m) : undefined}
+                onLink={openLink} nameOf={nameOf} quoteAuthor={m.replyTo ? quoteAuthor(m.replyTo) : undefined}
+                onRetry={isDm && m.text && !m.deletedAt ? () => retry(m) : undefined} />
             );
             });
           })()}
@@ -233,7 +298,26 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
           onSend={send} onSendFile={sendFile} onSendVoice={sendVoice} onCreate={setCreating} />
       )}
 
-      {menu && <Menu at={menu.at} items={menu.items} onClose={() => setMenu(null)} />}
+      {menu && <Menu at={menu.at} items={menu.items} header={menu.header} onClose={() => setMenu(null)} />}
+      {deleting && (
+        <DeleteSheet
+          forEveryone={deleting.from === 'me' && !deleting.deletedAt && !isRequest && peerCanDelete && !deleting.id.startsWith('pending-')}
+          everyoneUnavailable={deleting.from === 'me' && !deleting.deletedAt && !peerCanDelete
+            ? `${title}’s Kant is out of date, so this can only be deleted from your device.` : undefined}
+          onDelete={(forEveryone) => deleteMessage(deleting, forEveryone)}
+          onClose={() => setDeleting(null)} />
+      )}
+      {pendingLink && (
+        <Confirm title="Open this link?" confirmLabel="Open link" onClose={() => setPendingLink(null)}
+          message={<>
+            <span className="k-preview-url">{pendingLink}</span>
+            It opens outside Kant. The site will see your IP address.
+          </>}
+          onConfirm={() => {
+            void openExternalUrl(pendingLink).then((ok) => { if (!ok) toast('This link can’t be opened', <Alert size={18} />); })
+              .catch(() => toast('This link can’t be opened', <Alert size={18} />));
+          }} />
+      )}
       {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
       {preview && <FilePreview attachment={preview} onClose={() => setPreview(null)} onSendEdited={isRequest ? undefined : sendFile} />}
       {creating && (
@@ -246,30 +330,67 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
 
 /* ── Message ──────────────────────────────────────────────────────── */
 
-function MessageRow({ m, grouped, last, newDay, senderName, showStatus, isEditing, autoPlay, onVoiceEnded, onMenu, onOpenImage, onOpenFile, onRetry }: {
+function MessageRow({
+  m, grouped, last, newDay, senderName, showStatus, isEditing, autoPlay, onVoiceEnded, onMenu, onOpenImage, onOpenFile, onRetry,
+  onReactMenu, onReact, onReply, onLink, nameOf, quoteAuthor,
+}: {
   m: PlainMessage; grouped: boolean; last: boolean; newDay: boolean; senderName?: string; showStatus: boolean;
   isEditing: boolean; autoPlay: boolean; onVoiceEnded: () => void;
   onMenu: (at: { x: number; y: number }) => void; onOpenImage: (src: string) => void;
   onOpenFile: (attachment: MessageAttachment) => void; onRetry?: () => void;
+  /** Open just the reaction bar (desktop hover button). */
+  onReactMenu?: (at: { x: number; y: number }) => void;
+  /** Toggle a reaction; absent when this message can't be reacted to. */
+  onReact?: (emoji: string) => void;
+  onReply?: () => void;
+  onLink: (href: string) => void;
+  nameOf: (who: string) => string;
+  quoteAuthor?: string;
 }) {
   const out = m.from === 'me';
+  const prefs = useChatPrefs();
   const { pressed, handlers, justFired } = useLongPress(onMenu);
+  const gestures = useBubbleGestures({
+    swipe: prefs.swipeReply && !!onReply,
+    doubleTap: prefs.doubleTapReact && !!onReact,
+    onSwipe: () => onReply?.(),
+    onDoubleTap: () => onReact?.(prefs.quickReaction),
+  });
   const image = m.attachments?.find((a) => a.mime.startsWith('image/'));
   const audio = m.attachments?.filter(isAudio) ?? [];
   const files = m.attachments?.filter((a) => !a.mime.startsWith('image/') && !isAudio(a)) ?? [];
   const voiceOnly = audio.length > 0 && !m.text && !m.replyTo && !image && !files.length;
+  const touch = isTouch();
+
+  const bubbleHandlers = touch ? {
+    onTouchStart: (e: React.TouchEvent) => { handlers.onTouchStart(e); gestures.handlers.onTouchStart(e); },
+    onTouchMove: (e: React.TouchEvent) => { handlers.onTouchMove(e); gestures.handlers.onTouchMove(e); },
+    onTouchEnd: (e: React.TouchEvent) => { handlers.onTouchEnd(); gestures.handlers.onTouchEnd(e); },
+    onTouchCancel: () => { handlers.onTouchCancel(); gestures.handlers.onTouchCancel(); },
+  } : {};
 
   return (
     <>
       {newDay && <div className="k-day">{dayLabel(m.ts)}</div>}
       {senderName && <div className="k-sender">{senderName}</div>}
-      <div className={`k-msg ${out ? 'out' : 'in'}${grouped ? ' is-grouped' : ''}${last ? ' is-last' : ''}${m.status === 'failed' ? ' is-failed' : ''}${isEditing ? ' is-editing' : ''}`}>
-        <div className="k-bubble-row">
+      <div className={`k-msg ${out ? 'out' : 'in'}${grouped ? ' is-grouped' : ''}${last ? ' is-last' : ''}${m.status === 'failed' && !m.deletedAt ? ' is-failed' : ''}${isEditing ? ' is-editing' : ''}`}>
+        {gestures.offset > 0 && (
+          <span className="k-swipe-reply" aria-hidden="true" style={{ opacity: Math.min(1, gestures.offset / 56), transform: `scale(${0.6 + Math.min(0.4, gestures.offset / 140)})` }}>
+            <Reply size={18} />
+          </span>
+        )}
+        <div className="k-bubble-row" style={gestures.offset ? { transform: `translateX(${gestures.offset}px)`, transition: 'none' } : undefined}>
+          {m.deletedAt ? (
+            <div className="k-bubble is-deleted" {...bubbleHandlers}
+              onContextMenu={(e) => { e.preventDefault(); if (!justFired()) onMenu({ x: e.clientX, y: e.clientY }); }}>
+              <Trash size={15} /> {out ? 'You deleted this message' : 'This message was deleted'}
+            </div>
+          ) : (
           <div className={`k-bubble${image && !m.text && !m.replyTo ? ' has-image' : ''}${voiceOnly ? ' has-voice' : ''}${pressed ? ' is-pressed' : ''}`}
-            {...(isTouch() ? handlers : {})}
+            {...bubbleHandlers}
             onContextMenu={(e) => { e.preventDefault(); if (!justFired()) onMenu({ x: e.clientX, y: e.clientY }); }}>
             {m.replyTo && (
-              <span className="k-quote"><b>{m.replyTo.from}</b><span>{m.replyTo.text}</span></span>
+              <span className="k-quote"><b>{quoteAuthor ?? m.replyTo.from}</b><span>{m.replyTo.text ? plainText(m.replyTo.text) : <i>Deleted message</i>}</span></span>
             )}
             {image && <ImageAttachment attachment={image} onOpen={onOpenImage} />}
             {audio.map((a) => (
@@ -282,16 +403,33 @@ function MessageRow({ m, grouped, last, newDay, senderName, showStatus, isEditin
                 // A long-press that just opened the menu must not also open the preview.
                 onOpen={() => { if (!justFired()) onOpenFile(a); }} />
             ))}
-            {m.text && (image ? <span className="k-image-caption" style={{ display: 'block' }}>{m.text}</span> : m.text)}
+            {m.text && (image
+              ? <span className="k-image-caption" style={{ display: 'block' }}><ChatText text={m.text} onLink={onLink} /></span>
+              : <ChatText text={m.text} onLink={onLink} />)}
             {m.editedAt && m.text && <span className="k-edited" title={`Edited ${formatTime(m.editedAt)}`}>edited</span>}
           </div>
-          <button type="button" className="k-msg-more" aria-label="Message actions"
-            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onMenu({ x: r.left, y: r.bottom + 4 }); }}>
-            <More size={18} />
-          </button>
+          )}
+          <span className="k-msg-tools">
+            {onReactMenu && (
+              <button type="button" className="k-msg-more" aria-label="React"
+                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onReactMenu({ x: r.left - 120, y: r.top - 58 }); }}>
+                <Smile size={18} />
+              </button>
+            )}
+            {onReply && (
+              <button type="button" className="k-msg-more" aria-label="Reply" onClick={onReply}>
+                <Reply size={18} />
+              </button>
+            )}
+            <button type="button" className="k-msg-more" aria-label="Message actions"
+              onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onMenu({ x: r.left, y: r.bottom + 4 }); }}>
+              <More size={18} />
+            </button>
+          </span>
         </div>
-        {(last || m.status === 'failed') && (
-          <MetaLine m={m} out={out} showStatus={showStatus} onRetry={onRetry} />
+        {!m.deletedAt && <ReactionChips reactions={m.reactions} nameOf={nameOf} onToggle={onReact} />}
+        {(last || (m.status === 'failed' && !m.deletedAt)) && (
+          <MetaLine m={m} out={out} showStatus={showStatus && !m.deletedAt} onRetry={onRetry} />
         )}
       </div>
     </>
@@ -299,9 +437,9 @@ function MessageRow({ m, grouped, last, newDay, senderName, showStatus, isEditin
 }
 
 function MetaLine({ m, out, showStatus, onRetry }: { m: PlainMessage; out: boolean; showStatus: boolean; onRetry?: () => void }) {
-  if (m.status === 'failed' && out) {
+  if (m.status === 'failed' && out && !m.deletedAt) {
     return (
-      <div className="k-meta k-meta-fail"><Alert size={13} /> Not delivered{onRetry && <> · <button type="button" onClick={onRetry}>Try again</button></>}</div>
+      <div className="k-meta k-meta-fail"><Alert size={13} /> Not delivered yet{onRetry && <> · <button type="button" onClick={onRetry}>Retry now</button></>}</div>
     );
   }
   const statusLabel: Record<string, ReactNode> = {
@@ -455,6 +593,26 @@ function Composer({
   const photoRef = useRef<HTMLInputElement>(null);
   const [attachMenu, setAttachMenu] = useState<{ x: number; y: number } | null>(null);
   const canRecord = useMemo(canRecordVoice, []);
+  const prefs = useChatPrefs();
+  const [hasSelection, setHasSelection] = useState(false);
+  const trackSelection = () => {
+    const el = taRef.current;
+    setHasSelection(!!el && document.activeElement === el && el.selectionEnd > el.selectionStart);
+  };
+  const format = (kind: FormatKind) => {
+    const el = taRef.current;
+    if (!el) return;
+    const edit = applyFormat(el.value, el.selectionStart, el.selectionEnd, kind);
+    setValue(edit.value);
+    requestAnimationFrame(() => {
+      const t = taRef.current;
+      if (!t) return;
+      t.focus();
+      t.setSelectionRange(edit.start, edit.end);
+      resize(t);
+      setHasSelection(edit.end > edit.start);
+    });
+  };
 
   const capture = useVoiceCapture({
     onSend: (recording) => onSendVoice(recording),
@@ -552,15 +710,16 @@ function Composer({
       {editing ? (
         <div className="k-reply-preview is-edit">
           <Pencil size={17} />
-          <div><b>Edit message</b><span>{editing.text}</span></div>
+          <div><b>Edit message</b><span>{plainText(editing.text)}</span></div>
           <button type="button" className="k-icon-btn is-muted" style={{ width: 30, height: 30 }} onClick={onCancelEdit} aria-label="Cancel editing"><Close size={18} /></button>
         </div>
       ) : replyTo && (
         <div className="k-reply-preview">
-          <div><b>Replying to {replyTo.from}</b><span>{replyTo.text}</span></div>
+          <div><b>Replying to {replyTo.from}</b><span>{plainText(replyTo.text)}</span></div>
           <button type="button" className="k-icon-btn is-muted" style={{ width: 30, height: 30 }} onClick={onCancelReply} aria-label="Cancel reply"><Close size={18} /></button>
         </div>
       )}
+      {prefs.formatBar && hasSelection && !capturing && <FormatBar onFormat={format} />}
       <div className="k-composer-inner">
         {capturing && (capture.locked || reviewing) ? (
           <button type="button" className="k-attach-btn is-danger" aria-label="Delete recording" onClick={capture.cancel}>
@@ -581,9 +740,14 @@ function Composer({
         ) : (
           <div className="k-input-pill">
             <textarea ref={taRef} rows={1} value={value} placeholder={editing ? 'Edit message' : 'Message'} aria-label={editing ? 'Edit message' : 'Message'}
-              onChange={(e) => { setValue(e.target.value); resize(e.target); }}
+              onChange={(e) => { setValue(e.target.value); resize(e.target); trackSelection(); }}
+              onSelect={trackSelection}
+              // Deferred: on a phone, tapping a format button blurs the box first.
+              onBlur={() => window.setTimeout(trackSelection, 180)}
               onKeyDown={(e) => {
                 if (e.nativeEvent.isComposing) return;
+                const shortcut = formatForShortcut(e.key, e.ctrlKey || e.metaKey, e.shiftKey);
+                if (shortcut) { e.preventDefault(); format(shortcut); return; }
                 if (e.key === 'Escape' && editing) { e.preventDefault(); e.stopPropagation(); onCancelEdit(); return; }
                 if (e.key === 'ArrowUp' && !value && !editing && !isTouch()) { if (onEditLast()) e.preventDefault(); return; }
                 // Desktop: Enter sends, Shift+Enter adds a line. Phones keep Return for new lines.

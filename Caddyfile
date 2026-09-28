@@ -141,6 +141,24 @@
         }
     }
 
+    # -------------------------------------------------------------------------
+    # Relay federation tunnel — WebSocket upgrades on /fed/* go to the relay's
+    # HTTP port, which splices them onto a peer relay (see
+    # packages/relay/src/federation.ts). Must precede @websocket, which would
+    # otherwise hand them to the libp2p listener. Only ciphertext passes here.
+    # -------------------------------------------------------------------------
+    @federation {
+        path /fed/*
+    }
+    handle @federation {
+        reverse_proxy relay:3001 {
+            flush_interval -1
+            transport http {
+                versions 1.1
+            }
+        }
+    }
+
     # Push subscription endpoints belong to the relay HTTP API. Keep this
     # before the WebSocket fallback so browser/Android registration requests
     # never get sent to the libp2p transport.

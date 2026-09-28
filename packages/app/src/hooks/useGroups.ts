@@ -4,7 +4,6 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { multiaddr } from '@multiformats/multiaddr';
 import type { Libp2p } from 'libp2p';
 
 function normaliseAddr(addr: string): string {
@@ -19,12 +18,14 @@ import {
   decodeGroupText,
   sendPing, lookupPeers,
   sendFile, saveFileBlob, ed25519PubToX25519, COMMUNITY_MAX_FILE_SIZE,
-  saveGroupFileRecord, sanitizeVoiceMeta,
+  saveGroupFileRecord, sanitizeVoiceMeta, ensureRelayConnection,
+  purgeGroupMessage, sanitizeReaction, deleteFileBlob,
 } from '@kant/core';
 import type {
-  Group, GroupMember, GroupEvent, GroupMessage, UnlockedIdentity, VoiceMeta, MessageAttachment,
+  Group, GroupMember, GroupEvent, GroupMessage, UnlockedIdentity, VoiceMeta, MessageAttachment, ContentOptions,
 } from '@kant/core';
 import type { IncomingGroupFile } from './useKant';
+import { tombstone, withReaction } from './useKant';
 
 import { processImage, isProcessableImage } from '../lib/imageProcessor';
 import { readFileBytes } from '../lib/fileExport';
@@ -43,6 +44,10 @@ export interface PlainGroupMessage {
   attachment?: MessageAttachment;
   /** When the text was last replaced by an edit. */
   editedAt?: number;
+  /** Reactions: 'me' or the member's key → emoji. */
+  reactions?: Record<string, string>;
+  /** Set once the author deleted it for everyone. */
+  deletedAt?: number;
   /** Only for our own file sends that are still transferring or never reached anyone. */
   status?: 'pending' | 'failed';
 }
@@ -68,10 +73,25 @@ async function rowsToThread(
   const plain: PlainGroupMessage[] = [];
   const byId = new Map<string, PlainGroupMessage>();
   const sorted = [...rows].sort((a, b) => a.timestamp - b.timestamp);
+  const deletedIds = new Set<string>();
   for (const msg of sorted) {
+    const fromMe = msg.fromPubKeyHex === identity.publicKeyHex;
+    if (msg.hidden) { deletedIds.add(msg.id); continue; }
+    if (msg.deletedAt) {
+      const entry: PlainGroupMessage = {
+        id: msg.id, groupId: msg.groupId, fromPubKeyHex: msg.fromPubKeyHex, text: '', ts: msg.timestamp,
+        fromMe, expiresAt: (msg as any).expiresAt ?? 0, readBy: readBy(msg.id), deletedAt: msg.deletedAt,
+      };
+      byId.set(entry.id, entry);
+      deletedIds.add(entry.id);
+      plain.push(entry);
+      continue;
+    }
     let text = '[encrypted]';
     let replyTo: PlainGroupMessage['replyTo'];
     let edit: { id: string } | undefined;
+    let react: { id: string; emoji: string } | undefined;
+    let del: { id: string } | undefined;
     try {
       // IDB may return Uint8Array as plain object — reconstruct
       const ct = msg.ciphertext instanceof Uint8Array
@@ -84,10 +104,26 @@ async function rowsToThread(
       text = decoded.text;
       replyTo = decoded.replyTo;
       edit = decoded.edit;
+      react = decoded.react;
+      del = decoded.del;
     } catch {}
+    if (del) {
+      const target = byId.get(del.id);
+      if (target && target.fromPubKeyHex === msg.fromPubKeyHex && !target.deletedAt) {
+        Object.assign(target, tombstone(target, msg.timestamp));
+        delete target.attachment; delete target.replyTo; delete target.reactions; delete target.editedAt;
+        deletedIds.add(target.id);
+      }
+      continue;
+    }
+    if (react) {
+      const target = byId.get(react.id);
+      if (target && !target.deletedAt) target.reactions = withReaction(target.reactions, fromMe ? 'me' : msg.fromPubKeyHex, react.emoji);
+      continue;
+    }
     if (edit && !msg.attachment) {
       const target = byId.get(edit.id);
-      if (target && target.fromPubKeyHex === msg.fromPubKeyHex && !target.attachment) {
+      if (target && target.fromPubKeyHex === msg.fromPubKeyHex && !target.attachment && !target.deletedAt) {
         target.text = text;
         target.editedAt = msg.timestamp;
       }
@@ -108,6 +144,8 @@ async function rowsToThread(
     byId.set(entry.id, entry);
     plain.push(entry);
   }
+  // A quote of a deleted message must not keep its text alive.
+  for (const m of plain) if (m.replyTo && deletedIds.has(m.replyTo.id)) m.replyTo = { ...m.replyTo, text: '' };
   return plain;
 }
 
@@ -150,6 +188,19 @@ export function useGroups(
     if (selectedGroupRef.current?.id === groupId) {
       setGroupMessages(prev => prev.map(m => (m.id === msgId && m.groupId === groupId ? patch(m) : m)));
     }
+  }
+
+  /** Apply `patch` to every message of a group (cache and, if open, the view). */
+  function mapGroupMessages(groupId: string, patch: (m: PlainGroupMessage) => PlainGroupMessage) {
+    const cached = msgCacheRef.current.get(groupId);
+    if (cached) msgCacheRef.current.set(groupId, cached.map(patch));
+    if (selectedGroupRef.current?.id === groupId) setGroupMessages(prev => prev.map(m => (m.groupId === groupId ? patch(m) : m)));
+  }
+
+  /** Show `msgId` (by `authorHex`) as deleted, and empty quotes of it. */
+  function showGroupDeletion(groupId: string, msgId: string, authorHex: string, deletedAt: number) {
+    mapGroupMessages(groupId, m => (m.id === msgId && m.fromPubKeyHex === authorHex ? { ...tombstone(m, deletedAt), readBy: m.readBy }
+      : m.replyTo?.id === msgId ? { ...m, replyTo: { ...m.replyTo, text: '' } } : m));
   }
 
   /** Add a message to a loaded group's thread (no-op for groups not loaded yet — IDB has it). */
@@ -447,11 +498,15 @@ export function useGroups(
     let text = '[encrypted]';
     let replyTo: PlainGroupMessage['replyTo'];
     let edit: { id: string } | undefined;
+    let react: { id: string; emoji: string } | undefined;
+    let del: { id: string } | undefined;
     try {
       const decoded = decodeGroupText(await decryptGroupMessage(ciphertext, nonce, group, identity));
       text = decoded.text;
       replyTo = decoded.replyTo;
       edit = decoded.edit;
+      react = decoded.react;
+      del = decoded.del;
     } catch (e) {
       addLog(`Group decrypt fail: ${e}`);
       return;
@@ -459,14 +514,29 @@ export function useGroups(
 
     // Save to IDB (fire and forget). Edits are stored too: loading the group
     // replays them onto the message they change.
-    handleIncomingGroupMsg(payload, identity).catch(e =>
+    const saved = handleIncomingGroupMsg(payload, identity).catch(e =>
       console.warn('[groups] save msg failed:', e)
     );
+
+    if (del) {
+      const sender = String(payload.fromPubKeyHex);
+      await saved;
+      const result = await purgeGroupMessage(group, identity, del.id, sender, Date.now()).catch(() => ({ ok: false, fileId: undefined }));
+      if (result.fileId) void deleteFileBlob(result.fileId).catch(() => {});
+      showGroupDeletion(payload.groupId, del.id, sender, Date.now());
+      addLog(`🗑️ ${sender.slice(0, 12)}… deleted a message in ${group.name}`);
+      return;
+    }
+    if (react) {
+      const who = String(payload.fromPubKeyHex);
+      patchGroupMessage(payload.groupId, react.id, m => (m.deletedAt ? m : { ...m, reactions: withReaction(m.reactions, who, react!.emoji) }));
+      return;
+    }
 
     if (edit) {
       const editedAt = typeof payload.timestamp === 'number' ? payload.timestamp : Date.now();
       patchGroupMessage(payload.groupId, edit.id, m => (
-        m.fromPubKeyHex === payload.fromPubKeyHex && !m.attachment ? { ...m, text, editedAt } : m
+        m.fromPubKeyHex === payload.fromPubKeyHex && !m.attachment && !m.deletedAt ? { ...m, text, editedAt } : m
       ));
       addLog(`✏️ ${String(payload.fromPubKeyHex).slice(0, 12)}… edited a message in ${group.name}`);
       return;
@@ -769,7 +839,8 @@ export function useGroups(
     const relayId   = relayAddr.split('/p2p/')[1] ?? '';
     if (relayId && !myAddrs.some(a => a.includes(relayId))) {
       try {
-        await node.dial(multiaddr(relayAddr));
+        // Through our relay when theirs is federated (see core federation.ts).
+        await ensureRelayConnection(node, relayAddr);
         await new Promise(r => setTimeout(r, 1500));
       } catch { /* non-fatal */ }
     }
@@ -783,15 +854,66 @@ export function useGroups(
    * (stored like any other, so a reload replays it onto the original).
    */
   async function editGroupMessage(msgId: string, rawText: string): Promise<boolean> {
-    const node     = nodeRef.current;
     const identity = identityRef.current;
     const group    = selectedGroupRef.current;
     const text     = rawText.trim();
-    if (!node || !identity || !group || !text) return false;
+    if (!identity || !group || !text) return false;
     const original = (msgCacheRef.current.get(group.id) ?? []).find(m => m.id === msgId);
-    if (!original || !original.fromMe || original.attachment || original.text === text) return false;
+    if (!original || !original.fromMe || original.attachment || original.deletedAt || original.text === text) return false;
 
     patchGroupMessage(group.id, msgId, m => ({ ...m, text, editedAt: Date.now() }));
+    const ok = await sendGroupControl(group, text, { edit: { id: msgId } });
+    addLog(ok ? `✏️ Edit sent to ${group.name}` : 'Group edit fail');
+    return ok;
+  }
+
+  /** Set (emoji) or clear ('') your reaction to a message in the selected group. */
+  async function reactGroupMessage(msgId: string, emoji: string): Promise<boolean> {
+    const group = selectedGroupRef.current;
+    const clean = sanitizeReaction(emoji);
+    if (!group || clean === undefined) return false;
+    const target = (msgCacheRef.current.get(group.id) ?? []).find(m => m.id === msgId);
+    if (!target || target.deletedAt) return false;
+    patchGroupMessage(group.id, msgId, m => ({ ...m, reactions: withReaction(m.reactions, 'me', clean) }));
+    // Members on 0.4.0 can't apply reactions and would show an empty message;
+    // give them readable text. Current builds fold the row and never show it.
+    return sendGroupControl(group, clean ? `Reacted ${clean} to a message` : 'Removed a reaction', { react: { id: msgId, emoji: clean } });
+  }
+
+  /**
+   * Delete a message in the selected group — from this device only (just hidden
+   * from the thread and its content purged), or, for your own, for everyone.
+   */
+  async function deleteGroupMessage(msgId: string, forEveryone: boolean): Promise<boolean> {
+    const identity = identityRef.current;
+    const group = selectedGroupRef.current;
+    if (!identity || !group) return false;
+    const target = (msgCacheRef.current.get(group.id) ?? []).find(m => m.id === msgId);
+    if (!target || (forEveryone && !target.fromMe)) return false;
+    const deletedAt = Date.now();
+    if (!forEveryone) {
+      // Rows are a shared, replayed history: locally we keep the tombstone and
+      // drop the content, but never tell the others.
+      const result = await purgeGroupMessage(group, identity, msgId, target.fromPubKeyHex, deletedAt, { localOnly: true })
+        .catch(() => ({ ok: false, fileId: undefined }));
+      if (result.fileId) void deleteFileBlob(result.fileId).catch(() => {});
+      const drop = (list: PlainGroupMessage[]) => list.filter(m => m.id !== msgId);
+      const cached = msgCacheRef.current.get(group.id);
+      if (cached) msgCacheRef.current.set(group.id, drop(cached));
+      setGroupMessages(prev => drop(prev));
+      return true;
+    }
+    showGroupDeletion(group.id, msgId, identity.publicKeyHex, deletedAt);
+    const result = await purgeGroupMessage(group, identity, msgId, identity.publicKeyHex, deletedAt).catch(() => ({ ok: false, fileId: undefined }));
+    if (result.fileId) void deleteFileBlob(result.fileId).catch(() => {});
+    return sendGroupControl(group, 'Deleted a message', { del: { id: msgId } });
+  }
+
+  /** Broadcast a change to an earlier message to every member (stored like any group message). */
+  async function sendGroupControl(group: Group, text: string, options: ContentOptions): Promise<boolean> {
+    const node     = nodeRef.current;
+    const identity = identityRef.current;
+    if (!node || !identity) return false;
     try {
       const memberHexes = group.members.filter(m => m.publicKeyHex !== identity.publicKeyHex).map(m => m.publicKeyHex);
       if (memberHexes.length) {
@@ -808,12 +930,11 @@ export function useGroups(
       await sendGroupMessage(
         node, group, text, identity,
         async (n, addr, wire) => { await dialRelayFor(n, addr); await sendPing(n, addr, wire); },
-        liveAddrs, undefined, undefined, { edit: { id: msgId } },
+        liveAddrs, undefined, undefined, options,
       );
-      addLog(`✏️ Edit sent to ${group.name}`);
       return true;
     } catch (e: any) {
-      addLog(`Group edit fail: ${e?.message ?? e}`);
+      addLog(`Group change fail: ${e?.message ?? e}`);
       return false;
     }
   }
@@ -1026,7 +1147,7 @@ export function useGroups(
     expiryTtl, setExpiryTtl,
     onlineMembers, unreadCounts, keyDistStatus,
     loadGroups, startGroupHandler, handleIncomingMsg,
-    createNewGroup, selectGroup, sendToGroup, sendFileToGroup, editGroupMessage, handleIncomingFile,
+    createNewGroup, selectGroup, sendToGroup, sendFileToGroup, editGroupMessage, reactGroupMessage, deleteGroupMessage, handleIncomingFile,
     removeMember, leaveGroup,
     setSelectedGroup, updateMemberAddr,
   };

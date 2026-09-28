@@ -117,6 +117,43 @@ Build and ship the app. Every client worldwide now connects to the same public r
 
 ---
 
+## 7. Federate with other relays (optional)
+
+Federation lets a user on your relay talk to a user on another relay. Traffic
+goes **user1 → your relay → their relay → user2**: the client opens a WebSocket
+to *its own* relay at `/fed/<peer-relay-id>`, which splices it byte for byte onto
+the peer relay. The client then runs Noise with the peer relay, and a normal
+circuit (with its own end-to-end Noise) to user2. Both relays only ever carry
+ciphertext; the peer relay sees your relay's IP, never the user's.
+
+1. Get each relay's PeerID: `curl https://<relay>/relay-info` → `peerId`.
+2. On **each** relay, list the others (comma-separated `<url>#<peerId>`):
+
+   ```bash
+   # relay A (.env next to docker-compose.https.yml)
+   RELAY_FEDERATION=https://relay-b.example.org#12D3KooW…B
+   # relay B
+   RELAY_FEDERATION=https://relay-a.example.org#12D3KooW…A
+   ```
+
+   The PeerID is a pin: if the URL ever answers with a different identity,
+   federation with it stops. Use `https://` URLs in production.
+3. `docker compose -f docker-compose.https.yml up -d --build`. The shipped
+   Caddyfile already routes `/fed/*` to the relay; custom proxies need the same
+   (WebSocket upgrade passthrough, no buffering, HTTP/1.1).
+4. Check: `curl https://<relay>/relay-info` shows
+   `"federation": {"tunnel": …, "peers": ["12D3KooW…"]}` once the peer answers;
+   `GET /admin/federation` (bearer `RELAY_LAB_CONTROL_TOKEN`) shows per-peer
+   health and the last error; Prometheus has `kant_federation_*` metrics.
+
+Safeguards: only pinned peers are tunnel targets (never an open proxy); only
+clients currently connected to the relay may tunnel, with a single-use token
+signed by their key and valid for 60 s; tunnel caps
+(`RELAY_FEDERATION_MAX_TUNNELS`, default 1024; `…_PER_CLIENT`, default 8);
+federated lookups are answered from the local registry only (no recursion), and
+an answer is accepted only if it points at the relay that gave it. While
+federation is on, clients refuse to dial a federated relay directly.
+
 ## What the relay can and cannot see
 
 | | Relay |

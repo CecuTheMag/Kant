@@ -4,6 +4,7 @@
  */
 import { DB_NAME, wipeIdentity } from '@kant/core';
 import { clearTemporaryFiles } from './fileActions';
+import { disableBiometric } from './biometric';
 
 /**
  * Device preferences that identify nobody and that a fresh start should keep:
@@ -29,7 +30,10 @@ function deleteDatabase(): Promise<void> {
  * database could be neither cleared nor deleted — the caller must not tell the
  * user their data is gone in that case.
  */
-export async function eraseAllLocalData(): Promise<void> {
+export async function eraseAllLocalData(options: { keep?: string[] } = {}): Promise<void> {
+  const keep = new Set([...KEEP_LOCAL_KEYS, ...(options.keep ?? [])]);
+  // The fingerprint key wraps the erased identity's key: it must go too.
+  await disableBiometric().catch(() => {});
   try {
     await wipeIdentity();
   } catch {
@@ -37,7 +41,7 @@ export async function eraseAllLocalData(): Promise<void> {
   }
   try {
     for (const key of Object.keys(localStorage)) {
-      if (!KEEP_LOCAL_KEYS.has(key)) localStorage.removeItem(key);
+      if (!keep.has(key)) localStorage.removeItem(key);
     }
   } catch { /* storage unavailable — nothing stored there either */ }
   try { sessionStorage.clear(); } catch { /* storage unavailable */ }

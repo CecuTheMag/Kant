@@ -35,6 +35,11 @@ interface RatchetJson {
   sendingNumber: number;
   receivingNumber: number;
   previousReceivingChainKey: string | null;
+  /** Added with skipped-key support; absent in records from older builds. */
+  previousSendingNumber?: number;
+  chainCounters?: boolean;
+  /** [id, messageKey, storedAtMs] — still sealed with the rest of the record. */
+  skipped?: Array<[string, string, number]>;
 }
 
 /** Distinct subkey id from messages.ts (1) so the two ciphertexts never share a key. */
@@ -59,6 +64,11 @@ function toJson(sodium: any, state: RatchetState): RatchetJson {
     receivingNumber:           state.receivingNumber,
     previousReceivingChainKey: state.previousReceivingChainKey
       ? b64(sodium, state.previousReceivingChainKey) : null,
+    previousSendingNumber:     state.previousSendingNumber ?? 0,
+    chainCounters:             state.chainCounters === true,
+    skipped: state.skipped?.size
+      ? Array.from(state.skipped, ([id, entry]) => [id, b64(sodium, entry.key), entry.at] as [string, string, number])
+      : undefined,
   };
 }
 
@@ -76,6 +86,11 @@ function fromJson(sodium: any, json: RatchetJson): RatchetState {
     receivingNumber:        json.receivingNumber,
     previousReceivingChainKey: json.previousReceivingChainKey
       ? unb64(sodium, json.previousReceivingChainKey) : null,
+    previousSendingNumber: typeof json.previousSendingNumber === 'number' ? json.previousSendingNumber : 0,
+    // Records from builds without per-chain counters stay sequential until
+    // their next DH step (see RatchetState.chainCounters).
+    chainCounters: json.chainCounters === true,
+    skipped: new Map((json.skipped ?? []).map(([id, key, at]) => [id, { key: unb64(sodium, key), at }])),
   };
 }
 

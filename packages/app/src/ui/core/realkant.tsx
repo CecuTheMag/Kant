@@ -34,6 +34,9 @@ import { formatDuration, voiceFileName } from '../voice/waveform';
 import { deriveIdentity, pairWords } from './fingerprint';
 import type { Identity } from './fingerprint';
 import type { Contact, Group, MessageAttachment as DesignAttachment, NodeStatus, PlainMessage, TrustState } from './types';
+import { storedToPlain } from '../../hooks/useKant';
+import { plainText } from '../chat/chatLogic';
+import { biometricStatus } from '../../lib/biometric';
 
 const PROFILE_KEY = 'kant_profile_name';
 const THEME_KEY = 'kant_theme';
@@ -59,7 +62,8 @@ function toDesignAttachment(attachment: import('@kant/core').MessageAttachment):
 
 /** One-line summary of a message for the chat list. */
 export function previewText(m: PlainMessage): string {
-  if (m.text) return m.text;
+  if (m.deletedAt) return m.from === 'me' ? 'You deleted a message' : 'Message deleted';
+  if (m.text) return plainText(m.text);
   const a = m.attachments?.[0];
   if (!a) return '';
   if (a.voice) return `Voice message · ${formatDuration(a.voice.durationMs)}`;
@@ -85,6 +89,8 @@ function toDesignMsg(m: import('../../hooks/useKant').PlainMessage): PlainMessag
     expiresAt: (m as any).expiresAt,
     replyTo: m.replyTo,
     editedAt: m.editedAt,
+    reactions: m.reactions,
+    deletedAt: m.deletedAt,
     attachments: attachment ? [toDesignAttachment(attachment)] : undefined,
   };
 }
@@ -100,6 +106,8 @@ function toDesignGroupMsg(m: import('../../hooks/useGroups').PlainGroupMessage):
     expiresAt: m.expiresAt > 0 ? m.expiresAt : undefined,
     replyTo: m.replyTo,
     editedAt: m.editedAt,
+    reactions: m.reactions,
+    deletedAt: m.deletedAt,
     attachments: m.attachment ? [toDesignAttachment(m.attachment)] : undefined,
   };
 }
@@ -183,16 +191,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       hydratedRef.current.add(hex);
       void getConversation(hex, key).then((conv) => {
         if (!conv?.messages.length) return;
-        const stored = conv.messages.map((m) => ({
-          id: m.id,
-          from: m.fromMe ? 'me' : 'them',
-          text: (m as { text?: string }).text ?? '',
-          ts: m.timestamp,
-          status: m.status,
-          attachment: (m as { attachment?: unknown }).attachment,
-          replyTo: (m as { replyTo?: { id: string; from: string; text: string } }).replyTo,
-          editedAt: (m as { editedAt?: number }).editedAt,
-        })) as import('../../hooks/useKant').PlainMessage[];
+        const stored = conv.messages.map(storedToPlain);
         kant.setThreads((t) => {
           const live = t[hex] ?? [];
           const seen = new Set(stored.map((m) => m.id));
@@ -288,6 +287,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       unread: kant.unreadCounts.get(c.publicKeyHex) ?? 0,
       request: !!c.request,
       blocked: !!c.blocked,
+      caps: c.caps,
     } satisfies Contact;
   }), [kant.contacts, kant.onlineContacts, kant.unreadCounts, threadsById, trustOverride]);
 
@@ -389,6 +389,29 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     if (kant.selectedContact?.publicKeyHex !== core.publicKeyHex) await kant.selectContact(core);
     return kant.editMessage(msgId, text);
   }, [kant]);
+
+  const withContact = useCallback(async (contactId: string) => {
+    const core = kant.contacts.find(x => (x.id ?? x.publicKeyHex) === contactId);
+    if (core && kant.selectedContact?.publicKeyHex !== core.publicKeyHex) await kant.selectContact(core);
+    return core;
+  }, [kant]);
+
+  const retryMessage = useCallback(async (contactId: string, msgId: string) => {
+    const core = await withContact(contactId);
+    if (!core) return 'waiting' as const;
+    await resolveAndSession(core).catch(() => {});
+    return kant.retryMessage(msgId);
+  }, [kant, withContact, resolveAndSession]);
+
+  const reactToMessage = useCallback(async (contactId: string, msgId: string, emoji: string): Promise<boolean> => {
+    if (!await withContact(contactId)) return false;
+    return kant.reactToMessage(msgId, emoji);
+  }, [kant, withContact]);
+
+  const deleteMessage = useCallback(async (contactId: string, msgId: string, forEveryone: boolean): Promise<boolean> => {
+    if (!await withContact(contactId)) return false;
+    return kant.deleteMessage(msgId, forEveryone);
+  }, [kant, withContact]);
 
   const selectContact = useCallback((contactId: string) => {
     const core = kant.contacts.find(x => (x.id ?? x.publicKeyHex) === contactId);
@@ -545,6 +568,22 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     return groupsApi.editGroupMessage(msgId, text);
   }, [groupsApi]);
 
+  const withGroup = useCallback(async (groupId: string) => {
+    const g = groupsApi.groups.find(x => x.id === groupId);
+    if (g && groupsApi.selectedGroup?.id !== g.id) await groupsApi.selectGroup(g);
+    return g;
+  }, [groupsApi]);
+
+  const reactGroupMessage = useCallback(async (groupId: string, msgId: string, emoji: string): Promise<boolean> => {
+    if (!await withGroup(groupId)) return false;
+    return groupsApi.reactGroupMessage(msgId, emoji);
+  }, [groupsApi, withGroup]);
+
+  const deleteGroupMessage = useCallback(async (groupId: string, msgId: string, forEveryone: boolean): Promise<boolean> => {
+    if (!await withGroup(groupId)) return false;
+    return groupsApi.deleteGroupMessage(msgId, forEveryone);
+  }, [groupsApi, withGroup]);
+
   const createGroup = useCallback((name: string, memberContactIds: string[]) => {
     const members = kant.contacts
       .filter(c => memberContactIds.includes(c.id ?? c.publicKeyHex))
@@ -617,11 +656,29 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
 
   const reset = useCallback(() => { void kant.deleteIdentity(); }, [kant]);
 
+  const security = useMemo(() => ({
+    biometric: () => biometricStatus(),
+    setBiometric: (on: boolean) => kant.setBiometricUnlock(on),
+    duressIsSet: () => kant.duressIsSet(),
+    setDuress: (currentPassword: string, duress: string | null) => kant.setDuress(currentPassword, duress),
+    lockNow: () => { void kant.lock(); },
+  // The kant functions only read refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), []);
+
+  const transfer = useMemo(() => ({
+    createBackup: (password: string, includeFiles: boolean) => kant.createBackup(password, includeFiles),
+    sendMove: (code: string, handlers: { onSas: (sas: string) => void; onProgress?: (pieces: number) => void }) => kant.sendMove(code, handlers),
+    finishMove: () => kant.finishMove(),
+  // The kant functions only read refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), []);
+
   const identity = useCallback((hex: string) => identities[hex], [identities]);
   const ceremonyWords = useCallback((contactId: string) => ceremony[contactId], [ceremony]);
 
   return {
-    state, send, editMessage, sendVoice, selectContact, setConversationVisible, sendFile, loadAttachment, downloadAttachment,
+    state, security, transfer, send, editMessage, retryMessage, reactToMessage, deleteMessage, reactGroupMessage, deleteGroupMessage, sendVoice, selectContact, setConversationVisible, sendFile, loadAttachment, downloadAttachment,
     readAttachment, openAttachment, canOpenAttachments: canOpenExternally(), saveFile,
     createGroup, leaveGroup, selectGroup, sendGroup, sendGroupFile, editGroupMessage, sendGroupVoice, setTrust, addContact, renameContact,
     acceptRequest, blockContact, removeContact, connect, disconnect, setSettings, reset, identity, ceremonyWords,

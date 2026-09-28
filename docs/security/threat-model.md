@@ -31,6 +31,7 @@ Client invariants:
 - **The microphone is live only while recording.** Every exit path (send, cancel, leaving the chat, a failed start) stops the capture tracks; audio goes from memory straight into the encrypted file transfer.
 - **Received files are untrusted.** Previews decrypt to memory and render only through inert elements (text nodes, `<img>`, `<audio>`, `<video>`): no HTML is rendered, remote images inside documents are never fetched, and links leave the app only for `http(s)`/`mailto` after the user confirms. Plaintext touches disk only for "Open with…", under `cache/kant-open/`, which is swept at cold start, on resume and on erase.
 - **"Erase this device" clears every IndexedDB store** (enumerated from the database, not a hard-coded list), identifying local settings and temporary files, with networking stopped first.
+- **Relay federation carries only ciphertext.** A user on relay 1 reaches a user on relay 2 through relay 1's `/fed/<relay2>` tunnel, which splices the WebSocket byte for byte onto relay 2; Noise runs from the client to relay 2 and again end to end to the contact, so neither relay can read or alter content, and relay 2 sees relay 1's IP, not the user's. Tunnels only go to pinned, configured peer relays, only for clients currently connected to relay 1 (short-lived single-use token signed with the client's key), and are capped per client and globally. Federated lookups are non-recursive and an answer is accepted only if it points at the relay that gave it. While federation is on, clients refuse direct dials to federated relays.
 - **No OS backup on Android.** `allowBackup` is off and the data-extraction rules exclude everything: a restored copy would put the encrypted identity in a cloud account and fork every double-ratchet session.
 
 ### 2. Relay service
@@ -165,6 +166,32 @@ Mitigations:
 - require bearer tokens or other auth on admin endpoints
 - avoid public exposure of admin surfaces in production
 - keep the admin plane behind a trusted internal network or private control plane
+
+### H. Device seizure and coerced unlock
+Threat: someone takes the user's device, or forces them to unlock Kant.
+
+Mitigations:
+- everything at rest (identity key, messages, reactions, files, sessions) is encrypted under a key derived from the password with Argon2id; a locked or powered-off device reveals no content
+- **auto-lock** (Settings → Security) drops every key from memory after a chosen time in the background by reloading into a fresh process; while locked the client is offline and senders keep messages queued
+- **duress password**: entering it on the unlock screen erases the identity, contacts, messages, files, sessions and the fingerprint key, then opens a new empty account with that password. Every identity record carries a duress verifier — a real Argon2id hash or random bytes of the same shape — and every unlock runs both Argon2id checks, so neither the stored data nor the unlock result reveals whether a duress password is set. Whether it is set is recorded only encrypted under the unlocked key (`packages/core/src/identity.ts`)
+- **fingerprint unlock** (Android; iOS contract in `packages/app/src/lib/biometric.ts`) wraps the Argon2id-derived key with a hardware Keystore AES-GCM key that needs a strong (Class 3) biometric for every use and is destroyed when biometrics change. The password is still required after a device restart, after a user-chosen period (1–7 days) and after 3 failed fingerprint prompts; the button never prompts on its own
+
+Residual risks:
+- a fingerprint can be taken by force: the settings screen says so, and users facing that risk should leave fingerprint unlock off (the duress password cannot help once a finger has unlocked the app)
+- the duress wipe is a normal deletion: forensic recovery of freed flash pages is not ruled out, although everything deleted was encrypted at rest with a key that no longer exists on the device
+- a duress wipe takes about as long as one extra Argon2id derivation longer than a wrong password, which is not observable in practice but not constant time
+
+### I. Backups and moving to a new device
+Threat: a backup file or a device-to-device move leaks the account, or lets someone plant a different identity.
+
+Mitigations:
+- both carry the same sealed stream (`packages/core/src/bundle.ts`): newline-delimited records sealed with `crypto_secretstream_xchacha20poly1305`, so truncation, reordering and tampering are detected and an incomplete restore is erased, never left half-written. The identity record inside stays encrypted with the account password
+- **backup file**: keyed by Argon2id of the account password with a fresh salt; creating one requires the password. Double Ratchet sessions and outboxes are excluded, so a restored backup cannot fork sessions with a device that is still running; sessions re-establish on first contact
+- **move** (`packages/core/src/transfer.ts`, protocol `/kant/transfer/1.0.0`): the new device shows a QR code with a one-time X25519 public key and its circuit address; the old device derives the stream key with its own one-time key; both show a 6-digit code derived from the key, which the user compares before the new device accepts anything. The new device's `ready` and `done` replies are MACed with the key, so the old device only sends to — and only erases itself after — the holder of the scanned key. The move includes sessions, and the old device erases itself afterwards so a session is never used on two devices. The relay forwards ciphertext only
+
+Residual risks:
+- a backup file is only as strong as the account password; users are told that the file plus the password is the account
+- a six-digit comparison code gives roughly a one-in-a-million chance to a live attacker who saw the QR code and raced the real device; they would still need the user to confirm on the new device
 
 ---
 

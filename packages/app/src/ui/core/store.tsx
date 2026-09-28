@@ -54,11 +54,39 @@ export interface State {
   ceremony: Record<string, string[]>;
 }
 
+/** Unlock security (Settings → Security). */
+export interface SecurityApi {
+  biometric: () => Promise<{ supported: boolean; available: boolean; reason: string; enrolled: boolean }>;
+  /** null on success, 'cancelled', or a message to show. */
+  setBiometric: (on: boolean) => Promise<string | null>;
+  duressIsSet: () => Promise<boolean>;
+  setDuress: (currentPassword: string, duress: string | null) => Promise<'ok' | 'wrong-password' | 'same' | 'failed'>;
+  lockNow: () => void;
+}
+
+/** Backup file and moving the account to a new device. */
+export interface TransferApi {
+  /** Throws WRONG_PASSWORD. */
+  createBackup: (password: string, includeFiles: boolean) => Promise<Uint8Array>;
+  /** Send the account to a new device's code; throws BAD_CODE / OFFLINE / DECLINED / BAD_PEER / FAILED. */
+  sendMove: (code: string, handlers: { onSas: (sas: string) => void; onProgress?: (pieces: number) => void }) => Promise<{ records: number }>;
+  /** Erase this device after a completed move. */
+  finishMove: () => Promise<void>;
+}
+
 export interface Store {
   state: State;
+  security: SecurityApi;
+  transfer: TransferApi;
   send: (contactId: string, text: string, replyTo?: ReplyRef) => void;
   /** Replace the text of one of your own messages. Resolves false if it could not be changed. */
   editMessage: (contactId: string, msgId: string, text: string) => Promise<boolean>;
+  /** Deliver an undelivered message now (the same message, never a copy). */
+  retryMessage: (contactId: string, msgId: string) => Promise<'sent' | 'waiting' | 'resent'>;
+  /** Set (emoji) or clear ('') your reaction to a message. */
+  reactToMessage: (contactId: string, msgId: string, emoji: string) => Promise<boolean>;
+  /** Delete a message from this device, or (your own) for everyone. */
+  deleteMessage: (contactId: string, msgId: string, forEveryone: boolean) => Promise<boolean>;
   sendVoice: (contactId: string, recording: VoiceRecording) => void;
   selectContact: (contactId: string) => void;
   /** Whether a conversation is the view on screen (drives unread + notifications). */
@@ -92,6 +120,8 @@ export interface Store {
   sendGroup: (groupId: string, text: string, replyTo?: ReplyRef) => void;
   sendGroupFile: (groupId: string, file: File) => void;
   editGroupMessage: (groupId: string, msgId: string, text: string) => Promise<boolean>;
+  reactGroupMessage: (groupId: string, msgId: string, emoji: string) => Promise<boolean>;
+  deleteGroupMessage: (groupId: string, msgId: string, forEveryone: boolean) => Promise<boolean>;
   sendGroupVoice: (groupId: string, recording: VoiceRecording) => void;
 }
 

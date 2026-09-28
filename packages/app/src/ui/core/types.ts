@@ -80,6 +80,8 @@ export interface Contact {
   request?: boolean;
   /** Messages from this contact are dropped on arrival. */
   blocked?: boolean;
+  /** Protocol features their Kant advertised (e.g. 'message-delete-1'). */
+  caps?: string[];
 }
 
 export interface PlainMessage {
@@ -100,6 +102,10 @@ export interface PlainMessage {
   replyTo?: { id: string; from: string; text: string };
   /** When the text was last replaced by an edit. */
   editedAt?: number;
+  /** Reactions: who ('me', 'them' or a member key) → emoji. */
+  reactions?: Record<string, string>;
+  /** Set once the message was deleted for everyone; nothing of it is left. */
+  deletedAt?: number;
 }
 
 export interface Group {

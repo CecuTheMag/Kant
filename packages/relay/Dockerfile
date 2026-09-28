@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy workspace manifests first for layer caching
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/relay/package.json ./packages/relay/
 COPY tsconfig.json ./
 
@@ -18,7 +18,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/relay/package.json ./packages/relay/
 
 RUN corepack enable && corepack prepare pnpm@10.13.1 --activate && pnpm install --frozen-lockfile --prod

@@ -41,6 +41,9 @@ services:
       # Point at the hosted push proxy — no Firebase credentials needed here.
       PUSH_PROXY_URL: "${PUSH_PROXY_URL:-}"
       PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:-}"
+      # Relay federation (optional): `<url>#<peerId>`, comma-separated; the
+      # tunnel is served on the API port (3001) here. See RELAY_DEPLOY.md.
+      RELAY_FEDERATION: "${RELAY_FEDERATION:-}"
 
 volumes:
   relay-data:

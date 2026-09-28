@@ -58,6 +58,11 @@ services:
       # Point at the hosted push proxy — no Firebase credentials needed here.
       PUSH_PROXY_URL: "${PUSH_PROXY_URL:-}"
       PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:-}"
+      # Relay federation (optional): peer relays as `<https-url>#<peerId>`,
+      # comma-separated. Configure it on BOTH relays. See RELAY_DEPLOY.md.
+      RELAY_FEDERATION: "${RELAY_FEDERATION:-}"
+      RELAY_FEDERATION_MAX_TUNNELS: "${RELAY_FEDERATION_MAX_TUNNELS:-1024}"
+      RELAY_FEDERATION_MAX_TUNNELS_PER_CLIENT: "${RELAY_FEDERATION_MAX_TUNNELS_PER_CLIENT:-8}"
 
   caddy:
     build:

@@ -6,6 +6,7 @@ import { createIdentity, hasIdentity, wipeIdentity } from './identity.js';
 import { addContact, addContactCaps, getContact } from './contacts.js';
 import { enqueue, getPendingForContact, scrubQueuedLegacyWireFields } from './queue.js';
 import { CAP_CONTENT_ENVELOPE } from './envelope.js';
+import { hasMessage, saveMessage } from './messages.js';
 
 const HEX = 'a'.repeat(64);
 
@@ -65,6 +66,17 @@ describe('contact capabilities', () => {
   });
 });
 
+describe('offline queue order', () => {
+  test('queued messages come back in the order they were sent, not by (random) id', async () => {
+    const ids = ['f0000000', 'a0000000', 'c0000000', '10000000'];
+    for (let i = 0; i < ids.length; i++) {
+      await enqueue({ id: ids[i], contactPubkeyHex: HEX, peerCircuitAddr: '', wirePayload: `msg${i}`, timestamp: 1000 + i });
+    }
+    const pending = await getPendingForContact(HEX);
+    assert.deepEqual(pending.map(m => m.wirePayload), ['msg0', 'msg1', 'msg2', 'msg3']);
+  });
+});
+
 describe('queued legacy payloads', () => {
   test('scrub rewrites only payloads that carry a plaintext reply snippet', async () => {
     const legacy = JSON.stringify({ id: '1', replyTo: { id: 'x', from: 'y', text: 'secret quote' }, ciphertext: [1] });
@@ -80,5 +92,16 @@ describe('queued legacy payloads', () => {
     assert.equal(byId.get('1')!.wirePayload.includes('secret quote'), false);
     assert.deepEqual(JSON.parse(byId.get('1')!.wirePayload), { id: '1', ciphertext: [1] });
     assert.equal(byId.get('2')!.wirePayload, current);
+  });
+});
+
+describe('received-message dedupe', () => {
+  test('hasMessage finds a stored id without the key, per conversation', async () => {
+    const key = new Uint8Array(32).fill(7);
+    assert.equal(await hasMessage(HEX, 'm1'), false);
+    await saveMessage(HEX, key, { id: 'm1', fromMe: false, text: 'hello', timestamp: 1 } as any);
+    assert.equal(await hasMessage(HEX, 'm1'), true);
+    assert.equal(await hasMessage(HEX, 'm2'), false);
+    assert.equal(await hasMessage('b'.repeat(64), 'm1'), false);
   });
 });

@@ -11,11 +11,17 @@ import { ensureNotificationPermission, getNotificationPermission } from '../lib/
 import { isBackgroundServiceRunning, isBatteryOptimized, openBatterySettings } from '../lib/backgroundService';
 import {
   Alert, Bell, Block, Check, ChevronLeft, Copy, Globe, Moon, Onion, QR, Refresh, Shield, Spinner, Trash, Wave,
-  Doc, Link as LinkIcon, Bubble,
+  Doc, Link as LinkIcon, Bubble, Fingerprint, Lock, ShieldAlert,
 } from './icons';
 import { copyText, normalizeRelayUrl, shortId } from './lib';
 import { Avatar, Cell, Confirm, Section, Segmented, Sheet, SheetHead, Switch, useToast } from './parts';
 import { BlockedSheet } from './sheets';
+import { setChatPrefs, useChatPrefs } from './chat/prefs';
+import { BackupSheet, MoveOutSheet } from './TransferSheets';
+import { QUICK_REACTIONS } from './chat/chatLogic';
+import { readSecurityPrefs, writeSecurityPrefs } from '../lib/biometric';
+import { AUTO_LOCK_CHOICES, PASSWORD_EVERY_CHOICES } from '../lib/securityPolicy';
+import type { SecurityPrefs } from '../lib/securityPolicy';
 
 declare const __KANT_VERSION__: string;
 
@@ -35,6 +41,7 @@ export function SettingsPane({ onBack, onMyCode, showBack }: { onBack: () => voi
   const { settings, meHex, status } = state;
   const [sheet, setSheet] = useState<'relay' | 'diagnostics' | 'blocked' | 'erase' | 'name' | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [transferSheet, setTransferSheet] = useState<'backup' | 'move' | null>(null);
   const blockedCount = state.contacts.filter((c) => c.blocked).length;
   const relayHost = (() => { try { return new URL(settings.relay).host; } catch { return settings.relay; } })();
   const st = STATUS_TEXT[status];
@@ -70,6 +77,17 @@ export function SettingsPane({ onBack, onMyCode, showBack }: { onBack: () => voi
                 options={[{ value: 'system', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
             </div>
           </Section>
+
+          <ChatSettings />
+
+          <SecuritySection />
+
+          <Section title="Backup and moving" icons foot="Backups and moves are end-to-end encrypted. Nothing passes through a server in readable form.">
+            <Cell icon={<Doc size={18} />} iconTone="blue" label="Save an encrypted backup" chevron onClick={() => setTransferSheet('backup')} />
+            <Cell icon={<Refresh size={18} />} iconTone="green" label="Move to a new phone" chevron onClick={() => setTransferSheet('move')} />
+          </Section>
+          {transferSheet === 'backup' && <BackupSheet onClose={() => setTransferSheet(null)} />}
+          {transferSheet === 'move' && <MoveOutSheet onClose={() => setTransferSheet(null)} />}
 
           <Section title="Privacy" icons foot="Extra privacy sends messages through other people’s devices first, so the relay can’t see who you’re talking to. It’s slower and needs other people online.">
             <div className="k-cell">
@@ -288,5 +306,183 @@ function HealthRow({ ok, icon, tone, label, okText, badText, action, onAction }:
         : action && onAction ? <button type="button" className="k-btn k-btn-secondary k-btn-sm k-btn-pill" onClick={() => void onAction()}>{action}</button>
           : <Alert size={20} style={{ color: 'var(--warn)' }} />}
     </div>
+  );
+}
+
+/** Settings → Chats. Device-local; nothing here is sent to anyone. */
+function ChatSettings() {
+  const prefs = useChatPrefs();
+  const row = (label: string, sub: string, checked: boolean, onChange: (v: boolean) => void) => (
+    <div className="k-cell">
+      <span className="k-cell-body"><span className="k-cell-label">{label}</span><span className="k-cell-sub">{sub}</span></span>
+      <Switch label={label} checked={checked} onChange={onChange} />
+    </div>
+  );
+  return (
+    <Section title="Chats" foot="Formatting: **bold**, _italic_, ~~strikethrough~~, `code`, > quotes and - lists. Select text while typing for the formatting bar, or use Ctrl/⌘ + B, I, E and Ctrl/⌘ + Shift + X.">
+      {row('Show formatting', 'Bold, lists, code and links in messages', prefs.formatting, (formatting) => setChatPrefs({ formatting }))}
+      {row('Formatting bar', 'When you select text in a message you’re writing', prefs.formatBar, (formatBar) => setChatPrefs({ formatBar }))}
+      {row('Swipe to reply', 'Drag a message to the right', prefs.swipeReply, (swipeReply) => setChatPrefs({ swipeReply }))}
+      {row('Double-tap to react', `Adds ${prefs.quickReaction}`, prefs.doubleTapReact, (doubleTapReact) => setChatPrefs({ doubleTapReact }))}
+      {prefs.doubleTapReact && (
+        <div className="k-cell">
+          <span className="k-cell-body"><span className="k-cell-label">Quick reaction</span></span>
+          <Segmented label="Quick reaction" value={prefs.quickReaction} onChange={(quickReaction) => setChatPrefs({ quickReaction })}
+            options={QUICK_REACTIONS.map((e) => ({ value: e, label: e }))} />
+        </div>
+      )}
+      {row('Ask before opening links', 'Websites see your IP address', prefs.confirmLinks, (confirmLinks) => setChatPrefs({ confirmLinks }))}
+    </Section>
+  );
+}
+
+/* ── Security ─────────────────────────────────────────────────────── */
+
+const AUTO_LOCK_LABELS: Record<number, string> = { 0: 'Never', 60000: '1 min', 300000: '5 min', 900000: '15 min', 3600000: '1 h' };
+const PASSWORD_EVERY_LABELS: Record<number, string> = { 86400000: 'Daily', 259200000: '3 days', 604800000: 'Weekly' };
+
+function SecuritySection() {
+  const store = useStore();
+  const toast = useToast();
+  const [prefs, setPrefsState] = useState<SecurityPrefs>(readSecurityPrefs);
+  const [bio, setBio] = useState<{ supported: boolean; available: boolean; reason: string; enrolled: boolean } | null>(null);
+  const [bioBusy, setBioBusy] = useState(false);
+  const [duressSet, setDuressSet] = useState<boolean | null>(null);
+  const [duressSheet, setDuressSheet] = useState(false);
+
+  const refresh = useCallback(() => {
+    void store.security.biometric().then(setBio).catch(() => setBio(null));
+    void store.security.duressIsSet().then(setDuressSet).catch(() => setDuressSet(null));
+  }, [store.security]);
+  useEffect(refresh, [refresh]);
+
+  const setPrefs = (patch: Partial<SecurityPrefs>) => {
+    const next = { ...prefs, ...patch };
+    writeSecurityPrefs(next);
+    setPrefsState(next);
+  };
+
+  const toggleBio = async (on: boolean) => {
+    setBioBusy(true);
+    try {
+      const error = await store.security.setBiometric(on);
+      if (error && error !== 'cancelled') toast(error, <Alert size={18} />);
+      else if (!error) toast(on ? 'Fingerprint unlock is on' : 'Fingerprint unlock is off', <Check size={18} />);
+    } finally {
+      setBioBusy(false);
+      refresh();
+    }
+  };
+
+  const bioRow = bio?.supported && (
+    <div className="k-cell">
+      <span className="k-cell-icon green"><Fingerprint size={18} /></span>
+      <span className="k-cell-body">
+        <span className="k-cell-label">Unlock with fingerprint</span>
+        <span className="k-cell-sub">{bio.available ? 'Your password is still asked for after a restart'
+          : bio.reason === 'not-enrolled' ? 'Add a fingerprint in your phone’s settings first' : 'Not available on this device'}</span>
+      </span>
+      {bioBusy ? <Spinner size={18} />
+        : <Switch label="Unlock with fingerprint" checked={bio.enrolled} disabled={!bio.available && !bio.enrolled} onChange={(on) => { void toggleBio(on); }} />}
+    </div>
+  );
+
+  return (
+    <>
+      <Section title="Security" icons foot={<>
+        While Kant is locked it’s offline: messages wait on the sender’s device and arrive when you unlock.
+        {bio?.enrolled && <> Anyone who can use your finger can unlock Kant — turn fingerprint unlock off if that’s a risk for you.</>}
+      </>}>
+        {bioRow}
+        {bio?.enrolled && (
+          <div className="k-cell">
+            <span className="k-cell-body"><span className="k-cell-label">Ask for password</span></span>
+            <Segmented label="Ask for password" value={String(prefs.passwordEveryMs)}
+              onChange={(v) => setPrefs({ passwordEveryMs: Number(v) })}
+              options={PASSWORD_EVERY_CHOICES.map((ms) => ({ value: String(ms), label: PASSWORD_EVERY_LABELS[ms] }))} />
+          </div>
+        )}
+        <div className="k-cell">
+          <span className="k-cell-icon gray"><Lock size={17} /></span>
+          <span className="k-cell-body"><span className="k-cell-label">Auto-lock</span><span className="k-cell-sub">After this long in the background</span></span>
+        </div>
+        <div className="k-cell" style={{ paddingTop: 0 }}>
+          <div className="k-seg-full">
+            <Segmented label="Auto-lock" value={String(prefs.autoLockMs)} onChange={(v) => setPrefs({ autoLockMs: Number(v) })}
+              options={AUTO_LOCK_CHOICES.map((ms) => ({ value: String(ms), label: AUTO_LOCK_LABELS[ms] }))} />
+          </div>
+        </div>
+        <Cell icon={<ShieldAlert size={18} />} iconTone="red" label="Duress password"
+          value={duressSet === null ? '' : duressSet ? 'On' : 'Off'} chevron onClick={() => setDuressSheet(true)} />
+        <Cell icon={<Lock size={18} />} iconTone="indigo" label="Lock now" tone="action" onClick={() => store.security.lockNow()} />
+      </Section>
+      {duressSheet && (
+        <DuressSheet isSet={!!duressSet} onClose={() => { setDuressSheet(false); refresh(); }} />
+      )}
+    </>
+  );
+}
+
+function DuressSheet({ isSet, onClose }: { isSet: boolean; onClose: () => void }) {
+  const store = useStore();
+  const toast = useToast();
+  const [duress, setDuress] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [current, setCurrent] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const save = async (remove: boolean) => {
+    setError('');
+    if (!remove) {
+      if (duress.length < 8) { setError('Use at least 8 characters.'); return; }
+      if (duress !== confirm) { setError('The two duress passwords don’t match.'); return; }
+    }
+    if (!current) { setError('Enter your current password.'); return; }
+    setBusy(true);
+    try {
+      const result = await store.security.setDuress(current, remove ? null : duress);
+      if (result === 'ok') {
+        toast(remove ? 'Duress password removed' : 'Duress password set', <Check size={18} />);
+        onClose();
+      } else {
+        setError(result === 'wrong-password' ? 'That’s not your current password.'
+          : result === 'same' ? 'The duress password must be different from your password.'
+          : 'Couldn’t save. Try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const field = (label: string, value: string, onChange: (v: string) => void, auto: string) => (
+    <input className="k-field" type="password" value={value} onChange={(e) => onChange(e.target.value)} placeholder={label}
+      aria-label={label} autoComplete={auto} style={{ marginBottom: 10 }} />
+  );
+
+  return (
+    <Sheet onClose={onClose} label="Duress password" tall>
+      <SheetHead left={<button type="button" className="k-btn k-btn-plain" onClick={onClose}>Cancel</button>} title="Duress password" />
+      <div className="k-sheet-body">
+        <div className="k-sheet-pad">
+          <p className="k-footnote" style={{ marginBottom: 16 }}>
+            If someone forces you to unlock Kant, type this instead of your password. Kant silently erases everything on this
+            device — identity, contacts, messages, files — and opens a new, empty account that works normally. Nothing erased
+            can be recovered, and nothing on the device shows that a duress password was set.
+          </p>
+          {field(isSet ? 'New duress password' : 'Duress password', duress, setDuress, 'new-password')}
+          {field('Repeat duress password', confirm, setConfirm, 'new-password')}
+          {field('Your current password', current, setCurrent, 'current-password')}
+          {error && <p className="k-error" role="alert"><Alert size={16} />{error}</p>}
+          <button type="button" className="k-btn k-btn-primary k-btn-block" disabled={busy} onClick={() => { void save(false); }}>
+            {busy ? <Spinner size={18} /> : isSet ? 'Change duress password' : 'Set duress password'}
+          </button>
+          {isSet && (
+            <button type="button" className="k-btn k-btn-plain k-btn-block is-danger-text" disabled={busy} style={{ marginTop: 8 }}
+              onClick={() => { void save(true); }}>Turn off duress password</button>
+          )}
+        </div>
+      </div>
+    </Sheet>
   );
 }

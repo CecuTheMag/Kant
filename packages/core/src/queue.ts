@@ -28,11 +28,18 @@ export async function dequeue(id: string): Promise<void> {
   db.close();
 }
 
+/**
+ * A contact's queued messages in the order they were sent. IndexedDB returns
+ * rows in key order, and the key is the message id — a random UUID — so
+ * without the sort a reconnect replayed queued messages in random order.
+ */
 export async function getPendingForContact(contactPubkeyHex: string): Promise<QueuedMessage[]> {
   const db  = await openDB();
   const all = await idbGetAll<QueuedMessage>(db, STORE);
   db.close();
-  return all.filter(m => m.contactPubkeyHex === contactPubkeyHex);
+  return all
+    .filter(m => m.contactPubkeyHex === contactPubkeyHex)
+    .sort((a, b) => (a.timestamp - b.timestamp) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 export type SendFn = (wirePayload: string, peerCircuitAddr: string) => Promise<void>;

@@ -30,9 +30,42 @@ export interface RatchetState {
   sendingRatchetKeyPair: X25519Keypair;
   receivingRatchetPublic: Uint8Array;
   sendingNumber: number;
+  /**
+   * Messages received on the current receiving chain (Nr). Only meaningful when
+   * `chainCounters` is set — see below.
+   */
   receivingNumber: number;
   previousReceivingChainKey: Uint8Array | null;
+  /** Length of our previous sending chain (PN), sent as header.prevChainLen. */
+  previousSendingNumber?: number;
+  /**
+   * True once `receivingNumber` counts per receiving chain. Sessions persisted
+   * by builds before skipped-key support counted globally; they decrypt
+   * sequentially (the old behaviour) until their next DH ratchet step, which
+   * resets the counter and turns this on.
+   */
+  chainCounters?: boolean;
+  /**
+   * Message keys for messages that were skipped (arrived later, or not yet),
+   * keyed by `${dhPublicHex}:${msgNum}`. Bounded in count and age; each key is
+   * deleted the moment it is used, so a replay cannot decrypt twice.
+   */
+  skipped?: Map<string, SkippedKey>;
 }
+
+export interface SkippedKey { key: Uint8Array; at: number }
+
+/**
+ * Double Ratchet skipped-message-key bounds (Signal spec §3.2 MAX_SKIP). A
+ * peer claiming a jump larger than this is refused outright; the store keeps
+ * the most recent keys only and forgets keys older than the age limit, which
+ * caps the forward-secrecy cost of holding them.
+ */
+export const RATCHET_LIMITS = {
+  maxSkip: 1000,
+  maxStoredSkipped: 2000,
+  maxSkippedAgeMs: 14 * 24 * 60 * 60 * 1000,
+} as const;
 
 export interface EncryptedMessage {
   ciphertext: Uint8Array;
@@ -174,6 +207,9 @@ export async function initSenderRatchet(sharedSecret: Uint8Array, bobSignedPrePu
     sendingNumber: 0,
     receivingNumber: 0,
     previousReceivingChainKey: null,
+    previousSendingNumber: 0,
+    chainCounters: true,
+    skipped: new Map(),
   };
 }
 
@@ -190,6 +226,9 @@ export async function initReceiverRatchet(sharedSecret: Uint8Array, signedPreKey
     sendingNumber: 0,
     receivingNumber: 0,
     previousReceivingChainKey: null,
+    previousSendingNumber: 0,
+    chainCounters: true,
+    skipped: new Map(),
   };
 }
 
@@ -224,7 +263,11 @@ async function dhRatchetStep(sodium: any, state: RatchetState, theirPub: Uint8Ar
   state.sendingChainKey = sendingChainKey;
   state.sendingRatchetKeyPair = newSendingKP;
   state.receivingRatchetPublic = theirPub;
+  state.previousSendingNumber = state.sendingNumber;
   state.sendingNumber = 0;
+  // A fresh receiving chain: from here on the counter is per chain.
+  state.receivingNumber = 0;
+  state.chainCounters = true;
 }
 
 export async function ratchetEncrypt(state: RatchetState, plaintext: string): Promise<EncryptedMessage> {
@@ -256,25 +299,91 @@ export async function ratchetEncrypt(state: RatchetState, plaintext: string): Pr
   return {
     ciphertext,
     nonce,
-    header: { dhPublic: state.sendingRatchetKeyPair.publicKey, msgNum, prevChainLen: 0 },
+    header: { dhPublic: state.sendingRatchetKeyPair.publicKey, msgNum, prevChainLen: state.previousSendingNumber ?? 0 },
     ephemeralPublicKey: state.sendingRatchetKeyPair.publicKey,
   };
 }
 
+const hex = (b: Uint8Array): string => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+const skippedId = (dh: Uint8Array, n: number): string => `${hex(dh)}:${n}`;
+
+function validCounter(n: unknown): n is number {
+  return typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
+}
+
+/**
+ * Advance a (snapshot) receiving chain up to `until`, recording each skipped
+ * message key in `added`. Refuses jumps beyond MAX_SKIP so a peer cannot make
+ * us burn CPU and memory deriving keys.
+ */
+async function skipMessageKeys(
+  sodium: any,
+  snap: RatchetState,
+  until: number,
+  added: Map<string, SkippedKey>,
+): Promise<void> {
+  if (until <= snap.receivingNumber) return;
+  if (until - snap.receivingNumber > RATCHET_LIMITS.maxSkip) {
+    throw new Error(`ratchet: refusing to skip ${until - snap.receivingNumber} messages (max ${RATCHET_LIMITS.maxSkip})`);
+  }
+  const now = Date.now();
+  while (snap.receivingNumber < until) {
+    const [messageKey, next] = await hkdfChain(sodium, snap.receivingChainKey, 'send-msg');
+    added.set(skippedId(snap.receivingRatchetPublic, snap.receivingNumber), { key: messageKey, at: now });
+    snap.receivingChainKey = next;
+    snap.receivingNumber++;
+  }
+}
+
+function decryptWith(sodium: any, key: Uint8Array, msg: EncryptedMessage): Uint8Array {
+  return sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(null, msg.ciphertext, null, msg.nonce, key);
+}
+
+/** Merge newly skipped keys, drop the used one, then enforce the age and count bounds. */
+function commitSkipped(state: RatchetState, added: Map<string, SkippedKey>, used: string | null): void {
+  const store = state.skipped ?? new Map<string, SkippedKey>();
+  if (used) store.delete(used);
+  for (const [id, entry] of added) store.set(id, entry);
+  const cutoff = Date.now() - RATCHET_LIMITS.maxSkippedAgeMs;
+  for (const [id, entry] of store) if (entry.at < cutoff) store.delete(id);
+  // Map iteration is insertion order, so the first entries are the oldest.
+  while (store.size > RATCHET_LIMITS.maxStoredSkipped) {
+    const oldest = store.keys().next().value;
+    if (oldest === undefined) break;
+    store.delete(oldest);
+  }
+  state.skipped = store;
+}
+
+/**
+ * Decrypt one message, tolerating loss and reordering within the bounds above.
+ *
+ * All work happens on a snapshot; the live state changes only after the AEAD
+ * check passes. The message handler tries every known ratchet until one
+ * succeeds, so a failed attempt must leave the state (including its skipped
+ * keys) exactly as it was.
+ */
 export async function ratchetDecrypt(state: RatchetState, msg: EncryptedMessage): Promise<string> {
   const sodium = await getSodium();
   const dhPublic = msg.header?.dhPublic ?? msg.ephemeralPublicKey;
-  const nonce = msg.nonce;
+  const msgNum = msg.header?.msgNum;
+  const prevChainLen = msg.header?.prevChainLen;
 
-  // Check if sender has ratcheted (new DH public key)
+  // 1. A message we already skipped past: its key is waiting in the store.
+  if (validCounter(msgNum) && state.skipped?.size) {
+    const id = skippedId(dhPublic, msgNum);
+    const stored = state.skipped.get(id);
+    if (stored) {
+      const plaintext = decryptWith(sodium, stored.key, msg); // throws on a wrong key — state untouched
+      commitSkipped(state, new Map(), id);
+      return new TextDecoder().decode(plaintext);
+    }
+  }
+
   const isNewDH = !state.receivingRatchetPublic ||
     dhPublic.length !== state.receivingRatchetPublic.length ||
     !dhPublic.every((b, i) => b === state.receivingRatchetPublic[i]);
 
-  // Work on a snapshot so we never permanently mutate state on a failed
-  // decrypt attempt.  The "try all ratchets" loop in the message handler
-  // calls this function on every known ratchet until one succeeds — a failed
-  // attempt must leave the ratchet state completely untouched.
   const snap: RatchetState = {
     rootKey:                   state.rootKey,
     sendingChainKey:           state.sendingChainKey,
@@ -284,18 +393,32 @@ export async function ratchetDecrypt(state: RatchetState, msg: EncryptedMessage)
     sendingNumber:             state.sendingNumber,
     receivingNumber:           state.receivingNumber,
     previousReceivingChainKey: state.previousReceivingChainKey,
+    previousSendingNumber:     state.previousSendingNumber,
+    chainCounters:             state.chainCounters,
   };
+  const added = new Map<string, SkippedKey>();
 
   if (isNewDH) {
+    // Keep keys for the tail of the old chain the peer says it sent.
+    if (snap.chainCounters && validCounter(prevChainLen)) {
+      await skipMessageKeys(sodium, snap, prevChainLen, added);
+    }
     await dhRatchetStep(sodium, snap, dhPublic);
+  }
+
+  if (snap.chainCounters && validCounter(msgNum)) {
+    if (msgNum < snap.receivingNumber) {
+      // Older than the chain position and not in the skipped store: a replay,
+      // or a key we already expired. Never re-derive it.
+      throw new Error('ratchet: message key already used or expired');
+    }
+    await skipMessageKeys(sodium, snap, msgNum, added);
   }
 
   const [messageKey, newChain] = await hkdfChain(sodium, snap.receivingChainKey, 'send-msg');
 
   // This throws if the key is wrong — snap is discarded, state is untouched.
-  const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-    null, msg.ciphertext, null, nonce, messageKey
-  );
+  const plaintext = decryptWith(sodium, messageKey, msg);
 
   // Decrypt succeeded — commit the snapshot back to the live state.
   state.rootKey                   = snap.rootKey;
@@ -306,6 +429,9 @@ export async function ratchetDecrypt(state: RatchetState, msg: EncryptedMessage)
   state.sendingNumber             = snap.sendingNumber;
   state.receivingNumber           = snap.receivingNumber + 1;
   state.previousReceivingChainKey = snap.previousReceivingChainKey;
+  state.previousSendingNumber     = snap.previousSendingNumber;
+  state.chainCounters             = snap.chainCounters;
+  commitSkipped(state, added, null);
 
   return new TextDecoder().decode(plaintext);
 }

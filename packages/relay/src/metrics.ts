@@ -43,3 +43,10 @@ export const lookupStaleEntries = new Counter({ name: 'kant_relay_lookup_stale_e
 
 // Readiness
 export const relayReady = new Gauge({ name: 'kant_relay_ready', help: 'Relay readiness gate', registers: [registry], labelNames: ['gate'] });
+
+// Federation (relay ↔ relay)
+export const federationPeerUp = new Gauge({ name: 'kant_federation_peer_up', help: 'Whether a configured federation peer answered its last health check (1/0)', registers: [registry], labelNames: ['peer'] });
+export const federationLookups = new Counter({ name: 'kant_federation_lookups_total', help: 'Federated lookups sent to peer relays, by outcome', registers: [registry], labelNames: ['result'] });
+export const federationTunnels = new Counter({ name: 'kant_federation_tunnels_total', help: 'Tunnel requests, by outcome', registers: [registry], labelNames: ['result'] });
+export const federationTunnelsActive = new Gauge({ name: 'kant_federation_tunnels_active', help: 'Currently open federation tunnels', registers: [registry] });
+export const federationTunnelBytes = new Counter({ name: 'kant_federation_tunnel_bytes_total', help: 'Ciphertext bytes spliced through federation tunnels', registers: [registry], labelNames: ['direction'] });

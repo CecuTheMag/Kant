@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { multiaddr } from '@multiformats/multiaddr';
 import {
-  hasIdentity, createIdentity, unlockIdentity,
+  hasIdentity, createIdentity, unlockIdentityChecked, unlockIdentityWithKey, setDuressPassword, isDuressPasswordSet,
   createNode, getRelayInfo, sendPing, sendReceipt,
   ratchetEncrypt, ratchetDecrypt,
   initSenderRatchet, initReceiverRatchet,
@@ -19,18 +18,30 @@ import {
   setCoreLogger, burnOPK,
   incrementUnread, clearUnread, getAllUnread,
   generateX25519Keypair,
+  configureFederation, ensureRelayConnection, hasMessage,
   encodeContent, decodeContent, addContactCaps, sanitizeCaps,
   CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, SUPPORTED_CAPS, scrubQueuedLegacyWireFields,
   editStoredMessage, sanitizeVoiceMeta, sanitizeGroupRef,
+  CAP_MESSAGE_REACT, CAP_MESSAGE_DELETE, sanitizeReaction,
+  createBackupFile, restoreBackupFile, parseMoveCode, startOutgoingMove, startIncomingMove,
+  setStoredReaction, deleteStoredMessage, removeStoredMessage, markOpSynced, deleteFileBlob,
 } from '@kant/core';
 import type { Libp2p } from 'libp2p';
-import type { RatchetState, UnlockedIdentity, Contact, MessageStatus, DiscoveredPeer, MessageAttachment, FileMeta, ReplyRef, EditRef, VoiceMeta } from '@kant/core';
+import type {
+  RatchetState, UnlockedIdentity, Contact, MessageStatus, DiscoveredPeer, MessageAttachment, FileMeta, ReplyRef, VoiceMeta,
+  ContentOptions, DecodedContent, EditRef, ReactRef, Conversation,
+} from '@kant/core';
 import {
   AI_CONTACT_PUBKEY, loadAiSettings, saveAiSettings, chatCompletion,
   type AiSettings, type ChatMsg,
 } from '../lib/aiClient';
 import { processImage, isProcessableImage } from '../lib/imageProcessor';
 import { eraseAllLocalData } from '../lib/eraseDevice';
+import {
+  biometricStatus, enableBiometric, unlockWithBiometric, disableBiometric,
+  readGate, writeGate, readSecurityPrefs,
+} from '../lib/biometric';
+import { biometricBlocked, blockMessage, shouldAutoLock } from '../lib/securityPolicy';
 import { exportAndroidFile, readFileBytes } from '../lib/fileExport';
 import { showLocalNotification, appIsHidden, ensureNotificationPermission } from '../lib/localNotify';
 import {
@@ -68,7 +79,43 @@ export interface PlainMessage {
   replyTo?: { id: string; from: string; text: string };
   /** When the text was last replaced by an edit. */
   editedAt?: number;
+  /** Reactions by who reacted ('me' / 'them') → emoji. */
+  reactions?: Record<string, string>;
+  /** Set once the message was deleted for everyone; the content is gone. */
+  deletedAt?: number;
 }
+
+/** A stored conversation row as a thread message. */
+export function storedToPlain(m: Conversation['messages'][number]): PlainMessage {
+  return {
+    id: m.id,
+    from: m.fromMe ? 'me' : 'them',
+    text: m.text ?? '',
+    ts: m.timestamp,
+    status: m.status,
+    attachment: m.attachment,
+    replyTo: m.replyTo,
+    editedAt: m.editedAt,
+    reactions: m.reactions && Object.keys(m.reactions).length ? m.reactions : undefined,
+    deletedAt: m.deletedAt,
+  };
+}
+
+/** `current` with `who`'s reaction set to `emoji` ('' removes it). */
+export function withReaction(current: Record<string, string> | undefined, who: string, emoji: string): Record<string, string> | undefined {
+  const next = { ...current };
+  if (emoji) next[who] = emoji; else delete next[who];
+  return Object.keys(next).length ? next : undefined;
+}
+
+/** What is left of a message deleted for everyone. */
+export function tombstone<T extends { id: string; ts: number; text: string }>(m: T, deletedAt: number): T {
+  const { attachment: _a, replyTo: _r, reactions: _x, editedAt: _e, ...rest } = m as T & Record<string, unknown>;
+  return { ...(rest as T), text: '', deletedAt };
+}
+
+/** Outgoing content held (or re-queued) until it can be encrypted: a message, or a change to one (`ctl`). */
+type HeldMessage = { id: string; text: string; replyTo?: ReplyRef; ctl?: ContentOptions; ts?: number };
 
 /** A file that arrived for a group; useGroups files it into the group thread. */
 export interface IncomingGroupFile {
@@ -190,8 +237,9 @@ export function useKant() {
   // Per-contact in-memory queue for messages that couldn't be encrypted yet
   // because the receiver-side ratchet sending chain wasn't initialised.
   // Flushed after the first successful decrypt triggers the DH ratchet step.
-  // An entry with `edit` is an edit of an earlier message, not a new message.
-  const pendingPlaintextRef = useRef<Map<string, Array<{ id: string; text: string; replyTo?: { id: string; from: string; text: string }; edit?: EditRef }>>>(new Map());
+  // An entry with `ctl` is a change to an earlier message (edit, reaction,
+  // deletion), not a new message.
+  const pendingPlaintextRef = useRef<Map<string, HeldMessage[]>>(new Map());
   // message ids already encrypted+sent under the CURRENT ratchet for a contact.
   // Cleared whenever that ratchet is replaced (tiebreak re-handshake, resync)
   // so held plaintext gets re-encrypted under the new session instead of being
@@ -330,9 +378,237 @@ export function useKant() {
     setContacts(await getContacts());
   }
 
+  // Auto-lock (Settings → Security): lock when coming back after the chosen
+  // time in the background. Both the page's visibility and Capacitor's native
+  // pause/resume are watched — either alone misses cases on some WebViews.
+  useEffect(() => {
+    if (screen !== 'app') return;
+    let hiddenAt: number | null = null;
+    const hidden = () => { if (hiddenAt === null) hiddenAt = Date.now(); };
+    const shown = () => {
+      if (shouldAutoLock(hiddenAt, Date.now(), readSecurityPrefs())) { void lock(); return; }
+      hiddenAt = null;
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') hidden(); else shown(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener('pause', hidden);
+    document.addEventListener('resume', shown);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('pause', hidden);
+      document.removeEventListener('resume', shown);
+    };
+    // lock() only reads refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
+  /**
+   * Unlock with the password. The duress password instead erases this identity
+   * and opens a new, empty one — to whoever is watching, it just unlocks.
+   */
   async function unlock(password: string): Promise<boolean> {
-    const kp = await unlockIdentity(password);
-    if (!kp) return false;
+    const result = await unlockIdentityChecked(password);
+    if (result.kind === 'wrong') return false;
+    if (result.kind === 'duress') {
+      await duressReset(password);
+      return true;
+    }
+    // A password unlock re-opens the fingerprint window (see securityPolicy.ts).
+    const bio = await biometricStatus();
+    writeGate({ lastPasswordAt: Date.now(), bootTimeAtPassword: bio.bootTime, failures: 0 });
+    await completeUnlock(result.identity);
+    return true;
+  }
+
+  /** Why the fingerprint can't be offered on the unlock screen right now, or null when it can. */
+  async function biometricUnlockBlock(): Promise<string | null> {
+    const bio = await biometricStatus();
+    if (!bio.supported || !bio.available || !bio.enrolled) return 'unavailable';
+    const block = biometricBlocked(readGate(), Date.now(), bio.bootTime, readSecurityPrefs());
+    return block ? blockMessage(block) : null;
+  }
+
+  /** Unlock with the fingerprint. `ok: false` with a message means: use the password. */
+  async function unlockBiometric(): Promise<{ ok: true } | { ok: false; message?: string }> {
+    const blocked = await biometricUnlockBlock();
+    if (blocked) return { ok: false, message: blocked === 'unavailable' ? undefined : blocked };
+    const res = await unlockWithBiometric();
+    const fail = (message: string) => {
+      const gate = readGate();
+      if (gate) writeGate({ ...gate, failures: gate.failures + 1 });
+      return { ok: false as const, message };
+    };
+    if ('error' in res) {
+      switch (res.error) {
+        case 'CANCELLED': return { ok: false };
+        case 'INVALIDATED': writeGate(null); return { ok: false, message: 'Your fingerprints changed, so fingerprint unlock was turned off. Enter your password.' };
+        case 'TOO_MANY_ATTEMPTS': case 'LOCKOUT': {
+          const gate = readGate();
+          if (gate) writeGate({ ...gate, failures: Math.max(gate.failures + 1, 3) });
+          return { ok: false, message: 'Fingerprint not recognised. Enter your password.' };
+        }
+        default: return fail('Fingerprint unlock didn’t work. Enter your password.');
+      }
+    }
+    const kp = await unlockIdentityWithKey(res.key);
+    res.key.fill(0);
+    if (!kp) {
+      // The stored key no longer fits (e.g. the identity changed): start over.
+      await disableBiometric();
+      return { ok: false, message: 'Fingerprint unlock needs to be set up again. Enter your password.' };
+    }
+    const gate = readGate();
+    if (gate && gate.failures) writeGate({ ...gate, failures: 0 });
+    await completeUnlock(kp);
+    return { ok: true };
+  }
+
+  /** Turn fingerprint unlock on (prompts once) or off. */
+  async function setBiometricUnlock(on: boolean): Promise<string | null> {
+    if (!on) { await disableBiometric(); return null; }
+    const kp = identityRef.current;
+    if (!kp) return 'Unlock Kant first.';
+    const error = await enableBiometric(kp.derivedKey);
+    if (!error) {
+      // Turning it on proves the password was used in this session's unlock.
+      const bio = await biometricStatus();
+      const gate = readGate();
+      if (!gate) writeGate({ lastPasswordAt: Date.now(), bootTimeAtPassword: bio.bootTime, failures: 0 });
+      return null;
+    }
+    return error === 'CANCELLED' ? 'cancelled'
+      : error === 'UNAVAILABLE' ? 'Fingerprint unlock isn’t available on this device.'
+      : 'Couldn’t turn on fingerprint unlock.';
+  }
+
+  /** Set, change or (null) remove the duress password. Asks for the real password first. */
+  async function setDuress(currentPassword: string, duress: string | null): Promise<'ok' | 'wrong-password' | 'same' | 'failed'> {
+    const kp = identityRef.current;
+    if (!kp) return 'failed';
+    const check = await unlockIdentityChecked(currentPassword);
+    if (check.kind !== 'ok' || check.identity.publicKeyHex !== kp.publicKeyHex) return 'wrong-password';
+    try {
+      await setDuressPassword(kp, duress);
+      return 'ok';
+    } catch (e: any) {
+      return e?.message === 'SAME_AS_PASSWORD' ? 'same' : 'failed';
+    }
+  }
+
+  async function duressIsSet(): Promise<boolean> {
+    const kp = identityRef.current;
+    return kp ? isDuressPasswordSet(kp) : false;
+  }
+
+  /**
+   * The duress password was entered: erase everything of this identity and
+   * quietly start a brand-new, empty one with that password. Device settings
+   * that identify nobody (theme, relay, display name) stay, so the new
+   * account looks like an ordinary one.
+   */
+  async function duressReset(password: string): Promise<void> {
+    shouldReconnectRef.current = false;
+    if (nodeRef.current) { try { await nodeRef.current.stop(); } catch { /* best-effort */ } nodeRef.current = null; }
+    identityRef.current = null;
+    ratchetMapRef.current.clear();
+    ratchetRef.current = null;
+    await eraseAllLocalData({ keep: ['kant_relay_url', 'kant_profile_name', 'kant-chat-prefs', 'kant_security'] });
+    const kp = await createIdentity(password);
+    shouldReconnectRef.current = true;
+    await completeUnlock(kp);
+  }
+
+  // ── Backup and moving to a new device ──────────────────────────────────
+
+  /** Preferences that follow the account to a new device (nothing device-specific, never the relay). */
+  const PORTABLE_SETTINGS = ['kant_profile_name', 'kant-chat-prefs', 'kant_security', 'kant_theme', 'kant_onion_enabled'];
+  function portableSettings(): Record<string, string> {
+    const out: Record<string, string> = {};
+    try { for (const k of PORTABLE_SETTINGS) { const v = localStorage.getItem(k); if (v !== null) out[k] = v; } } catch { /* storage unavailable */ }
+    return out;
+  }
+  function applyPortableSettings(settings: Record<string, string>): void {
+    try { for (const k of PORTABLE_SETTINGS) if (typeof settings[k] === 'string') localStorage.setItem(k, settings[k]); } catch { /* storage unavailable */ }
+  }
+
+  /** An encrypted backup file of this identity. Throws WRONG_PASSWORD. */
+  async function createBackup(password: string, includeFiles: boolean): Promise<Uint8Array> {
+    return createBackupFile(password, { includeFiles, settings: portableSettings() });
+  }
+
+  /** Restore a backup on a fresh install, then unlock with the same password. */
+  async function restoreBackup(bytes: Uint8Array, password: string): Promise<void> {
+    const summary = await restoreBackupFile(bytes, password);
+    applyPortableSettings(summary.settings);
+    addLog(`♻️ Restored ${summary.records} record(s) from a backup`);
+    if (!await unlock(password)) setScreen('unlock');
+  }
+
+  /**
+   * Fresh install: wait for the old device to send the account. Runs its own
+   * short-lived node (no identity yet) on the configured relay; `onCode` gets
+   * the code to show as QR. After the move the app lands on the unlock screen.
+   */
+  async function receiveMove(handlers: {
+    onCode: (code: string) => void;
+    onHello: (sas: string, decide: (accept: boolean) => void) => void;
+    onProgress?: (pieces: number) => void;
+  }): Promise<{ result: Promise<void>; stop: () => Promise<void> }> {
+    const info = await getRelayInfo(relayHttpPort, activeRelayUrl);
+    if (!info?.multiaddr) throw new Error('NO_RELAY');
+    const node = await createNode(undefined, undefined, info.multiaddr);
+    let stopped = false;
+    const stopNode = async () => { if (stopped) return; stopped = true; try { await node.stop(); } catch { /* already stopped */ } };
+    try {
+      const incoming = await startIncomingMove(node, { onHello: handlers.onHello, onProgress: handlers.onProgress });
+      handlers.onCode(incoming.code);
+      const result = incoming.result.then(async (summary) => {
+        applyPortableSettings(summary.settings);
+        addLog(`📲 Received this account from your other device (${summary.records} records)`);
+        await incoming.stop();
+        await stopNode();
+        setScreen('unlock');
+      });
+      return { result, stop: async () => { await incoming.stop(); await stopNode(); } };
+    } catch (error) {
+      await stopNode();
+      throw error;
+    }
+  }
+
+  /**
+   * Old device: send this account to the new device's code. `onSas` shows the
+   * code to compare. On success the account lives on the new device and this
+   * one must be erased (finishMove) — two devices using the same sessions
+   * would break them.
+   */
+  async function sendMove(codeText: string, handlers: { onSas: (sas: string) => void; onProgress?: (pieces: number) => void }): Promise<{ records: number }> {
+    const code = await parseMoveCode(codeText);
+    if (!code) throw new Error('BAD_CODE');
+    const node = nodeRef.current;
+    if (!node) throw new Error('OFFLINE');
+    const outgoing = await startOutgoingMove(node, code, { includeSessions: true, includeFiles: true, settings: portableSettings() });
+    handlers.onSas(outgoing.sas);
+    return outgoing.run(handlers.onProgress);
+  }
+
+  /** After a completed move: erase this device (reloads). */
+  async function finishMove(): Promise<void> {
+    await deleteIdentity();
+  }
+
+  /**
+   * Lock: stop networking and drop every key from memory by reloading into a
+   * fresh process, which lands on the unlock screen. Messages sent meanwhile
+   * wait on the sender's device and arrive after unlocking.
+   */
+  async function lock(): Promise<void> {
+    try { await disconnectNode(true); } catch { /* reload regardless */ }
+    identityRef.current = null;
+    location.reload();
+  }
+
+  async function completeUnlock(kp: UnlockedIdentity): Promise<void> {
     setIdentity(kp);
     identityRef.current = kp;
     setScreen('app');
@@ -371,7 +647,6 @@ export function useKant() {
     // Restore persisted unread counts
     const savedUnread = await getAllUnread();
     if (savedUnread.size > 0) setUnreadCounts(savedUnread);
-    return true;
   }
 
   async function disconnectNode(explicit = true): Promise<void> {
@@ -477,7 +752,8 @@ export function useKant() {
         const relayId = peerRelayAddr.split('/p2p/')[1] ?? '';
         if (relayId && !myAddrs.some(a => a.includes(relayId))) {
           try {
-            await node.dial(multiaddr(peerRelayAddr));
+            // Through our relay when theirs is federated (see federation.ts).
+            await ensureRelayConnection(node, peerRelayAddr);
             await new Promise(r => setTimeout(r, 2000));
           } catch { /* non-fatal */ }
         }
@@ -516,6 +792,7 @@ export function useKant() {
       ratchetMapRef.current.set(contact.publicKeyHex, senderRatchet);
       void persistRatchet(contact.publicKeyHex);
       flushedPendingRef.current.delete(contact.publicKeyHex);
+      await reclaimUnacked(contact.publicKeyHex);
 
       const handshake = JSON.stringify({
         type: 'x3dh-init',
@@ -639,6 +916,19 @@ export function useKant() {
     deliveryPendingRef.current.set(msgId, timer);
   }
 
+  /** Per-peer chains that run inbound frames strictly one after another. */
+  const inboundChainsRef = useRef<Map<string, Promise<void>>>(new Map());
+  function serializeInbound(peer: string, work: () => Promise<void>): Promise<void> {
+    const chains = inboundChainsRef.current;
+    const next = (chains.get(peer) ?? Promise.resolve())
+      .then(work)
+      .catch((e: any) => addLog(`⚠️ Inbound handling failed: ${e?.message ?? e}`));
+    chains.set(peer, next);
+    // Drop the entry once idle so the map doesn't grow with every peer ever seen.
+    void next.then(() => { if (chains.get(peer) === next) chains.delete(peer); });
+    return next;
+  }
+
   /**
    * The exact string handed to the ratchet for one outbound message. A reply
    * quote is message content, so it travels inside the ciphertext (envelope.ts)
@@ -646,10 +936,15 @@ export function useKant() {
    * would otherwise show the raw envelope JSON. For those the message goes out
    * without the quote: degraded context, never a plaintext leak.
    */
-  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef, edit?: EditRef): Promise<string> {
-    if (!replyTo && !edit) return text;
+  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef, ctl?: ContentOptions): Promise<string | null> {
+    if (!replyTo && !ctl) return text;
     let caps: string[] = [];
     try { caps = (await getContact(peerHex))?.caps ?? []; } catch { /* unknown → the safe no-quote path */ }
+    // Reactions and deletions only mean something to a build that applies
+    // them; an older one would show an empty message. null = nothing to send.
+    if (ctl?.react) return caps.includes(CAP_MESSAGE_REACT) ? encodeContent('', undefined, { react: ctl.react }) : null;
+    if (ctl?.del) return caps.includes(CAP_MESSAGE_DELETE) ? encodeContent('', undefined, { del: ctl.del }) : null;
+    const edit = ctl?.edit;
     if (edit) {
       if (caps.includes(CAP_MESSAGE_EDIT)) return encodeContent(text, undefined, { edit });
       // An older build would show the envelope's text as a brand-new message
@@ -660,6 +955,56 @@ export function useKant() {
     if (caps.includes(CAP_CONTENT_ENVELOPE)) return encodeContent(text, replyTo);
     addLog(`↩️ ${peerHex.slice(0, 12)}… runs an older Kant — reply sent without the quote`);
     return text;
+  }
+
+  /**
+   * A session was just replaced (we accepted their x3dh-init, or started a new
+   * one). Anything we sent under the old session that was never acknowledged
+   * can no longer be decrypted by the peer — its queued ciphertext is dead. Put
+   * those messages back as plaintext so flushPendingPlaintext re-encrypts them
+   * under the new session, with the same id (the receiver drops duplicates) and
+   * their original time. Text only: files are a live transfer and fail visibly.
+   */
+  async function reclaimUnacked(peerHex: string): Promise<void> {
+    const kp = identityRef.current;
+    if (!kp) return;
+    let conv: Awaited<ReturnType<typeof getConversation>> = null;
+    try { conv = await getConversation(peerHex, kp.derivedKey); } catch { return; }
+    if (!conv) return;
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const held = pendingPlaintextRef.current.get(peerHex) ?? [];
+    const heldIds = new Set(held.map(m => m.id));
+    const reclaimed: HeldMessage[] = [];
+    for (const m of conv.messages) {
+      if (m.fromMe && !m.attachment && m.text && !m.deletedAt
+        && m.status !== 'delivered' && m.status !== 'read'
+        && m.timestamp >= cutoff && !heldIds.has(m.id)) {
+        reclaimed.push({ id: m.id, text: m.text, replyTo: m.replyTo, ts: m.timestamp });
+      }
+      // Our changes to this message the peer never acknowledged, rebuilt from
+      // its current state (after the message itself, so it arrives first).
+      const unsynced = m.unsynced;
+      if (!unsynced) continue;
+      if (unsynced.del) {
+        if (!heldIds.has(unsynced.del)) reclaimed.push({ id: unsynced.del, text: '', ctl: { del: { id: m.id } } });
+        continue;
+      }
+      if (unsynced.edit && m.text && !heldIds.has(unsynced.edit)) {
+        reclaimed.push({ id: unsynced.edit, text: m.text, ctl: { edit: { id: m.id } } });
+      }
+      if (unsynced.react && !heldIds.has(unsynced.react)) {
+        reclaimed.push({ id: unsynced.react, text: '', ctl: { react: { id: m.id, emoji: m.reactions?.me ?? '' } } });
+      }
+    }
+    if (!reclaimed.length) return;
+    for (const r of reclaimed) {
+      clearDeliveryPending(r.id);
+      await dequeue(r.id);
+    }
+    // Older unacknowledged messages first, then anything typed while no session existed.
+    pendingPlaintextRef.current.set(peerHex, [...reclaimed, ...held]);
+    flushedPendingRef.current.delete(peerHex);
+    addLog(`♻️ Re-encrypting ${reclaimed.length} unacknowledged message(s) for the new session with ${peerHex.slice(0, 12)}…`);
   }
 
   async function flushPendingPlaintext(contact: Contact, ratchet: RatchetState, peerCircuitAddr: string) {
@@ -675,10 +1020,17 @@ export function useKant() {
     const flushed = flushedPendingRef.current.get(contact.publicKeyHex) ?? new Set<string>();
     flushedPendingRef.current.set(contact.publicKeyHex, flushed);
     let sentCount = 0;
-    for (const { id, text, replyTo, edit } of pending) {
+    for (const { id, text, replyTo, ctl, ts } of pending) {
       if (flushed.has(id)) continue;
       try {
-        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo, edit);
+        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo, ctl);
+        if (plaintext === null) {
+          // A change this peer's Kant can't apply: it stays local.
+          flushed.add(id);
+          pendingPlaintextRef.current.set(contact.publicKeyHex, (pendingPlaintextRef.current.get(contact.publicKeyHex) ?? []).filter(p => p.id !== id));
+          void markOpSynced(contact.publicKeyHex, id).catch(() => null);
+          continue;
+        }
         const encrypted = await ratchetEncrypt(ratchet, plaintext);
         const wire = JSON.stringify({
           id,
@@ -697,19 +1049,19 @@ export function useKant() {
         await sendOnion(node, hops, peerCircuitAddr, wire);
         flushed.add(id);
         sentCount += 1;
-        // An edit has no bubble of its own — the original was updated when it was made.
-        if (!edit) {
+        // A change has no bubble of its own — the original was updated when it was made.
+        if (!ctl) {
           setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sent' } : m));
           patchThread(contact.publicKeyHex, id, { status: 'sent' });
           await saveMessage(contact.publicKeyHex, kp.derivedKey, {
-            id, fromMe: true, text, timestamp: Date.now(), status: 'sent', replyTo,
+            id, fromMe: true, text, timestamp: ts ?? Date.now(), status: 'sent', replyTo,
           } as any);
         }
         scheduleDeliveryRetry(id, contact, peerCircuitAddr, wire);
       } catch (error: any) {
         // Preserve the message as a visible retryable failure if the just-made
         // session dies before its first payload can leave the client.
-        if (!edit) {
+        if (!ctl) {
           setMessages(p => p.map(m => m.id === id ? { ...m, status: 'failed' } : m));
           patchThread(contact.publicKeyHex, id, { status: 'failed' });
         }
@@ -806,11 +1158,16 @@ export function useKant() {
             else pendingPlaintextRef.current.delete(senderHex);
           }
           flushedPendingRef.current.get(senderHex)?.delete(receipt.msgId);
+          // If it carried a change to an earlier message, that change is now in sync.
+          void markOpSynced(senderHex, receipt.msgId).catch(() => null);
         }
       };
 
       const node = await createNode(
-        async (fromPeer: string, raw: string) => {
+        // One frame at a time per peer, in arrival order. libp2p hands us each
+        // inbound stream concurrently, so two messages flushed back to back could
+        // otherwise finish decrypting — and appear in the chat — in reverse.
+        (fromPeer: string, raw: string) => serializeInbound(fromPeer, async () => {
           let parsed: any;
           try { parsed = JSON.parse(raw); } catch { addLog(`← ${fromPeer.slice(0, 12)}… (unparseable ${raw.length}B)`); return; }
           const msgKind = parsed.type ?? (parsed.ciphertext ? 'ciphertext' : 'unknown');
@@ -826,7 +1183,13 @@ export function useKant() {
             // Check if this is a known contact
             const allContacts = await getContacts();
             const contact = allContacts.find(c => c.publicKeyHex === fromPubKeyHex);
-            if (!contact) return;
+            if (!contact) {
+              // Someone who added us before we added them: their first message
+              // usually lands right after this ping. Keep what they can decode
+              // so replies to that message can carry quotes (see adoptPendingCaps).
+              rememberPendingCaps(fromPubKeyHex, sanitizeCaps(parsed.caps));
+              return;
+            }
 
             // Update in-memory and IDB addr
             contactAddrRef.current.set(fromPubKeyHex, theirAddr);
@@ -851,7 +1214,8 @@ export function useKant() {
                   ? await pickHops(liveNode, [liveNode.peerId.toString()], hopRegistryRef.current, identityRef.current ? [identityRef.current.publicKeyHex] : [])
                   : [];
                 await sendOnion(liveNode, hops, theirAddr, msg.wirePayload);
-                await dequeue(msg.id);
+                // Stays queued until the recipient's delivery receipt removes it
+                // (receiptHandler): a completed write is not proof of delivery.
                 setMessages(p => p.map(m => m.id === msg.id ? { ...m, status: 'sent' } : m));
                 addLog(`📤 Queued msg delivered`);
               } catch { /* will retry next time */ }
@@ -928,6 +1292,8 @@ export function useKant() {
               if (senderHex) {
                 ratchetMapRef.current.set(senderHex, ratchet);
                 void persistRatchet(senderHex);
+                // Their new session supersedes ours: re-send what they never acknowledged.
+                await reclaimUnacked(senderHex);
                 // The old ratchet (and any ciphertext flushed under it) is now
                 // dead.  Force held plaintext to re-encrypt under this one.
                 flushedPendingRef.current.delete(senderHex);
@@ -965,10 +1331,11 @@ export function useKant() {
                       // Same rule as the live path: a blocked sender is ACKed
                       // below (so their retries stop) but never shown or stored.
                       const blocked = !isBootstrap && !!(await getContact(senderHex))?.blocked;
-                      const bufferedContent = !isBootstrap && !blocked ? decodeContent(plain) : null;
-                      if (bufferedContent?.edit) {
-                        void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT]);
-                        await applyInboundEdit(senderHex, bufferedContent.edit, bufferedContent.text);
+                      // Already stored (a re-send whose ACK was lost): acknowledge below, show nothing.
+                      const duplicate = !isBootstrap && !!originalId && await hasMessage(senderHex, originalId);
+                      const bufferedContent = !isBootstrap && !blocked && !duplicate ? decodeContent(plain) : null;
+                      if (bufferedContent && await applyInboundControl(senderHex, bufferedContent)) {
+                        // A change to an earlier message — applied, no bubble.
                       } else if (bufferedContent) {
                         const content = bufferedContent;
                         if (content.enveloped) void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE]);
@@ -1088,6 +1455,17 @@ export function useKant() {
               acknowledge();
               return;
             }
+            // Same check against stored history, which survives restarts: the
+            // outbox re-sends queued ciphertext until it sees our ACK, and that
+            // ciphertext's ratchet key is already spent — decrypting it would
+            // fail and needlessly trigger a session resync. The sender hint is
+            // unauthenticated, but all it can make us do is drop a frame whose id
+            // we already hold and re-ACK it.
+            if (messageId && /^[0-9a-f]{64}$/.test(hintedSender) && await hasMessage(hintedSender, messageId)) {
+              receivedMessageIdsRef.current.set(messageId, Date.now());
+              acknowledge();
+              return;
+            }
             // Find which contact this came from by trying all known ratchets
             let decrypted: string | null = null;
             let senderHex = '';
@@ -1204,6 +1582,15 @@ export function useKant() {
               let isSessionBootstrap = false;
               try { isSessionBootstrap = JSON.parse(decrypted)?.type === 'kant-session-ready'; } catch { /* normal user text */ }
               const content = decodeContent(decrypted);
+              // A message we already stored: the sender re-sent it under a new
+              // session because our acknowledgement never reached them. Acknowledge
+              // again, show nothing new.
+              if (!isSessionBootstrap && messageId && senderHex && await hasMessage(senderHex, messageId)) {
+                addLog(`↩️ Duplicate ${messageId.slice(0, 8)}… from ${senderHex.slice(0, 12)}… — re-acknowledged`);
+                receivedMessageIdsRef.current.set(messageId, Date.now());
+                acknowledge();
+                return;
+              }
               // An envelope proves the sender's build supports them, even if
               // its presence ping (which advertises caps) hasn't reached us yet.
               if (content.enveloped && senderHex) void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE]);
@@ -1214,14 +1601,11 @@ export function useKant() {
                 hideFromUser = true;
                 addLog(`🚫 Dropped message from blocked contact ${senderHex.slice(0, 12)}…`);
               }
-              // An edit replaces the text of an earlier message from the same
-              // sender; it is never shown, counted or notified as a new one.
-              if (!hideFromUser && content.edit) {
+              // An edit, reaction or deletion changes an earlier message; it is
+              // never shown, counted or notified as a new one.
+              if (!hideFromUser && (content.edit || content.react || content.del)) {
                 hideFromUser = true;
-                if (senderHex) {
-                  void addContactCaps(senderHex, [CAP_MESSAGE_EDIT]);
-                  await applyInboundEdit(senderHex, content.edit, content.text);
-                }
+                if (senderHex) await applyInboundControl(senderHex, content);
               }
               // The bootstrap advances the receiver chain but is protocol
               // control traffic, never a user-visible/persisted message.
@@ -1259,6 +1643,7 @@ export function useKant() {
                 const known = await getContact(senderHex);
                 if (!known) {
                   await addContact(senderHex, undefined, undefined, { request: true });
+                  await adoptPendingCaps(senderHex);
                   addLog(`👤 new contact from inbound message: ${senderHex.slice(0, 12)}…`);
                   setContacts(await getContacts());
                 }
@@ -1314,7 +1699,7 @@ export function useKant() {
               }
             }
           }
-        },
+        }),
         receiptHandler,
         relayInfo.multiaddr,
         identityRef.current,
@@ -1330,12 +1715,20 @@ export function useKant() {
 
       nodeRef.current = node;
       addLog(`Node: ${node.peerId.toString().slice(0, 20)}…`);
+      // Relay federation: contacts homed on a peer relay are reached through
+      // our relay (tunnel), never by dialing their relay directly.
+      configureFederation(node, relayInfo.multiaddr, (relayInfo as any).federation);
 
       let directoryRefreshInFlight = false;
       const refreshRelayDirectory = async (addr: string) => {
         if (!identityRef.current || directoryRefreshInFlight) return;
         directoryRefreshInFlight = true;
         try {
+          // Peer relays come and go; keep the federation list current.
+          try {
+            const info = await getRelayInfo(relayHttpPort, activeRelayUrl);
+            if (info?.peerId === relayInfo.peerId) configureFederation(node, relayInfo.multiaddr, (info as any).federation);
+          } catch { /* keep the last known list */ }
           // B1: Register with ephemeral key + identity override (same as heartbeat).
           const _eph = ephemeralKeyRef.current;
           const _regKey = _eph ? _eph.pubHex : identityRef.current.publicKeyHex;
@@ -1373,6 +1766,19 @@ export function useKant() {
         }
       };
 
+      // The home relay connection closing is the one event that always needs a
+      // reconnect. React within seconds instead of waiting for the heartbeat;
+      // the short delay lets a transport-level reconnect win first.
+      node.addEventListener('connection:close', (event: any) => {
+        if (event.detail?.remotePeer?.toString?.() !== relayInfo.peerId) return;
+        setTimeout(() => {
+          if (nodeRef.current !== node || !shouldReconnectRef.current) return;
+          const stillConnected = ((node as any).getConnections?.() ?? [])
+            .some((c: any) => c.remotePeer?.toString?.() === relayInfo.peerId);
+          if (!stillConnected) restartForReservation('Relay connection lost', onGroupMsg, onCircuitReady);
+        }, 3000);
+      });
+
       // ── Connection-state heartbeat ────────────────────────────────────────
       // Every 10s, report how many peer connections we hold and whether we
       // still have a live /p2p-circuit listen address. A circuit that keeps
@@ -1388,7 +1794,9 @@ export function useKant() {
           // js-libp2p may retain a stale circuit listen address after the relay
           // process dies. A reservation is live only while its relay connection
           // is present; otherwise the stale address produces NO_RESERVATION.
-          const hasRelayConnection = conns.length > 0;
+          // Only the *home* relay counts: federation tunnels and peer circuits
+          // are connections too, and must not mask a dead home relay.
+          const hasRelayConnection = conns.some((c: any) => c.remotePeer?.toString?.() === relayInfo.peerId);
           const hasCircuit = hasCircuitAddr && hasRelayConnection;
           addLog(`💓 conns=${conns.length} circuit=${hasCircuit ? 'yes' : 'NO'} ratchets=${ratchetMapRef.current.size}`);
           if (hasCircuit && identityRef.current && Date.now() - lastRegistryRefresh >= 60_000) {
@@ -1418,9 +1826,13 @@ export function useKant() {
             }
           } else if (shouldReconnectRef.current && circuitSeenRef.current) {
             setCircuitAddr('');
-            if (conns.length === 0) setNodeStatus('idle');
+            if (!hasRelayConnection) setNodeStatus('idle');
             noCircuitStreakRef.current += 1;
-            if (noCircuitStreakRef.current >= 6) { // 60s without circuit after having one
+            // The home relay connection itself is gone (relay restart, network
+            // drop): nothing will bring the reservation back but a reconnect, so
+            // do it on the second tick. A live connection that merely lost its
+            // reservation keeps the longer grace for the reservation store.
+            if (noCircuitStreakRef.current >= (hasRelayConnection ? 6 : 2)) {
               noCircuitStreakRef.current = 0;
               circuitSeenRef.current = false;
               restartForReservation('Circuit lost while connected', onGroupMsg, onCircuitReady);
@@ -1482,6 +1894,7 @@ export function useKant() {
               // contact (as a message request) so the thread is reachable.
               if (!(await getContact(senderHex))) {
                 await addContact(senderHex, undefined, undefined, { request: true });
+                await adoptPendingCaps(senderHex);
                 setContacts(await getContacts());
               }
               await saveMessage(senderHex, identityRef.current.derivedKey, {
@@ -1894,7 +2307,7 @@ export function useKant() {
     }
 
     const id       = addMessage('me', text, 'sending', undefined, undefined, contact.publicKeyHex, replyTo);
-    const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo);
+    const plaintext = (await outboundPlaintext(contact.publicKeyHex, text, replyTo)) ?? text;
     // Resolve immediately before each delivery attempt.  A stored circuit
     // address may outlive the peer's reservation after sleep/reconnect.
     let peerAddr = contactAddrRef.current.get(contact.publicKeyHex) ?? contact.lastCircuitAddr ?? '';
@@ -1997,39 +2410,58 @@ export function useKant() {
     if (!contact || !kp || !text) return false;
     const hex = contact.publicKeyHex;
     const original = (threads[hex] ?? messages).find(m => m.id === msgId);
-    if (original && (original.from !== 'me' || original.text === text)) return false;
+    if (original && (original.from !== 'me' || original.text === text || original.deletedAt)) return false;
+
+    // Still held before the session was up? Then the peer has never seen it —
+    // just change what will be sent.
+    const held = pendingPlaintextRef.current.get(hex)?.find(p => p.id === msgId && !p.ctl);
+    const stillHeld = !!held && !flushedPendingRef.current.get(hex)?.has(msgId);
+    // The AI contact is a local conversation: nothing to transmit.
+    const transmit = !stillHeld && hex !== AI_CONTACT_PUBKEY;
+    const opId = generateId();
 
     const editedAt = Date.now();
     const patch = (m: PlainMessage) => (m.id === msgId && m.from === 'me' ? { ...m, text, editedAt } : m);
     setMessages(p => p.map(patch));
     setThreads(t => (t[hex] ? { ...t, [hex]: t[hex].map(patch) } : t));
-    await editStoredMessage(hex, kp.derivedKey, msgId, text, editedAt, true).catch(() => false);
+    await editStoredMessage(hex, kp.derivedKey, msgId, text, editedAt, true, transmit ? opId : undefined).catch(() => false);
 
-    // The AI contact is a local conversation: nothing to transmit.
-    if (hex === AI_CONTACT_PUBKEY) return true;
+    if (held && stillHeld) held.text = text;
+    if (transmit) await sendControl(contact, opId, text, { edit: { id: msgId } });
+    return true;
+  }
 
-    // Still held before the session was up? Then the peer has never seen it —
-    // just change what will be sent.
-    const held = pendingPlaintextRef.current.get(hex)?.find(p => p.id === msgId && !p.edit);
-    if (held && !flushedPendingRef.current.get(hex)?.has(msgId)) {
-      held.text = text;
-      return true;
-    }
-
-    const id = generateId();
-    const edit: EditRef = { id: msgId };
+  /**
+   * Send a change to an earlier message — an edit, a reaction, a deletion — as
+   * its own encrypted control message `opId`. It travels the same ratchet path
+   * as a normal message (held before the session is up, queued while the peer
+   * is unreachable, retried until their receipt) but has no bubble of its own.
+   * The change is already applied and recorded as unsynced locally, so a
+   * session reset re-sends it from the message's state (reclaimUnacked).
+   */
+  async function sendControl(contact: Contact, opId: string, text: string, ctl: ContentOptions): Promise<void> {
+    const kp = identityRef.current;
+    if (!kp) return;
+    const hex = contact.publicKeyHex;
     const hold = () => {
       const pending = pendingPlaintextRef.current.get(hex) ?? [];
-      pending.push({ id, text, edit });
+      if (!pending.some(p => p.id === opId)) pending.push({ id: opId, text, ctl });
       pendingPlaintextRef.current.set(hex, pending);
     };
-    const ratchet = ratchetMapRef.current.get(hex) ?? ratchetRef.current;
+    const ratchet = ratchetMapRef.current.get(hex)
+      ?? (selectedContactRef.current?.publicKeyHex === hex ? ratchetRef.current : null);
     let peerAddr = contactAddrRef.current.get(hex) ?? contact.lastCircuitAddr ?? '';
     if (!ratchet) {
-      addLog('⏳ No session yet — holding the edit while the secure session starts');
+      addLog('⏳ No session yet — holding the change while the secure session starts');
       hold();
       if (peerAddr) void tryAutoSession(contact, peerAddr);
-      return true;
+      return;
+    }
+    const plaintext = await outboundPlaintext(hex, text, undefined, ctl);
+    if (plaintext === null) {
+      addLog(`${hex.slice(0, 12)}… runs an older Kant — the change stays on this device`);
+      await markOpSynced(hex, opId).catch(() => null);
+      return;
     }
     try {
       const fresh = await lookupPeers(relayHttpPort, [hex], activeRelayUrl, kp);
@@ -2042,11 +2474,10 @@ export function useKant() {
 
     let wire = '';
     try {
-      const plaintext = await outboundPlaintext(hex, text, undefined, edit);
       const encrypted = await ratchetEncrypt(ratchet, plaintext);
       void persistRatchet(hex);
       wire = JSON.stringify({
-        id,
+        id: opId,
         fromPubKeyHex: kp.publicKeyHex,
         header: {
           dhPublic:     Array.from(encrypted.header.dhPublic),
@@ -2061,24 +2492,188 @@ export function useKant() {
           ? await pickHops(nodeRef.current, [nodeRef.current.peerId.toString()], hopRegistryRef.current, [kp.publicKeyHex])
           : [];
         await sendOnion(nodeRef.current, hops, peerAddr, wire);
-        scheduleDeliveryRetry(id, contact, peerAddr, wire);
-        addLog('✏️ Edit sent; waiting for delivery ACK');
+        scheduleDeliveryRetry(opId, contact, peerAddr, wire);
+        addLog('✏️ Change sent; waiting for delivery ACK');
       } else {
-        await enqueue({ id, contactPubkeyHex: hex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
-        addLog('📥 Edit queued — peer not reachable right now');
+        await enqueue({ id: opId, contactPubkeyHex: hex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
+        addLog('📥 Change queued — peer not reachable right now');
       }
     } catch (e: any) {
       if ((e as Error).message?.includes('sending chain not yet initialised')) {
         hold();
       } else if (wire) {
-        await enqueue({ id, contactPubkeyHex: hex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
-        addLog(`📥 Edit queued — send failed: ${e?.message ?? e}`);
+        await enqueue({ id: opId, contactPubkeyHex: hex, peerCircuitAddr: peerAddr, wirePayload: wire, timestamp: Date.now() });
+        addLog(`📥 Change queued — send failed: ${e?.message ?? e}`);
       } else {
-        addLog(`⚠️ Edit failed: ${e?.message ?? e}`);
-        return false;
+        // Stays recorded as unsynced; the next session re-sends it.
+        addLog(`⚠️ Change not sent yet: ${e?.message ?? e}`);
       }
     }
+  }
+
+  /**
+   * "Retry now" on an undelivered message: send the same queued ciphertext
+   * (same id — the receiver drops duplicates) right away instead of waiting
+   * for the next automatic retry. Never sends a second copy of something that
+   * may already be on its way. 'waiting' = still unreachable; Kant keeps trying.
+   */
+  async function retryMessage(msgId: string): Promise<'sent' | 'waiting' | 'resent'> {
+    const contact = selectedContactRef.current;
+    const kp = identityRef.current;
+    if (!contact || !kp) return 'waiting';
+    const hex = contact.publicKeyHex;
+    let addr = contactAddrRef.current.get(hex) ?? contact.lastCircuitAddr ?? '';
+    const queued = (await getPendingForContact(hex).catch(() => [])).find(q => q.id === msgId);
+    if (!queued) {
+      if (pendingPlaintextRef.current.get(hex)?.some(p => p.id === msgId)) {
+        // Held until the secure session is up: nudge the session.
+        if (addr) void tryAutoSession(contact, addr);
+        return 'waiting';
+      }
+      // Never left this device (it failed before it could be encrypted): a
+      // fresh send is safe; drop the failed copy so it isn't shown twice.
+      const original = (threads[hex] ?? messages).find(m => m.id === msgId);
+      if (!original?.text || original.from !== 'me') return 'waiting';
+      setMessages(p => p.filter(m => m.id !== msgId));
+      setThreads(t => (t[hex] ? { ...t, [hex]: t[hex].filter(m => m.id !== msgId) } : t));
+      await removeStoredMessage(hex, msgId).catch(() => null);
+      await sendMessage(original.text, original.replyTo);
+      return 'resent';
+    }
+    try {
+      const fresh = await lookupPeers(relayHttpPort, [hex], activeRelayUrl, kp);
+      if (fresh[hex]) { addr = fresh[hex]; contactAddrRef.current.set(hex, addr); void updateContactAddr(hex, addr); }
+    } catch { /* keep the last known route */ }
+    const node = nodeRef.current;
+    if (!node || !addr) return 'waiting';
+    setMessages(p => p.map(m => m.id === msgId ? { ...m, status: 'sending' } : m));
+    patchThread(hex, msgId, { status: 'sending' });
+    try {
+      const hops = onionEnabled ? await pickHops(node, [node.peerId.toString()], hopRegistryRef.current, [kp.publicKeyHex]) : [];
+      await sendOnion(node, hops, addr, queued.wirePayload);
+      setMessages(p => p.map(m => m.id === msgId ? { ...m, status: 'sent' } : m));
+      patchThread(hex, msgId, { status: 'sent' });
+      scheduleDeliveryRetry(msgId, contact, addr, queued.wirePayload);
+      return 'sent';
+    } catch {
+      setMessages(p => p.map(m => m.id === msgId ? { ...m, status: 'failed' } : m));
+      patchThread(hex, msgId, { status: 'failed' });
+      return 'waiting';
+    }
+  }
+
+  /** Set (emoji) or clear ('') your reaction to a message in the open conversation. */
+  async function reactToMessage(msgId: string, emoji: string): Promise<boolean> {
+    const contact = selectedContactRef.current;
+    const kp = identityRef.current;
+    const clean = sanitizeReaction(emoji);
+    if (!contact || !kp || clean === undefined) return false;
+    const hex = contact.publicKeyHex;
+    const target = (threads[hex] ?? messages).find(m => m.id === msgId);
+    if (!target || target.deletedAt) return false;
+    const transmit = hex !== AI_CONTACT_PUBKEY;
+    const opId = generateId();
+    const patch = (m: PlainMessage) => (m.id === msgId && !m.deletedAt ? { ...m, reactions: withReaction(m.reactions, 'me', clean) } : m);
+    setMessages(p => p.map(patch));
+    setThreads(t => (t[hex] ? { ...t, [hex]: t[hex].map(patch) } : t));
+    const stored = await setStoredReaction(hex, kp.derivedKey, msgId, 'me', clean, transmit ? opId : undefined).catch(() => false);
+    if (stored && transmit) await sendControl(contact, opId, '', { react: { id: msgId, emoji: clean } });
     return true;
+  }
+
+  /**
+   * Delete a message in the open conversation — from this device only, or (your
+   * own messages) for everyone: the peer's copy is replaced by a tombstone too.
+   */
+  async function deleteMessage(msgId: string, forEveryone: boolean): Promise<boolean> {
+    const contact = selectedContactRef.current;
+    const kp = identityRef.current;
+    if (!contact || !kp) return false;
+    const hex = contact.publicKeyHex;
+    const target = (threads[hex] ?? messages).find(m => m.id === msgId);
+    if (!target || (forEveryone && target.from !== 'me')) return false;
+
+    if (target.from === 'me') {
+      // Whatever of it is still waiting to go out stops here.
+      clearDeliveryPending(msgId);
+      await dequeue(msgId).catch(() => {});
+      const held = pendingPlaintextRef.current.get(hex);
+      if (held) {
+        pendingPlaintextRef.current.set(hex, held.filter(p => p.id !== msgId
+          && p.ctl?.edit?.id !== msgId && p.ctl?.react?.id !== msgId));
+      }
+    }
+
+    if (!forEveryone) {
+      setMessages(p => p.filter(m => m.id !== msgId));
+      setThreads(t => (t[hex] ? { ...t, [hex]: t[hex].filter(m => m.id !== msgId) } : t));
+      const removed = await removeStoredMessage(hex, msgId).catch(() => ({ ok: false, fileId: undefined }));
+      if (removed.fileId) void deleteFileBlob(removed.fileId).catch(() => {});
+      return true;
+    }
+
+    const transmit = hex !== AI_CONTACT_PUBKEY;
+    const opId = generateId();
+    const deletedAt = Date.now();
+    const patch = (m: PlainMessage) => (m.id === msgId ? tombstone(m, deletedAt)
+      : m.replyTo?.id === msgId ? { ...m, replyTo: { ...m.replyTo, text: '' } } : m);
+    setMessages(p => p.map(patch));
+    setThreads(t => (t[hex] ? { ...t, [hex]: t[hex].map(patch) } : t));
+    const result = await deleteStoredMessage(hex, kp.derivedKey, msgId, true, deletedAt, transmit ? opId : undefined)
+      .catch(() => ({ ok: false, fileId: undefined }));
+    if (result.fileId) void deleteFileBlob(result.fileId).catch(() => {});
+    if (transmit) await sendControl(contact, opId, '', { del: { id: msgId } });
+    return true;
+  }
+
+  /**
+   * Apply a change a contact made to an earlier message (edit, reaction,
+   * deletion). Returns true when `content` was such a change — it then gets
+   * no bubble of its own.
+   */
+  async function applyInboundControl(senderHex: string, content: DecodedContent): Promise<boolean> {
+    if (content.del) {
+      void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE, CAP_MESSAGE_DELETE]);
+      await applyInboundDelete(senderHex, content.del.id);
+      return true;
+    }
+    if (content.edit) {
+      void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT]);
+      await applyInboundEdit(senderHex, content.edit, content.text);
+      return true;
+    }
+    if (content.react) {
+      void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE, CAP_MESSAGE_REACT]);
+      await applyInboundReaction(senderHex, content.react);
+      return true;
+    }
+    return false;
+  }
+
+  async function applyInboundReaction(senderHex: string, react: ReactRef): Promise<void> {
+    const kp = identityRef.current;
+    if (!kp) return;
+    const applied = await setStoredReaction(senderHex, kp.derivedKey, react.id, 'them', react.emoji).catch(() => false);
+    if (!applied) { addLog(`Ignored a reaction to an unknown message from ${senderHex.slice(0, 12)}…`); return; }
+    const patch = (m: PlainMessage) => (m.id === react.id && !m.deletedAt ? { ...m, reactions: withReaction(m.reactions, 'them', react.emoji) } : m);
+    if (selectedContactRef.current?.publicKeyHex === senderHex) setMessages(p => p.map(patch));
+    setThreads(t => (t[senderHex] ? { ...t, [senderHex]: t[senderHex].map(patch) } : t));
+  }
+
+  /** A contact deleted one of their own messages for everyone. */
+  async function applyInboundDelete(senderHex: string, msgId: string): Promise<void> {
+    const kp = identityRef.current;
+    if (!kp) return;
+    const deletedAt = Date.now();
+    const result = await deleteStoredMessage(senderHex, kp.derivedKey, msgId, false, deletedAt)
+      .catch(() => ({ ok: false, fileId: undefined }));
+    if (!result.ok) { addLog(`Ignored a deletion of an unknown message from ${senderHex.slice(0, 12)}…`); return; }
+    if (result.fileId) void deleteFileBlob(result.fileId).catch(() => {});
+    const patch = (m: PlainMessage) => (m.id === msgId && m.from === 'them' ? tombstone(m, deletedAt)
+      : m.replyTo?.id === msgId ? { ...m, replyTo: { ...m.replyTo, text: '' } } : m);
+    if (selectedContactRef.current?.publicKeyHex === senderHex) setMessages(p => p.map(patch));
+    setThreads(t => (t[senderHex] ? { ...t, [senderHex]: t[senderHex].map(patch) } : t));
+    addLog(`🗑️ ${senderHex.slice(0, 12)}… deleted a message`);
   }
 
   /**
@@ -2212,10 +2807,12 @@ export function useKant() {
         thumbnail,
         ...(voice ? { voice } : {}),
       };
-      setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sent', attachment } : m));
-      patchThread(contact.publicKeyHex, id, { status: 'sent', attachment });
+      // sendFile resolves only after the recipient stored the file and verified
+      // its hash (the final FILE_ACK), so this is delivery, not just "sent".
+      setMessages(p => p.map(m => m.id === id ? { ...m, status: 'delivered', attachment } : m));
+      patchThread(contact.publicKeyHex, id, { status: 'delivered', attachment });
       await saveMessage(contact.publicKeyHex, identityRef.current.derivedKey, {
-        id, fromMe: true, text: '', timestamp: Date.now(), status: 'sent', attachment,
+        id, fromMe: true, text: '', timestamp: Date.now(), status: 'delivered', attachment,
       } as any);
     } catch (e: any) {
       addLog(`File send fail: ${e.message}`);
@@ -2229,10 +2826,32 @@ export function useKant() {
 
   // ── Contacts ──────────────────────────────────────────────────────────────
 
+  /**
+   * Capabilities advertised in presence by people who aren't contacts yet,
+   * applied once they become one. In memory and bounded: presence is unsigned,
+   * so this can only ever widen what a later contact is sent (a quote envelope
+   * it may not render) — never leak or unlock anything.
+   */
+  const pendingCapsRef = useRef<Map<string, string[]>>(new Map());
+  function rememberPendingCaps(hex: string, caps: string[]) {
+    if (!/^[0-9a-f]{64}$/i.test(hex) || !caps.length) return;
+    const pending = pendingCapsRef.current;
+    pending.delete(hex);
+    pending.set(hex, caps);
+    while (pending.size > 256) pending.delete(pending.keys().next().value!);
+  }
+  async function adoptPendingCaps(hex: string) {
+    const caps = pendingCapsRef.current.get(hex);
+    if (!caps) return;
+    pendingCapsRef.current.delete(hex);
+    await addContactCaps(hex, caps);
+  }
+
   async function addNewContact(hex: string, nick?: string, circuitAddr?: string) {
     // Adding someone yourself is consent: it accepts a pending request and
     // lifts a block.
     await addContact(hex, nick, circuitAddr, { request: false, blocked: false });
+    await adoptPendingCaps(hex);
     const all = await getContacts();
     setContacts(all);
     if (circuitAddr) contactAddrRef.current.set(hex, circuitAddr);
@@ -2245,6 +2864,7 @@ export function useKant() {
 
   async function acceptContact(hex: string, nick?: string) {
     await addContact(hex, nick?.trim() || undefined, undefined, { request: false, blocked: false });
+    await adoptPendingCaps(hex);
     setContacts(await getContacts());
   }
 
@@ -2328,16 +2948,7 @@ export function useKant() {
 
     if (identityRef.current) {
       const conv = await getConversation(contact.publicKeyHex, identityRef.current.derivedKey);
-      const convMessages: PlainMessage[] = (conv?.messages ?? []).map(m => ({
-        id: m.id,
-        from: m.fromMe ? 'me' : 'them',
-        text: (m as any).text ?? '',
-        ts: m.timestamp,
-        status: m.status,
-        attachment: (m as any).attachment,
-        replyTo: (m as any).replyTo,
-        editedAt: (m as any).editedAt,
-      })) ?? [];
+      const convMessages: PlainMessage[] = (conv?.messages ?? []).map(storedToPlain);
       // Merge IDB history with any in-memory messages not yet persisted,
       // deduplicating by id to prevent duplicate keys in the message list.
       // Do NOT merge with prev messages — prev belongs to the previously selected contact.
@@ -2531,8 +3142,10 @@ export function useKant() {
     sharedRelayUrl, setSharedRelayUrl, activeRelayUrl,
     aiSettings, updateAiSettings,
     onionEnabled, toggleOnion,
-    checkIdentity, configureRelay, setup, unlock, deleteIdentity,
-    startNode, disconnectNode, initSession, sendMessage, editMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment, readAttachmentData,
+    checkIdentity, configureRelay, setup, unlock, unlockBiometric, biometricUnlockBlock, setBiometricUnlock,
+    setDuress, duressIsSet, lock, deleteIdentity,
+    createBackup, restoreBackup, receiveMove, sendMove, finishMove,
+    startNode, disconnectNode, initSession, sendMessage, editMessage, retryMessage, reactToMessage, deleteMessage, sendFileMessage, loadAttachmentUrl, downloadAttachment, readAttachmentData,
     addNewContact, renameContact, acceptContact, blockContact, removeContact, selectContact,
     setConversationVisible,
     setMessages,

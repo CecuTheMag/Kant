@@ -84,8 +84,8 @@ export default function Home() {
       <section className="hero">
         <div className="wrap">
           <Link href="/download" className="announce anim-rise">
-            <span className="announce-tag">{RELEASE.channel}</span>
-            Now on Android and Linux
+            <span className="announce-tag">{RELEASE.channel} {RELEASE.version}</span>
+            Reactions, fingerprint unlock and moving to a new phone
             <IconChevron size={12} />
           </Link>
           <h1 className="h-display anim-rise d1">

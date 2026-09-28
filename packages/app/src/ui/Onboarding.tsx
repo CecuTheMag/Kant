@@ -2,10 +2,12 @@
  * Everything before the app: boot, welcome + terms, network (only when the
  * build has no default relay), create a password, and unlock.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { getRelayInfo } from '@kant/core';
-import { Alert, Bubble, Eye, EyeOff, LockFill, Person, Spinner } from './icons';
+import { getRelayInfo, isBackupFile } from '@kant/core';
+import { QRCodeSVG } from 'qrcode.react';
+import { Alert, Bubble, Check, ChevronLeft, Copy, Doc, Eye, EyeOff, Fingerprint, LockFill, Person, Spinner } from './icons';
+import { copyText } from './lib';
 import { normalizeRelayUrl, parseInvite, savePendingInvite } from './lib';
 import { Sheet } from './parts';
 
@@ -139,8 +141,10 @@ function strength(pw: string): 0 | 1 | 2 | 3 {
 const STRENGTH = ['', 'Weak', 'Good', 'Strong'];
 const STRENGTH_COLOR = ['', 'var(--danger)', 'var(--warn)', 'var(--ok)'];
 
-export function CreateStep({ onCreate, step, totalSteps }: {
+export function CreateStep({ onCreate, step, totalSteps, onMoveIn, onRestore }: {
   onCreate: (password: string, name: string) => Promise<void>; step: number; totalSteps: number;
+  /** Already use Kant: bring the account over instead of creating one. */
+  onMoveIn?: () => void; onRestore?: () => void;
 }) {
   const [name, setName] = useState('');
   const [pw, setPw] = useState('');
@@ -207,6 +211,177 @@ export function CreateStep({ onCreate, step, totalSteps }: {
           <button className="k-btn k-btn-primary k-btn-block" disabled={busy || !pw || !pw2}>
             {busy ? <><Spinner size={18} /> Creating your keys…</> : 'Create'}
           </button>
+          {(onMoveIn || onRestore) && (
+            <div className="k-alt-actions" role="group" aria-label="Already use Kant?">
+              <span className="k-footnote k-muted">Already use Kant?</span>
+              {onMoveIn && <button type="button" className="k-btn k-btn-plain" onClick={onMoveIn}>Move from your other phone</button>}
+              {onRestore && <button type="button" className="k-btn k-btn-plain" onClick={onRestore}>Restore a backup</button>}
+            </div>
+          )}
+        </div>
+      </form>
+    </Shell>
+  );
+}
+
+/* ── Move from another device ─────────────────────────────────────── */
+
+type ReceiveMove = (handlers: {
+  onCode: (code: string) => void;
+  onHello: (sas: string, decide: (accept: boolean) => void) => void;
+  onProgress?: (pieces: number) => void;
+}) => Promise<{ result: Promise<void>; stop: () => Promise<void> }>;
+
+function moveError(e: unknown): string {
+  const code = (e as Error)?.message;
+  if (code === 'NO_RELAY' || code === 'NO_ADDRESS') return 'Can’t reach the network right now. Check your connection and try again.';
+  if (code === 'BAD_KEY') return 'This transfer couldn’t be verified, so nothing was saved. Start again on both phones.';
+  return 'The move didn’t finish, so nothing was saved on this phone. Start again on both phones.';
+}
+
+export function MoveInScreen({ receive, onBack }: { receive: ReceiveMove; onBack: () => void }) {
+  const [phase, setPhase] = useState<'starting' | 'code' | 'compare' | 'receiving' | 'error'>('starting');
+  const [code, setCode] = useState('');
+  const [sas, setSas] = useState('');
+  const [pieces, setPieces] = useState(0);
+  const [note, setNote] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const decideRef = useRef<((accept: boolean) => void) | null>(null);
+  // The caller's function changes identity every render; the node must start once per attempt.
+  const receiveRef = useRef(receive);
+  receiveRef.current = receive;
+
+  useEffect(() => {
+    let live = true;
+    let stop: (() => Promise<void>) | null = null;
+    setPhase('starting'); setNote('');
+    receiveRef.current({
+      onCode: (c) => { if (live) { setCode(c); setPhase('code'); } },
+      onHello: (s, decide) => { if (!live) { decide(false); return; } decideRef.current = decide; setSas(s); setPhase('compare'); },
+      onProgress: (n) => { if (live) { setPieces(n); setPhase('receiving'); } },
+    }).then(({ result, stop: st }) => {
+      stop = st;
+      if (!live) { void st(); return; }
+      result.catch((e) => { if (live) { setNote(moveError(e)); setPhase('error'); } });
+    }).catch((e) => { if (live) { setNote(moveError(e)); setPhase('error'); } });
+    return () => { live = false; decideRef.current?.(false); void stop?.(); };
+  }, [attempt]);
+
+  const decide = (accept: boolean) => {
+    const d = decideRef.current;
+    decideRef.current = null;
+    d?.(accept);
+    if (accept) setPhase('receiving');
+    else { setPhase('code'); setNote('The codes didn’t match, so nothing was accepted. If you didn’t start this on your other phone, someone else may have seen this code — close this screen and open it again for a new one.'); }
+  };
+
+  return (
+    <Shell>
+      <div className="k-contents">
+        <div className="k-onboard-top">
+          <button type="button" className="k-btn k-btn-plain" style={{ alignSelf: 'flex-start', marginLeft: -12 }} onClick={onBack}>
+            <ChevronLeft size={20} /> Back
+          </button>
+          <h1>Move from your other phone</h1>
+          {phase === 'starting' && <p className="k-onboard-lede"><Spinner size={18} /> Getting ready…</p>}
+          {phase === 'code' && (
+            <>
+              <p className="k-onboard-lede">On your other phone open Kant → <b>Settings</b> → <b>Move to a new phone</b>, and scan this code.</p>
+              <div className="k-move-qr"><QRCodeSVG value={code} level="L" marginSize={0} bgColor="#ffffff" fgColor="#1d1d1f" aria-label="Move code" /></div>
+              <button type="button" className="k-btn k-btn-plain" onClick={() => { void copyText(code); setCopied(true); }}>
+                {copied ? <><Check size={18} /> Copied</> : <><Copy size={18} /> Copy code instead</>}
+              </button>
+              {note && <p className="k-error" role="alert"><Alert size={16} />{note}</p>}
+            </>
+          )}
+          {phase === 'compare' && (
+            <>
+              <p className="k-onboard-lede">Check that your other phone shows the same code.</p>
+              <div className="k-sas" aria-label={`Code ${sas.split('').join(' ')}`}>{sas.slice(0, 3)} {sas.slice(3)}</div>
+            </>
+          )}
+          {phase === 'receiving' && (
+            <p className="k-onboard-lede"><Spinner size={18} /> Receiving your account… {pieces > 0 && <span className="k-faint">({pieces} parts)</span>}<br />Keep both phones open.</p>
+          )}
+          {phase === 'error' && <p className="k-error" role="alert"><Alert size={16} />{note}</p>}
+        </div>
+        <div className="k-onboard-bottom">
+          {phase === 'compare' && (
+            <>
+              <button type="button" className="k-btn k-btn-primary k-btn-block" onClick={() => decide(true)}>The codes match</button>
+              <button type="button" className="k-btn k-btn-secondary k-btn-block" onClick={() => decide(false)}>They don’t match</button>
+            </>
+          )}
+          {phase === 'error' && (
+            <button type="button" className="k-btn k-btn-primary k-btn-block" onClick={() => setAttempt((n) => n + 1)}>Try again</button>
+          )}
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+/* ── Restore a backup ─────────────────────────────────────────────── */
+
+export function RestoreScreen({ restore, onBack }: { restore: (bytes: Uint8Array, password: string) => Promise<void>; onBack: () => void }) {
+  const [file, setFile] = useState<{ name: string; bytes: Uint8Array } | null>(null);
+  const [pw, setPw] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+
+  async function pick(f: File | undefined) {
+    setError('');
+    if (!f) return;
+    const bytes = new Uint8Array(await f.arrayBuffer());
+    if (!isBackupFile(bytes)) { setFile(null); setError('That isn’t a Kant backup file.'); return; }
+    setFile({ name: f.name, bytes });
+  }
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!file || !pw) return;
+    setBusy(true);
+    setError('');
+    try {
+      await restore(file.bytes, pw);
+    } catch (err) {
+      const code = (err as Error)?.message;
+      setError(code === 'WRONG_PASSWORD' ? 'That password doesn’t open this backup.'
+        : code === 'NOT_A_BACKUP' ? 'That isn’t a Kant backup file.'
+        : code === 'IDENTITY_EXISTS' ? 'This device already has an account.'
+        : 'The backup is damaged or incomplete, so nothing was restored.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Shell>
+      <form className="k-contents" onSubmit={submit}>
+        <div className="k-onboard-top">
+          <button type="button" className="k-btn k-btn-plain" style={{ alignSelf: 'flex-start', marginLeft: -12 }} onClick={onBack}>
+            <ChevronLeft size={20} /> Back
+          </button>
+          <h1>Restore a backup</h1>
+          <p className="k-onboard-lede">Choose your Kant backup file and enter the password your account had when you saved it.</p>
+          <div className="k-onboard-form">
+            <input ref={input} type="file" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ''; }} />
+            <button type="button" className="k-btn k-btn-secondary k-btn-block" onClick={() => input.current?.click()}>
+              <Doc size={18} /> {file ? file.name : 'Choose backup file'}
+            </button>
+            {file && (
+              <input className="k-field" type="password" value={pw} onChange={(e) => setPw(e.target.value)}
+                placeholder="Account password" aria-label="Account password" autoComplete="current-password" autoFocus />
+            )}
+            {error && <p className="k-error" role="alert"><Alert size={16} />{error}</p>}
+            <p className="k-footnote k-muted">Chats continue where they left off. The first message in each chat quietly sets up a fresh secure session.</p>
+          </div>
+        </div>
+        <div className="k-onboard-bottom">
+          <button className="k-btn k-btn-primary k-btn-block" disabled={busy || !file || !pw}>
+            {busy ? <><Spinner size={18} /> Restoring…</> : 'Restore'}
+          </button>
         </div>
       </form>
     </Shell>
@@ -215,12 +390,41 @@ export function CreateStep({ onCreate, step, totalSteps }: {
 
 /* ── Unlock ───────────────────────────────────────────────────────── */
 
-export function Unlock({ onUnlock, onErase }: { onUnlock: (pw: string) => Promise<boolean>; onErase: () => Promise<void> }) {
+export function Unlock({ onUnlock, onErase, biometric }: {
+  onUnlock: (pw: string) => Promise<boolean>; onErase: () => Promise<void>;
+  /** Fingerprint unlock, where the device and the user's settings allow it. */
+  biometric?: {
+    /** null = ready; 'unavailable' = don't mention it; anything else = why the password is needed. */
+    block: () => Promise<string | null>;
+    unlock: () => Promise<{ ok: true } | { ok: false; message?: string }>;
+  };
+}) {
   const [pw, setPw] = useState('');
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [forgot, setForgot] = useState(false);
+  // Never prompts on its own: a fingerprint is asked for only when the user taps.
+  const [bio, setBio] = useState<'hidden' | 'ready' | { note: string }>('hidden');
+  const [bioBusy, setBioBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void biometric?.block().then((b) => { if (live) setBio(b === null ? 'ready' : b === 'unavailable' ? 'hidden' : { note: b }); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [biometric]);
+
+  async function fingerprint() {
+    if (!biometric) return;
+    setBioBusy(true);
+    setError('');
+    try {
+      const r = await biometric.unlock();
+      if (!r.ok && r.message) setBio({ note: r.message });
+    } finally {
+      setBioBusy(false);
+    }
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -250,12 +454,18 @@ export function Unlock({ onUnlock, onErase }: { onUnlock: (pw: string) => Promis
               aria-label={show ? 'Hide password' : 'Show password'}>{show ? <EyeOff size={20} /> : <Eye size={20} />}</button>
           </div>
           {error && <p className="k-error" role="alert"><Alert size={16} />{error}</p>}
+          {typeof bio === 'object' && <p className="k-hint" role="status">{bio.note}</p>}
         </div>
         </div>
         <div className="k-onboard-bottom">
           <button className="k-btn k-btn-primary k-btn-block" disabled={busy || !pw}>
             {busy ? <><Spinner size={18} /> Unlocking…</> : 'Unlock'}
           </button>
+          {bio === 'ready' && (
+            <button type="button" className="k-btn k-btn-secondary k-btn-block" disabled={bioBusy || busy} onClick={fingerprint}>
+              {bioBusy ? <Spinner size={18} /> : <Fingerprint size={20} />} Unlock with fingerprint
+            </button>
+          )}
           <button type="button" className="k-btn k-btn-plain" onClick={() => setForgot(true)}>Forgot password?</button>
         </div>
       </form>

@@ -114,8 +114,8 @@ export function Cell({ icon, iconTone, label, sub, value, onClick, chevron, tone
   return <div className={cls}>{inner}</div>;
 }
 
-export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className="k-switch" onClick={() => onChange(!checked)} />;
+export function Switch({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className="k-switch" disabled={disabled} onClick={() => onChange(!checked)} />;
 }
 
 export function Segmented<T extends string>({ value, options, onChange, label }: {
@@ -134,18 +134,29 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
 
 export interface MenuItem { label: string; icon?: ReactNode; danger?: boolean; onSelect: () => void }
 
-export function Menu({ at, items, onClose }: { at: { x: number; y: number }; items: MenuItem[]; onClose: () => void }) {
+export function Menu({ at, items, onClose, header }: {
+  at: { x: number; y: number }; items: MenuItem[]; onClose: () => void;
+  /** Content above the items (e.g. the reaction bar). */
+  header?: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState(at);
   const openedAt = useRef(Date.now());
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const w = el.offsetWidth, h = el.offsetHeight;
-    setPos({
-      x: Math.max(8, Math.min(at.x, window.innerWidth - w - 8)),
-      y: Math.max(8, Math.min(at.y, window.innerHeight - h - 8)),
-    });
+    const place = () => {
+      const w = el.offsetWidth, h = el.offsetHeight;
+      setPos({
+        x: Math.max(8, Math.min(at.x, window.innerWidth - w - 8)),
+        y: Math.max(8, Math.min(at.y, window.innerHeight - h - 8)),
+      });
+    };
+    place();
+    // The header can grow (more reactions); keep the menu on screen.
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(place) : null;
+    observer?.observe(el);
+    return () => observer?.disconnect();
   }, [at]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -161,8 +172,9 @@ export function Menu({ at, items, onClose }: { at: { x: number; y: number }; ite
   return createPortal(
     <div className="k-menu-layer" onMouseDown={onClose} onTouchStart={onClose}
       onContextMenu={(e) => { e.preventDefault(); if (Date.now() - openedAt.current > 700) onClose(); }}>
-      <div ref={ref} className="k-menu" role="menu" style={{ left: pos.x, top: pos.y }}
+      <div ref={ref} className={`k-menu${header ? ' has-header' : ''}`} role="menu" style={{ left: pos.x, top: pos.y }}
         onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}>
+        {header}
         {items.map((it) => (
           <button key={it.label} role="menuitem" className={it.danger ? 'is-danger' : ''}
             onClick={() => { onClose(); it.onSelect(); }}>

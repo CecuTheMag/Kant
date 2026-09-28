@@ -11,24 +11,24 @@ export const SITE = {
   githubUrl: "https://github.com/CecuTheMag/Kant",
 };
 
-const releaseBase = `${SITE.githubUrl}/releases/download/v0.4.0-beta`;
+const releaseBase = `${SITE.githubUrl}/releases/download/v0.4.1-beta`;
 
 export const RELEASE = {
-  version: "0.4.0",
+  version: "0.4.1",
   channel: "Beta",
   date: "2026-09-28",
   notesUrl: `${SITE.githubUrl}/releases/latest`,
   android: {
-    file: "Kant-0.4.0.apk",
-    url: `${releaseBase}/Kant-0.4.0.apk`,
-    size: "5.6 MB",
-    sha256: "b29402446fa53bfd333cc95cb35eb63340a953efe60572789415ad3ed0b573e0",
+    file: "Kant-0.4.1.apk",
+    url: `${releaseBase}/Kant-0.4.1.apk`,
+    size: "5.7 MB",
+    sha256: "1ed9bf86a84bc9c52ac869558e80c66292092cb5f90cbc8c0026d8b60ae9cb68",
   },
   linux: {
-    file: "Kant-0.4.0.AppImage",
-    url: `${releaseBase}/Kant-0.4.0.AppImage`,
+    file: "Kant-0.4.1.AppImage",
+    url: `${releaseBase}/Kant-0.4.1.AppImage`,
     size: "118 MB",
-    sha256: "c536a08fc2e745f7ef2869360ab6a15f2baba86fb527bb61d043bb347f8f07ce",
+    sha256: "9c34d8c3bac6f5e32172898ca722129c0a4766c5dd23f491e7b5d1a31e3f5b9b",
   },
 };
 

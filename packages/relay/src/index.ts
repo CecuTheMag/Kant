@@ -34,6 +34,10 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
 import { log } from './logger.js';
+import { Federation } from './federationRuntime.js';
+import { REGISTRATION_FRESH_MS, pickRegistration } from './federation.js';
+import { RELAY_DATA_LIMIT, RELAY_DURATION_LIMIT_MS } from './limits.js';
+import { peerIdFromString } from '@libp2p/peer-id';
 import { registry, circuitsClosed,
          peersConnected, peersDisconnected, peersActive, registryEntries, registryEvictions,
          registerRequests, lookupRequests, lookupHits, lookupMisses, registerDuration, lookupDuration,
@@ -145,8 +149,9 @@ const node = await createLibp2p({
         // 2 min, after which it is closed. That silently breaks long-lived
         // messaging streams and any file transfer larger than 128 KiB. Raise
         // both so relayed connections behave like ordinary long-lived links.
-        defaultDataLimit: BigInt(2 * 1024 * 1024 * 1024), // 2 GiB per connection
-        defaultDurationLimit: 12 * 60 * 60 * 1000,        // 12 hours
+        // See limits.ts: the value must avoid a protobuf encoding bug.
+        defaultDataLimit: RELAY_DATA_LIMIT,
+        defaultDurationLimit: RELAY_DURATION_LIMIT_MS,
       }
     })
   }
@@ -159,6 +164,32 @@ log.info({ event: 'relay.started', peerId: node.peerId.toString(), multiaddrs: a
 log.info({ event: 'relay.address', addr: fullRelayAddr }, 'Full relay addr');
 
 const peerId = node.peerId.toString();
+
+// ── Federation (relay ↔ relay) ────────────────────────────────────────────────
+// The relay's Ed25519 identity is the same key libp2p derives from the seed, so
+// peers can tie a federated lookup's signature to this relay's PeerID.
+const relayEd = sodium.crypto_sign_seed_keypair(seedBytes);
+const RELAY_INFO_PUBLIC_PORT = parseInt(process.env.RELAY_INFO_PUBLIC_PORT ?? String(RELAY_INFO_PORT));
+// Where clients open tunnels. Behind TLS (Caddy) /fed/* shares the public
+// WSS origin; on a plain-HTTP relay it lives on the HTTP API port.
+const federationTunnelBase = process.env.RELAY_FEDERATION_TUNNEL_ADDR
+  ?? (process.env.RELAY_SECURE === 'true'
+    ? `/${hostProto}/${PUBLIC_HOST}/tcp/${RELAY_PUBLIC_PORT}/tls/ws`
+    : `/${hostProto}/${PUBLIC_HOST}/tcp/${RELAY_INFO_PUBLIC_PORT}/ws`);
+const federation = new Federation({
+  raw: process.env.RELAY_FEDERATION,
+  selfPeerId: node.peerId.toString(),
+  sign: (msg) => sodium.crypto_sign_detached(msg, relayEd.privateKey),
+  publicKeyHex: sodium.to_hex(relayEd.publicKey),
+  isConnected: (id) => {
+    try { return ((node as any).getConnections?.(peerIdFromString(id)) ?? []).some((c: any) => c.status === undefined || c.status === 'open'); }
+    catch { return false; }
+  },
+  tunnelBase: federationTunnelBase,
+  maxTunnels: Math.max(1, parseInt(process.env.RELAY_FEDERATION_MAX_TUNNELS ?? '1024')),
+  maxTunnelsPerClient: Math.max(1, parseInt(process.env.RELAY_FEDERATION_MAX_TUNNELS_PER_CLIENT ?? '8')),
+});
+federation.start();
 
 // Set readiness gate now that node.start() has succeeded.
 relayReady.set({ gate: 'ready' }, 1);
@@ -561,7 +592,8 @@ const httpServer = createServer((req, res) => {
 
   if (req.url === '/relay-info') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ peerId, multiaddr: fullRelayAddr }));
+    const fed = federation.info();
+    res.end(JSON.stringify({ peerId, multiaddr: fullRelayAddr, ...(fed ? { federation: fed } : {}) }));
     return;
   }
 
@@ -661,6 +693,13 @@ const httpServer = createServer((req, res) => {
       res.end(JSON.stringify({ error: 'invalid authorization token' }));
       return;
     }
+  }
+
+  // GET /admin/federation — configured peer relays and their health
+  if (req.method === 'GET' && req.url === '/admin/federation') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ enabled: federation.enabled, tunnel: federationTunnelBase, peers: federation.status() }));
+    return;
   }
 
   // GET /admin/reservations — list all active reservations
@@ -826,7 +865,7 @@ const httpServer = createServer((req, res) => {
       if (bodySize > MAX_BODY) { req.destroy(); return; }
       body += chunk;
     });
-    req.on('end', () => {
+    req.on('end', async () => {
       const end = lookupDuration.startTimer();
       try {
         const data = JSON.parse(body);
@@ -868,12 +907,22 @@ const httpServer = createServer((req, res) => {
         }
         usedNonces.set(data.nonce, Date.now() + NONCE_TTL_MS);
         const results: Record<string, string> = {};
+        // How long ago each local entry was last refreshed. Peers use it to pick
+        // the newest registration when an identity moved between relays.
+        const ages: Record<string, number> = {};
+        // Whether each local entry's device holds a reservation here now. A
+        // connection alone doesn't count: a user of a peer relay reaching us
+        // through a federation tunnel is connected but can't be dialled here.
+        const reserved: Record<string, boolean> = {};
+        const now = Date.now();
         let found = 0;
         let missing = 0;
         for (const key of keys) {
           const entry = peerRegistry.get(key);
           if (entry) {
             results[key] = entry.circuitAddr;
+            ages[key] = Math.max(0, now - entry.registeredAt);
+            reserved[key] = getReservation(entry.peerId)?.status === 'active';
             found++;
             // The entry is still within its TTL but the circuit behind it is
             // gone, so the sender's dial will fail with NO_RESERVATION. Wake the
@@ -891,11 +940,32 @@ const httpServer = createServer((req, res) => {
             void sendPushNotification(key);
           }
         }
+        // Keys this relay doesn't hold may belong to users of a federated
+        // relay. A `federated` request is itself a peer asking us, so it is
+        // answered from the local registry only — never forwarded again.
+        // An entry that stopped refreshing may be a device that moved to a
+        // peer relay — ask peers about those too, and keep the newest.
+        const askPeers = keys.filter((key) => results[key] === undefined
+          || (ages[key] ?? 0) >= REGISTRATION_FRESH_MS || reserved[key] === false);
+        if (askPeers.length && federation.enabled && data.federated !== true) {
+          const remote = await federation.lookup(askPeers, sodium);
+          for (const [key, located] of Object.entries(remote)) {
+            const local = results[key] !== undefined ? { addr: results[key], ageMs: ages[key], reachable: reserved[key] } : undefined;
+            const chosen = pickRegistration(local, located);
+            if (!chosen) continue;
+            if (!local) { found++; missing--; }
+            else if (chosen !== local) {
+              log.info({ event: 'lookup.newer_on_peer', keyHex: key.slice(0, 12) }, 'identity is registered more recently on a peer relay');
+            }
+            results[key] = chosen.addr;
+          }
+        }
         lookupHits.inc(found);
         lookupMisses.inc(missing);
         lookupRequests.inc({ result: 'ok' });
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(results));
+        // A peer relay's federated lookup also gets the ages; clients never see them.
+        res.end(JSON.stringify(data.federated === true ? { ...results, ages } : results));
         end();
       } catch {
         lookupRequests.inc({ result: 'error' });
@@ -1036,6 +1106,13 @@ const httpServer = createServer((req, res) => {
 });
 
 const HTTP_BIND = process.env.RELAY_HTTP_BIND ?? '0.0.0.0';
+// WebSocket upgrades on the HTTP port are only ever federation tunnels.
+httpServer.on('upgrade', (req, socket, head) => {
+  if (federation.handles(req)) { void federation.handleUpgrade(req, socket, head); return; }
+  socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+  socket.destroy();
+});
+
 httpServer.listen(RELAY_INFO_PORT, HTTP_BIND, () => {
   log.info({ event: 'http.started', bind: HTTP_BIND, port: RELAY_INFO_PORT, endpoints: ['/relay-info', '/healthz', '/readyz', '/metrics'] }, 'HTTP info server started');
 });

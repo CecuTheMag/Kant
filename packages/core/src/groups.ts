@@ -33,7 +33,7 @@ import { burnOPK, getOPK } from './prekey.js';
 import type { X3DHPublicBundle } from './ratchet.js';
 import { buildPrivateBundle } from './prekey.js';
 import { decodeContent, encodeContent } from './envelope.js';
-import type { ContentOptions, EditRef } from './envelope.js';
+import type { ContentOptions, DeleteRef, EditRef, ReactRef } from './envelope.js';
 import type { MessageAttachment } from './messages.js';
 import type { ReplyRef } from './envelope.js';
 
@@ -125,12 +125,36 @@ export interface GroupMessage {
    * a member cannot make a group message point at one of our stored blobs.
    */
   attachment?: MessageAttachment;
+  /**
+   * Set when the author deleted it for everyone. The row is then a tombstone:
+   * its ciphertext is empty and it has no attachment.
+   */
+  deletedAt?: number;
+  /** Deleted on this device only ("delete for me"): not shown at all. */
+  hidden?: boolean;
 }
 
 export interface StoredGroupConversation {
   groupId: string;       // also the IDB key (publicKeyHex field for keyPath compat)
   publicKeyHex: string;  // = groupId (satisfies keyPath)
   messages: GroupMessage[];
+  /**
+   * `${authorHex}:${messageId}` of messages deleted for everyone, so a copy
+   * still in flight (a sender's retry, our own row saved after its broadcast)
+   * is stored as a tombstone instead of bringing the content back.
+   */
+  deleted?: string[];
+}
+
+const MAX_DELETED_MARKERS = 1000;
+
+function asBytes(value: unknown): Uint8Array {
+  return value instanceof Uint8Array ? value : new Uint8Array(Object.values((value ?? {}) as Record<string, number>));
+}
+
+function tombstoneRow(row: GroupMessage, deletedAt: number): GroupMessage {
+  const { attachment: _attachment, ...rest } = row;
+  return { ...rest, ciphertext: new Uint8Array(0), nonce: new Uint8Array(0), deletedAt: row.deletedAt ?? deletedAt };
 }
 
 // ── IDB (delegates to shared db.ts) ──────────────────────────────────────────
@@ -623,9 +647,74 @@ export async function saveGroupMessage(msg: GroupMessage): Promise<void> {
   // Senders retry a group-msg with the same id until every member has it, and
   // a slow first attempt can still land — store each message once.
   if (conv.messages.some(existing => existing.id === msg.id)) { db.close(); return; }
-  conv.messages.push(msg);
+  const wasDeleted = conv.deleted?.includes(`${msg.fromPubKeyHex}:${msg.id}`);
+  conv.messages.push(wasDeleted ? tombstoneRow(msg, Date.now()) : msg);
   await idbPut(db, 'groupmsgs', conv);
   db.close();
+}
+
+/**
+ * Delete a group message for everyone. The target row becomes a tombstone (no
+ * text, no attachment); rows that edited or reacted to it are dropped, since
+ * they carry its content too; quotes of it in later messages are emptied.
+ *
+ * `authorHex` is who asked: only the message's author may delete it. When the
+ * target isn't stored yet, the deletion is remembered for that author and id,
+ * so the message is stored as a tombstone if it arrives later. `localOnly`
+ * ("delete for me") hides the tombstone from the thread too. Returns the
+ * removed attachment's file id so the caller can drop the stored file.
+ */
+export async function purgeGroupMessage(
+  group: Group,
+  identity: UnlockedIdentity,
+  targetId: string,
+  authorHex: string,
+  deletedAt: number,
+  options: { localOnly?: boolean } = {},
+): Promise<{ ok: boolean; fileId?: string }> {
+  const db = await sharedOpenDB();
+  try {
+    const conv = await sharedIdbGet<StoredGroupConversation>(db, 'groupmsgs', group.id)
+      ?? { groupId: group.id, publicKeyHex: group.id, messages: [] };
+    const target = conv.messages.find(m => m.id === targetId);
+    if (target && target.fromPubKeyHex !== authorHex) return { ok: false };
+    const marker = `${authorHex}:${targetId}`;
+    const deleted = (conv.deleted ?? []).filter(m => m !== marker);
+    deleted.push(marker);
+    conv.deleted = deleted.slice(-MAX_DELETED_MARKERS);
+    const fileId = target?.attachment?.fileId;
+
+    const kept: GroupMessage[] = [];
+    for (const row of conv.messages) {
+      if (row.id === targetId) {
+        kept.push({ ...tombstoneRow(row, deletedAt), ...(options.localOnly || row.hidden ? { hidden: true } : {}) });
+        continue;
+      }
+      if (row.deletedAt) { kept.push(row); continue; }
+      let decoded: ReturnType<typeof decodeContent>;
+      try {
+        decoded = decodeContent(await decryptGroupMessage(asBytes(row.ciphertext), asBytes(row.nonce), group, identity));
+      } catch {
+        kept.push(row); // an older key generation — nothing we can read or rewrite
+        continue;
+      }
+      if (decoded.edit?.id === targetId || decoded.react?.id === targetId) continue;
+      if (decoded.replyTo?.id === targetId && decoded.replyTo.text) {
+        const rewritten = await encryptGroupMessage(
+          encodeContent(decoded.text, { ...decoded.replyTo, text: '' }, decoded.edit ? { edit: decoded.edit } : {}),
+          group, identity,
+        );
+        kept.push({ ...row, ciphertext: rewritten.ciphertext, nonce: rewritten.nonce, keyGeneration: group.keyGeneration });
+        continue;
+      }
+      kept.push(row);
+    }
+    conv.messages = kept;
+    await sharedIdbPut(db, 'groupmsgs', conv);
+    return { ok: !!target, fileId };
+  } finally {
+    db.close();
+  }
 }
 
 /** Load all messages for a group, purging any that have expired */
@@ -824,9 +913,12 @@ export function encodeGroupText(text: string, replyTo?: GroupReplyRef, options?:
 /** Reverse of encodeGroupText. Anything that isn't a recognised envelope is
  *  treated as plain legacy text — keeps old stored/received messages readable.
  *  The reply reference is validated: a group member controls it. */
-export function decodeGroupText(raw: string): { text: string; replyTo?: GroupReplyRef; edit?: EditRef } {
-  const { text, replyTo, edit } = decodeContent(raw);
-  return { text, ...(replyTo ? { replyTo } : {}), ...(edit ? { edit } : {}) };
+export function decodeGroupText(raw: string): { text: string; replyTo?: GroupReplyRef; edit?: EditRef; react?: ReactRef; del?: DeleteRef } {
+  const { text, replyTo, edit, react, del } = decodeContent(raw);
+  return {
+    text, ...(replyTo ? { replyTo } : {}), ...(edit ? { edit } : {}),
+    ...(react ? { react } : {}), ...(del ? { del } : {}),
+  };
 }
 
 /**

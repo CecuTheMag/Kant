@@ -86,6 +86,6 @@ function renderBlocks(blocks: Block[], onLink: OnLink): ReactNode[] {
   });
 }
 
-export function Markdown({ blocks, onLink }: { blocks: Block[]; onLink: OnLink }) {
-  return <div className="k-md">{renderBlocks(blocks, onLink)}</div>;
+export function Markdown({ blocks, onLink, className }: { blocks: Block[]; onLink: OnLink; className?: string }) {
+  return <div className={className ? `k-md ${className}` : 'k-md'}>{renderBlocks(blocks, onLink)}</div>;
 }

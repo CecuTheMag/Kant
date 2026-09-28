@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/playwright:v1.62.1-noble
 WORKDIR /workspace
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY tsconfig.json ./
 COPY packages/core ./packages/core
 COPY tests/lab/package.json tests/lab/package.json
