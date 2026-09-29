@@ -327,9 +327,18 @@ importers:
 
   tests/lab:
     devDependencies:
+      '@libp2p/crypto':
+        specifier: 5.1.18
+        version: 5.1.18
+      '@libp2p/peer-id':
+        specifier: 6.0.9
+        version: 6.0.9
       fake-indexeddb:
         specifier: 6.2.5
         version: 6.2.5
+      libsodium-wrappers-sumo:
+        specifier: 0.8.2
+        version: 0.8.2
 
 packages:
 

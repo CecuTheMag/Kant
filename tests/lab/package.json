@@ -3,11 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-global-webcrypto --test --test-concurrency=1 tests/*.test.mjs",
-    "test:e2e": "node --experimental-global-webcrypto --test --test-concurrency=1 tests/e2e-*.test.mjs",
+    "test": "node --experimental-global-webcrypto --test --test-concurrency=1 --test-timeout=600000 --test-force-exit tests/*.test.mjs",
+    "test:e2e": "node --experimental-global-webcrypto --test --test-concurrency=1 --test-timeout=600000 --test-force-exit tests/e2e-*.test.mjs",
     "test:ui": "playwright test"
   },
   "devDependencies": {
-    "fake-indexeddb": "6.2.5"
+    "@libp2p/crypto": "5.1.18",
+    "@libp2p/peer-id": "6.0.9",
+    "fake-indexeddb": "6.2.5",
+    "libsodium-wrappers-sumo": "0.8.2"
   }
 }

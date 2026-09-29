@@ -92,12 +92,31 @@ async function getIdentityRecord(page) {
   }));
 }
 
+/** Wait for `promise`, but give up after `ms` so a wedged Chromium can't block teardown. */
+function settleWithin(promise, ms) {
+  return Promise.race([
+    Promise.resolve(promise).catch(() => {}),
+    new Promise(resolve => setTimeout(resolve, ms).unref?.()),
+  ]);
+}
+
 /**
  * Create a browser pair for 2-member E2E tests (Alice and Bob).
  * @deprecated Use createBrowserGroup(n) for scalable N-member tests.
  */
 export async function createBrowserPair() {
   const browser = await chromium.launch(CHROMIUM_LAUNCH_OPTS);
+  try {
+    return await setupBrowserPair(browser);
+  } catch (error) {
+    // Any setup failure (not just connect) used to leave Chromium running,
+    // which kept the runner process alive for hours after the test failed.
+    await settleWithin(browser.close(), 15_000);
+    throw error;
+  }
+}
+
+async function setupBrowserPair(browser) {
   const makeClient = async label => {
     const context = await browser.newContext({ acceptDownloads: true });
     // Force legacy UI so tests target the production component tree
@@ -169,15 +188,7 @@ export async function createBrowserPair() {
     }
     throw new Error('Node did not get a circuit address within 180s');
   };
-  try {
-    await Promise.all([connect(alice.page), connect(bob.page)]);
-  } catch (error) {
-    // A rejected Promise.all used to leak both Chromium contexts and leave
-    // reconnect timers running for minutes, contaminating the next churn run.
-    await Promise.allSettled([alice.context.close(), bob.context.close()]);
-    await browser.close().catch(() => {});
-    throw error;
-  }
+  await Promise.all([connect(alice.page), connect(bob.page)]);
   // Read each peer's circuit address from window.__kantCircuitAddr (set by useKant)
   // and inject it into the other peer's contacts IDB so the group modal doesn't
   // show the "Enter circuit address" fallback input.
@@ -228,8 +239,8 @@ export async function createBrowserPair() {
   return {
     browser, alice, bob,
     async close() {
-      await Promise.allSettled([alice.context.close(), bob.context.close()]);
-      await browser.close();
+      await settleWithin(Promise.allSettled([alice.context.close(), bob.context.close()]), 15_000);
+      await settleWithin(browser.close(), 15_000);
     },
   };
 }

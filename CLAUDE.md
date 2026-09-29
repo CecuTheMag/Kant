@@ -15,7 +15,7 @@ Install (from repo root):
 npx pnpm install
 ```
 
-Typecheck (root `tsc --noEmit` over the whole `packages/**` tree, per `tsconfig.json` `paths` mapping `@kant/*` → `packages/*/src`):
+Typecheck (root `tsc --noEmit` over the `packages/**` tree, per `tsconfig.json` `paths` mapping `@kant/*` → `packages/*/src`; `packages/site` is excluded: it is a Next.js app with its own `@/` alias and global types, checked by `npx tsc --noEmit -p packages/site`):
 ```bash
 pnpm run typecheck   # == pnpm run lint
 ```
