@@ -1,3 +1,5 @@
+import 'fake-indexeddb/auto';
+import { test } from 'node:test';
 import {
   createIdentity,
   x3dhSend, x3dhReceive, ed25519ToX25519,
@@ -50,4 +52,4 @@ async function testRatchet() {
   console.log('Full ratchet roundtrip ✅');
 }
 
-testRatchet().catch(console.error);
+test('X3DH agreement and a full double-ratchet roundtrip', testRatchet);

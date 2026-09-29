@@ -119,6 +119,17 @@ export const RECEIPT_PROTOCOL = '/kant/receipt/1.0.0';
 
 export const PING_PROTOCOL = '/kant/ping/1.0.0';
 
+/**
+ * Connection-manager limits for a client node. libp2p rate-limits inbound
+ * connections per remote IP, and a relayed connection's remote IP is the
+ * relay's — so these bound how many contacts can open a conversation with us
+ * at once, not how many hosts can.
+ */
+export const CLIENT_CONNECTION_LIMITS = {
+  inboundConnectionThreshold: 200,
+  maxIncomingPendingConnections: 100,
+};
+
 // ── Core log sink ───────────────────────────────────────────────────────────
 // Transport-level events (dial attempts, retries, onion forwarding, inbound
 // frames) happen inside core, below the React layer, so they normally only
@@ -303,6 +314,11 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     // no response — causing the Android client to drop its relay reservation
     // every 10-30 seconds. Disable it; Kant uses its own PING_PROTOCOL.
     connectionMonitor: { enabled: false },
+    // Every inbound circuit arrives with the relay's IP as its remote host, so
+    // libp2p's per-IP limits (5 new connections/s, 10 mid-handshake) applied to
+    // all contacts at once: when 10+ peers messaged us in the same moment —
+    // an active group — most of their dials were refused.
+    connectionManager: CLIENT_CONNECTION_LIMITS,
   });
 
   selfNode = node;

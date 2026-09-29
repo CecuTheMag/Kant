@@ -16,9 +16,6 @@ const SYNC_INTERVAL_MS = 10 * 1000;
 /** Sweep interval for expired reservations (60 seconds) */
 const SWEEP_INTERVAL_MS = 60 * 1000;
 
-/** Maximum number of reservations (matches circuit-relay-v2 config) */
-export const MAX_RESERVATIONS = 1024;
-
 /** Reservation status enum */
 export type ReservationStatus = 'active' | 'evicted' | 'expired';
 

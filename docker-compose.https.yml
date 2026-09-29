@@ -15,12 +15,21 @@
 # Caddy automatically obtains and renews a Let's Encrypt certificate.
 # The relay seed in the relay-data volume keeps the PeerID stable — back it up.
 
+# Bounded container logs: Caddy's access log alone grows ~15 MB/day on a busy
+# relay, and Docker's default json-file driver never rotates.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   push-proxy:
     build:
       context: packages/push-proxy
       dockerfile: Dockerfile
     restart: unless-stopped
+    logging: *logging
     volumes:
       - ./.kant-secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
       - push-proxy-data:/data
@@ -38,10 +47,20 @@ services:
       context: .
       dockerfile: packages/relay/Dockerfile
     restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     # Port 3000 is intentionally private; Caddy proxies WSS to it internally.
     volumes:
       - relay-data:/data
     environment:
+      # Capacity (see packages/relay/src/limits.ts). ~0.5 MB RAM per online user.
+      RELAY_MAX_CONNECTIONS: "${RELAY_MAX_CONNECTIONS:-4096}"
+      RELAY_INBOUND_CONNECTIONS_PER_SECOND: "${RELAY_INBOUND_CONNECTIONS_PER_SECOND:-500}"
       RELAY_PORT: "3000"
       RELAY_INFO_PORT: "3001"
       RELAY_HTTP_BIND: "0.0.0.0"
@@ -69,6 +88,7 @@ services:
       context: .
       dockerfile: Dockerfile.caddy
     restart: unless-stopped
+    logging: *logging
     ports:
       - "80:80"
       - "443:443"

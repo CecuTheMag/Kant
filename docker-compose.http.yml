@@ -14,18 +14,36 @@
 # The seed file in ./data/ keeps the relay PeerID stable across restarts.
 # Back it up — if lost, all clients need to reconnect with the new PeerID.
 
+# Bounded container logs: Caddy's access log alone grows ~15 MB/day on a busy
+# relay, and Docker's default json-file driver never rotates.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   relay:
     build:
       context: .
       dockerfile: packages/relay/Dockerfile
     restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     ports:
       - "3000:3000"   # libp2p WebSocket
       - "3001:3001"   # HTTP registry API
     volumes:
       - relay-data:/data
     environment:
+      # Capacity (see packages/relay/src/limits.ts). ~0.5 MB RAM per online user.
+      RELAY_MAX_CONNECTIONS: "${RELAY_MAX_CONNECTIONS:-4096}"
+      RELAY_INBOUND_CONNECTIONS_PER_SECOND: "${RELAY_INBOUND_CONNECTIONS_PER_SECOND:-500}"
       RELAY_PORT: "3000"
       RELAY_INFO_PORT: "3001"
       RELAY_HTTP_BIND: "0.0.0.0"

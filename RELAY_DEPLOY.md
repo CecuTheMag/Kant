@@ -154,6 +154,35 @@ federated lookups are answered from the local registry only (no recursion), and
 an answer is accepted only if it points at the relay that gave it. While
 federation is on, clients refuse to dial a federated relay directly.
 
+## 8. Capacity
+
+One relay carries **4096 online users** by default (`RELAY_MAX_CONNECTIONS`;
+reservations follow it unless `RELAY_MAX_RESERVATIONS` is set). Measured: 1000
+clients use ~510 MB RSS and under half a CPU core; 1000 clients reconnecting at
+once are all back within 5 s. Raise the cap only with the RAM for it (~0.5 MB
+per user).
+
+`RELAY_INBOUND_CONNECTIONS_PER_SECOND` (default 500) is libp2p's per-IP connect
+rate limit. Behind Caddy every client arrives from Caddy's IP, so this is the
+relay's **total** connect rate — keep it well above your reconnect wave after a
+restart. `RELAY_MAX_PENDING_CONNECTIONS` (default 256) bounds handshakes in
+flight.
+
+Only a device holding a live connection to the relay can `/register`, only
+under its own key (its PeerID is derived from its identity key), and it keeps at
+most 4 keys; the registry is sized so connected devices can never fill it.
+
+Verify a deployment under real traffic with the transport load test and the
+federation smoke test (both use real libp2p clients):
+
+```sh
+cd packages/core && pnpm run build
+node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs scripts/relay-load.mjs \
+  --relay https://<relay> --clients 50 --rate 5 --fanout 3 --msgs 2
+node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs scripts/federation-smoke.mjs \
+  https://<relay-a> https://<relay-b> 10
+```
+
 ## What the relay can and cannot see
 
 | | Relay |

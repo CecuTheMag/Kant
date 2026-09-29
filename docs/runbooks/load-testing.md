@@ -15,6 +15,13 @@ The load test spawns **N headless Node.js client processes** that speak the same
 
 The test is **registry-level only** — it does not create libp2p reservations, send group keys, or run a browser. Real group/file/churn transport behavior is covered by the Playwright E2E suite; do not present this test as evidence of 100 simultaneous relay reservations.
 
+For transport-level load — real libp2p clients holding reservations and
+exchanging messages through the relay — use `packages/core/scripts/relay-load.mjs`
+(see RELAY_DEPLOY.md § Capacity). It runs against any relay URL, needs no Docker,
+and exits non-zero unless every client reserved and every message arrived.
+The lab relay sets `RELAY_REGISTER_REQUIRES_CONNECTION=false` because this
+registry-only test registers keys without connecting; never set it in production.
+
 ---
 
 ## Running the Test

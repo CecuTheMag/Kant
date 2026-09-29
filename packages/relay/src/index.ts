@@ -36,7 +36,7 @@ import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
 import { log } from './logger.js';
 import { Federation } from './federationRuntime.js';
 import { REGISTRATION_FRESH_MS, pickRegistration } from './federation.js';
-import { RELAY_DATA_LIMIT, RELAY_DURATION_LIMIT_MS } from './limits.js';
+import { RELAY_DATA_LIMIT, RELAY_DURATION_LIMIT_MS, connectionLimits } from './limits.js';
 import { peerIdFromString } from '@libp2p/peer-id';
 import { registry, circuitsClosed,
          peersConnected, peersDisconnected, peersActive, registryEntries, registryEvictions,
@@ -121,6 +121,9 @@ import { peerIdFromPrivateKey } from '@libp2p/peer-id';
 const _prePeerId = await peerIdFromPrivateKey(relayPrivateKey);
 const fullRelayAddr = `/${hostProto}/${PUBLIC_HOST}/tcp/${RELAY_PUBLIC_PORT}/${wsProto}/p2p/${_prePeerId.toString()}`;
 
+const limits = connectionLimits();
+log.info({ event: 'relay.limits', ...limits }, 'connection limits');
+
 const node = await createLibp2p({
   privateKey: relayPrivateKey,
   addresses: {
@@ -140,11 +143,17 @@ const node = await createLibp2p({
   // monitor always saw a failed ping and dropped every client ~30s after
   // connect. The relay must never be the side that kills idle connections.
   connectionMonitor: { enabled: false },
+  // See limits.ts: libp2p's defaults cap a relay at 300 users and 5 connects/s.
+  connectionManager: {
+    maxConnections: limits.maxConnections,
+    inboundConnectionThreshold: limits.inboundConnectionThreshold,
+    maxIncomingPendingConnections: limits.maxIncomingPendingConnections,
+  },
   services: {
     identify: identify(),
     relay: circuitRelayServer({
       reservations: {
-        maxReservations: 1024,
+        maxReservations: limits.maxReservations,
         // circuit-relay-v2 defaults cap each relayed connection at ~128 KiB /
         // 2 min, after which it is closed. That silently breaks long-lived
         // messaging streams and any file transfer larger than 128 KiB. Raise
@@ -510,10 +519,17 @@ function isPeerReachable(peerId: string): boolean {
 // registration every 10s, so a short soft-state TTL makes stale routes vanish
 // quickly without requiring unreliable peer:disconnect events.
 const REGISTRY_TTL_MS = 5 * 60 * 1000; // 5 min — clients re-register every 2 min so 5 min gives 2 missed heartbeats of headroom
-const configuredRegistryLimit = Number.parseInt(process.env.RELAY_MAX_REGISTRY_ENTRIES ?? '10000', 10);
+/** Keys one device may hold in the registry: identity + current and previous ephemeral, + 1 spare. */
+const MAX_KEYS_PER_PEER = 4;
+/** Registry-only lab load tests register without a libp2p connection. Never disable in production. */
+const REGISTER_REQUIRES_CONNECTION = process.env.RELAY_REGISTER_REQUIRES_CONNECTION !== 'false';
+// Default: room for every key every connected device may hold, so connected
+// clients can never fill it.
+const defaultRegistryLimit = Math.max(10_000, limits.maxConnections * MAX_KEYS_PER_PEER);
+const configuredRegistryLimit = Number.parseInt(process.env.RELAY_MAX_REGISTRY_ENTRIES ?? String(defaultRegistryLimit), 10);
 const MAX_REGISTRY_ENTRIES = Number.isSafeInteger(configuredRegistryLimit) && configuredRegistryLimit > 0
   ? configuredRegistryLimit
-  : 10_000;
+  : defaultRegistryLimit;
 const peerRegistry = new Map<string, { circuitAddr: string; peerId: string; registeredAt: number; isIdentityEntry?: boolean }>();
 
 function publishRegistryMetrics(): void {
@@ -550,6 +566,42 @@ function publishRegistryMetrics(): void {
   }
   publishRegistryMetrics();
 });
+
+function requestedKeysOf(data: { publicKeyHex?: string; identityKeyHex?: string }): Set<string> {
+  return new Set<string>([data.publicKeyHex, data.identityKeyHex].filter((k): k is string => !!k));
+}
+
+/**
+ * Why a registration is refused before its signature is even checked, or null.
+ * Clients derive their libp2p key from their identity seed, so a device's
+ * PeerID is its identity key: requiring it to match the signing key binds the
+ * (otherwise unsigned) peerId to the signature, and requiring a live connection
+ * means each identity costs an attacker a real Noise-authenticated connection.
+ */
+function registrationAdmission(peerIdStr: unknown, signingKeyHex: string): { status: number; result: string; error: string } | null {
+  if (!REGISTER_REQUIRES_CONNECTION) return null;
+  let pid;
+  try { pid = peerIdFromString(String(peerIdStr)); } catch { /* handled below */ }
+  const pidKey = pid?.publicKey?.raw;
+  if (!pid || !pidKey || sodium.to_hex(pidKey) !== String(signingKeyHex).toLowerCase()) {
+    return { status: 403, result: 'peer_key_mismatch', error: 'peerId does not belong to the signing key' };
+  }
+  const connected = node.getConnections(pid).some((c: any) => c.status === undefined || c.status === 'open');
+  if (!connected) {
+    return { status: 409, result: 'not_connected', error: 'register after connecting to this relay' };
+  }
+  return null;
+}
+
+/** Keep one device to MAX_KEYS_PER_PEER entries: drop its oldest other keys. */
+function capDeviceKeys(peerIdStr: string, keeping: Set<string>): void {
+  const others = [...peerRegistry].filter(([key, e]) => e.peerId === peerIdStr && !keeping.has(key))
+    .sort((a, b) => a[1].registeredAt - b[1].registeredAt);
+  for (const [key] of others.slice(0, Math.max(0, others.length + keeping.size - MAX_KEYS_PER_PEER))) {
+    peerRegistry.delete(key);
+    registryEvictions.inc({ reason: 'device_key_cap' });
+  }
+}
 
 // nonce -> expiry timestamp (ms). Replay protection only needs to remember a
 // nonce for as long as its timestamp could still pass the ±60s freshness check.
@@ -789,6 +841,18 @@ const httpServer = createServer((req, res) => {
           end();
           return;
         }
+        // Only a device holding a live connection here can register, and each
+        // device keeps only a few keys (see capDeviceKeys). Otherwise anyone
+        // could fill the registry with throwaway keys and every new user would
+        // get 503 until the entries aged out.
+        const admission = registrationAdmission(data.peerId, data.identityKeyHex ?? data.publicKeyHex);
+        if (admission) {
+          registerRequests.inc({ result: admission.result });
+          res.writeHead(admission.status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: admission.error }));
+          end();
+          return;
+        }
         // Verify the client signed: timestamp || nonce || circuitAddr.
         // When registering an ephemeral key, identityKeyHex carries the Ed25519
         // key used for signing; publicKeyHex is the ephemeral key being registered.
@@ -811,7 +875,8 @@ const httpServer = createServer((req, res) => {
           peerId: data.peerId ?? '',
           registeredAt: Date.now(),
         };
-        const requestedKeys = new Set<string>([data.publicKeyHex, data.identityKeyHex].filter(Boolean));
+        const requestedKeys = requestedKeysOf(data);
+        if (REGISTER_REQUIRES_CONNECTION) capDeviceKeys(data.peerId, requestedKeys);
         let newKeyCount = 0;
         for (const key of requestedKeys) {
           if (!peerRegistry.has(key)) newKeyCount++;

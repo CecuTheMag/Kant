@@ -24,3 +24,42 @@ export const RELAY_DURATION_LIMIT_MS = 12 * 60 * 60 * 1000; // 12 hours
 if (!isWireSafeUint64(RELAY_DATA_LIMIT)) {
   throw new Error(`RELAY_DATA_LIMIT ${RELAY_DATA_LIMIT} falls in the uint64 range circuit-relay-v2 cannot encode`);
 }
+
+/**
+ * libp2p's connection-manager defaults are sized for an ordinary peer, not a
+ * relay every client holds a connection to. Left at the defaults the relay
+ * refused the 301st online user (maxConnections 300), and accepted only 5 new
+ * connections per second per source IP (inboundConnectionThreshold). Behind
+ * Caddy every client arrives from Caddy's one IP, so that 5/s was the whole
+ * relay's budget: a refused client stayed offline until its app restarted
+ * networking, and reconnect waves after a restart or network blip were mostly
+ * refused.
+ */
+export interface ConnectionLimits {
+  /** Concurrent connections (≈ online users + peer-relay links). */
+  maxConnections: number;
+  /** Concurrent circuit reservations (one per online client). */
+  maxReservations: number;
+  /** New inbound connections accepted per second from one IP (behind a proxy: in total). */
+  inboundConnectionThreshold: number;
+  /** Connections allowed to be mid-handshake at once. */
+  maxIncomingPendingConnections: number;
+}
+
+function positiveInt(env: Record<string, string | undefined>, name: string, fallback: number): number {
+  const raw = env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n) || n <= 0) throw new Error(`${name} must be a positive integer, got "${raw}"`);
+  return n;
+}
+
+export function connectionLimits(env: Record<string, string | undefined> = process.env): ConnectionLimits {
+  const maxConnections = positiveInt(env, 'RELAY_MAX_CONNECTIONS', 4096);
+  return {
+    maxConnections,
+    maxReservations: positiveInt(env, 'RELAY_MAX_RESERVATIONS', maxConnections),
+    inboundConnectionThreshold: positiveInt(env, 'RELAY_INBOUND_CONNECTIONS_PER_SECOND', 500),
+    maxIncomingPendingConnections: positiveInt(env, 'RELAY_MAX_PENDING_CONNECTIONS', 256),
+  };
+}

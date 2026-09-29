@@ -169,6 +169,53 @@ describe('relay federation (two real relays, two real nodes)', { timeout: 300_00
     assert.equal(got.from, bob.node.peerId.toString());
   });
 
+  test('a crowd connects and messages Bob in the same second — no refusals', async () => {
+    // Twelve clients connect to relay B at once (libp2p's default relay limit
+    // was 5 connections/s per IP — behind Caddy, all clients share one IP),
+    // then all open circuits to Bob at once (his node saw every circuit as
+    // coming from the relay's IP and refused all but 5 per second).
+    const crowd = await Promise.all(Array.from({ length: 12 }, async (_, i) =>
+      startClient(await createIdentity(`crowd-${i}`), B)));
+    try {
+      await Promise.all(crowd.map((c, i) => sendPing(c.node, bob.circuit, `crowd ${i}`)));
+      await waitFor('all crowd messages', () => crowd.every((_, i) => bob.inbox.some((m) => m.msg === `crowd ${i}`)), 30_000);
+    } finally {
+      await Promise.allSettled(crowd.map((c) => c.node.stop()));
+    }
+  });
+
+  test('registry: only a connected device can register, only as itself, and only a few keys', async () => {
+    const url = `http://127.0.0.1:${B.http}`;
+    // A key that never connected to the relay (the registry-flood attacker).
+    const strangerId = await createIdentity('stranger');
+    const strangerPeer = peerIdFromPrivateKey(await generateKeyPairFromSeed('Ed25519', strangerId.privateKey.slice(0, 32))).toString();
+    await assert.rejects(
+      registerWithRelay(B.http, strangerId.publicKeyHex, `${bob.circuit}-x`, strangerPeer, strangerId.privateKey, url),
+      /\(409\)/);
+    // Claiming Bob's (connected) device under someone else's key.
+    await assert.rejects(
+      registerWithRelay(B.http, strangerId.publicKeyHex, bob.circuit, bob.node.peerId.toString(), strangerId.privateKey, url),
+      /\(403\)/);
+    // Bob rotating through ephemeral keys keeps only his newest few.
+    const sodium = (await import('libsodium-wrappers-sumo')).default;
+    await sodium.ready;
+    const eph: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      const kp = sodium.crypto_sign_keypair();
+      eph.push(sodium.to_hex(kp.publicKey));
+      await registerWithRelay(B.http, eph[i], bob.circuit, bob.node.peerId.toString(), bobId.privateKey, url,
+        { publicKeyHex: bobId.publicKeyHex, privateKey: bobId.privateKey });
+      await sleep(5); // distinct registeredAt
+    }
+    const found = await lookupPeers(B.http, [bobId.publicKeyHex, ...eph], url, bobId);
+    assert.equal(found[bobId.publicKeyHex], bob.circuit, 'identity entry survives');
+    assert.equal(found[eph[5]], bob.circuit, 'newest ephemeral key resolves');
+    assert.ok(Object.keys(found).length <= 4, `at most 4 keys per device, got ${Object.keys(found).length}`);
+    assert.equal(found[eph[0]], undefined, 'oldest ephemeral key was dropped');
+    // Put Bob's plain identity registration back for the tests that follow.
+    await registerWithRelay(B.http, bobId.publicKeyHex, bob.circuit, bob.node.peerId.toString(), bobId.privateKey, url);
+  });
+
   test('a 3 MB file (the path voice notes use) crosses both relays intact', async () => {
     const bobX = await ed25519ToX25519(bobId.publicKey, bobId.privateKey);
     let received: Uint8Array | undefined;
