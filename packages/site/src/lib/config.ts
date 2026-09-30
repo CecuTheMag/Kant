@@ -11,7 +11,7 @@ export const SITE = {
   githubUrl: "https://github.com/CecuTheMag/Kant",
 };
 
-const releaseBase = `${SITE.githubUrl}/releases/download/v0.4.2-beta`;
+const releaseBase = `${SITE.githubUrl}/releases/download/0.4.2-beta`;
 
 export const RELEASE = {
   version: "0.4.2",
