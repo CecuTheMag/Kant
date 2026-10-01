@@ -1,0 +1,56 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security problems don't go here.** Report them privately, as described in [SECURITY.md](https://github.com/CecuTheMag/Kant/blob/main/SECURITY.md).
+        Please don't paste keys, passwords, backup files or message contents.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - Android app
+        - Desktop app
+        - Web app
+        - CLI
+        - Relay
+        - Website
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: App or relay version, e.g. 0.4.3-beta.
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Device and OS, and which relay you use (public, self-hosted, or LAN).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The in-app debug log or relay output, if you have it. Remove anything private first.
+      render: text
