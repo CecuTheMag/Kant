@@ -13,7 +13,7 @@ import {
   createNode, getRelayInfo, sendPing,
   ratchetEncrypt, ratchetDecrypt,
   initSenderRatchet, initReceiverRatchet,
-  x3dhSend, x3dhReceive, ed25519ToX25519,
+  x3dhSend, x3dhReceive, x3dhInitMatchesIdentity, ed25519ToX25519, identityForPeerId,
   fetchPreKeyBundle, buildPrivateBundle,
   addContact, getContacts, deleteContact,
   saveMessage, getConversation,
@@ -166,8 +166,16 @@ export async function main() {
           if (parsed.type === 'x3dh-init') {
             if (!identity) return;
             try {
-              const privateBundle    = await buildPrivateBundle(identity);
+              // Inits arrive directly, so the Noise-authenticated PeerID names the
+              // sender: its identity key must be the one the init carries, and it
+              // must be a contact — this session replaces the one on screen.
+              const sender           = identityForPeerId(fromPeer);
               const aliceIdentityPub = new Uint8Array(Object.values(parsed.aliceIdentityPublic));
+              if (!await x3dhInitMatchesIdentity(sender, aliceIdentityPub) || !contacts.some(c => c.publicKeyHex === sender)) {
+                log(`⚠️ Ignored handshake from ${fromPeer.slice(0, 12)}… (not a contact, or identity key mismatch)`);
+                return;
+              }
+              const privateBundle    = await buildPrivateBundle(identity);
               const ephemeralPub     = new Uint8Array(Object.values(parsed.ephemeralPublic));
               const sharedSecret     = await x3dhReceive(privateBundle, aliceIdentityPub, ephemeralPub);
               ratchet                = await initReceiverRatchet(sharedSecret, privateBundle.signedPreKeypair);
@@ -256,6 +264,8 @@ export async function main() {
       ratchet = await initSenderRatchet(sharedSecret, bobBundle.signedPreKey);
       const handshake = JSON.stringify({
         type: 'x3dh-init',
+        // Receivers accept an init only for the identity this key derives from.
+        fromPubKeyHex: identity.publicKeyHex,
         aliceIdentityPublic: Array.from(myX25519.publicKey),
         ephemeralPublic: Array.from(ephemeralPublic),
       });

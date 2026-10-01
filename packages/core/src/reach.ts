@@ -12,7 +12,7 @@
  * byte of payload is sent. A bad hint can make a dial fail, never redirect it.
  */
 import { publicKeyFromRaw } from '@libp2p/crypto/keys';
-import { peerIdFromPublicKey } from '@libp2p/peer-id';
+import { peerIdFromPublicKey, peerIdFromString } from '@libp2p/peer-id';
 
 const HEX64 = /^[0-9a-f]{64}$/;
 const PEER_ID_RE = /^12D3KooW[1-9A-HJ-NP-Za-km-z]{44}$/;
@@ -35,6 +35,18 @@ export function peerIdForIdentity(publicKeyHex: string): string {
   if (peerIds.size >= 1024) peerIds.clear();
   peerIds.set(hex, id);
   return id;
+}
+
+/** The Kant identity (Ed25519 public key hex) behind a PeerID, or '' if it has none. */
+export function identityForPeerId(peerId: string): string {
+  if (typeof peerId !== 'string' || !PEER_ID_RE.test(peerId)) return '';
+  try {
+    const key = peerIdFromString(peerId).publicKey;
+    if (key?.type !== 'Ed25519') return '';
+    return Array.from(key.raw, b => b.toString(16).padStart(2, '0')).join('');
+  } catch {
+    return '';
+  }
 }
 
 /**

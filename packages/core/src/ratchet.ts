@@ -186,6 +186,22 @@ export async function x3dhReceive(
   return sharedSecret;
 }
 
+/**
+ * Whether an x3dh-init's sender X25519 key is the one derived from the Ed25519
+ * identity it claims. Only then does DH3 (SPK_B × IK_A) require that identity's
+ * private key. Without this check anyone could open a session under a
+ * contact's name using their own identity key, and be shown as that contact.
+ */
+export async function x3dhInitMatchesIdentity(claimedEd25519Hex: unknown, aliceIdentityPub: Uint8Array): Promise<boolean> {
+  if (typeof claimedEd25519Hex !== 'string' || !/^[0-9a-fA-F]{64}$/.test(claimedEd25519Hex)) return false;
+  const sodium = await getSodium();
+  if (aliceIdentityPub.length !== sodium.crypto_scalarmult_BYTES) return false;
+  let expected: Uint8Array;
+  try { expected = sodium.crypto_sign_ed25519_pk_to_curve25519(sodium.from_hex(claimedEd25519Hex)); }
+  catch { return false; } // not a valid Ed25519 point
+  return sodium.memcmp(expected, aliceIdentityPub);
+}
+
 export async function initSenderRatchet(sharedSecret: Uint8Array, bobSignedPrePublic: Uint8Array): Promise<RatchetState> {
   const sodium = await getSodium();
   const [rootKey0, initialChainKey] = await kdf(sodium, sharedSecret, 'ratchet-init');

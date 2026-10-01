@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@kant/core": "file:../core",
-    "@multiformats/multiaddr": "13.0.1",
+    "@multiformats/multiaddr": "13.0.3",
     "blessed": "^0.1.81",
-    "libp2p": "3.1.7",
+    "libp2p": "3.3.11",
     "libsodium-wrappers-sumo": "0.8.2"
   },
   "devDependencies": {

@@ -328,7 +328,6 @@ export async function fetchPreKeyBundle(node: Libp2p, peerCircuitAddr: string, e
 }
 
 async function fetchPreKeyBundleUnlocked(node: Libp2p, peerCircuitAddr: string, expectedEd25519PubHex?: string): Promise<X3DHPublicBundle> {
-  const sodium = await getSodium();
   let conn: any;
   let lastError: any;
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -349,8 +348,16 @@ async function fetchPreKeyBundleUnlocked(node: Libp2p, peerCircuitAddr: string, 
   } catch (e: any) {
     throw new Error(`fetchPreKeyBundle(${peerCircuitAddr}) readFramed failed: ${e?.message ?? e}`);
   }
-  const json = JSON.parse(new TextDecoder().decode(raw));
+  return verifyPreKeyBundle(JSON.parse(new TextDecoder().decode(raw)), expectedEd25519PubHex);
+}
 
+/**
+ * Check a peer's prekey response and turn it into a bundle, or throw. The SPK
+ * must be signed by the Ed25519 key we expect (when given), and the X25519
+ * identity key must be the one derived from that Ed25519 key.
+ */
+export async function verifyPreKeyBundle(json: any, expectedEd25519PubHex?: string): Promise<X3DHPublicBundle> {
+  const sodium = await getSodium();
   const identityKey  = new Uint8Array(json.identityKey);
   const signedPreKey = new Uint8Array(json.signedPreKey);
 
@@ -373,6 +380,13 @@ async function fetchPreKeyBundleUnlocked(node: Libp2p, peerCircuitAddr: string, 
 
   const valid = sodium.crypto_sign_verify_detached(spkSig, signedPreKey, ed25519Pub);
   if (!valid) throw new Error('SPK signature verification failed — possible MITM');
+
+  // The X25519 identity key is not signed; it must be the one derived from the
+  // (verified) Ed25519 key, never whatever the response claims.
+  const derivedIdentityKey = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Pub);
+  if (identityKey.length !== derivedIdentityKey.length || !sodium.memcmp(identityKey, derivedIdentityKey)) {
+    throw new Error('Pre-key bundle identity key does not match its signing key — possible MITM');
+  }
 
   const bundle: X3DHPublicBundle = { identityKey, signedPreKey };
   if (json.opkPublicKey?.length && typeof json.opkId === 'string') {

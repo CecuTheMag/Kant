@@ -25,11 +25,11 @@
   "pnpm": {
     "overrides": {
       "builder-util-runtime": "9.7.0",
-      "fast-uri": "3.1.6",
-      "ip-address": "10.3.1",
-      "js-yaml": "4.3.1",
+      "fast-uri": "3.1.8",
+      "ip-address": "10.7.2",
+      "js-yaml": "4.3.2",
       "qs": "6.16.0",
-      "hono": "4.12.34",
+      "hono": "4.13.12",
       "@hono/node-server": "1.19.15"
     },
     "ignoredBuiltDependencies": [

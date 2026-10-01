@@ -28,6 +28,7 @@ import { yamux } from '@libp2p/yamux';
 import { circuitRelayServer } from '@libp2p/circuit-relay-v2';
 import { identify } from '@libp2p/identify';
 import { createServer } from 'http';
+import { createHash, timingSafeEqual } from 'crypto';
 import { createRequire } from 'module';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from 'fs';
 import { join, dirname } from 'path';
@@ -37,6 +38,8 @@ import { log } from './logger.js';
 import { Federation } from './federationRuntime.js';
 import { REGISTRATION_FRESH_MS, pickRegistration } from './federation.js';
 import { RELAY_DATA_LIMIT, RELAY_DURATION_LIMIT_MS, connectionLimits } from './limits.js';
+import { mayWriteRegistryKey } from './registry.js';
+import { PUSH_MAX_BODY, PUSH_MAX_TOKEN, isAllowedWebPushEndpoint, parseWebPushSubscription, pushSubscribeMessage, pushUnsubscribeMessage, readPushRequest, verifyPushSignature } from './pushAuth.js';
 import { peerIdFromString } from '@libp2p/peer-id';
 import { registry, circuitsClosed,
          peersConnected, peersDisconnected, peersActive, registryEntries, registryEvictions,
@@ -60,6 +63,13 @@ const RELAY_INFO_PORT = parseInt(process.env.RELAY_INFO_PORT ?? '3001');
 // socket into the test runner. Docker's restart policy then starts a fresh
 // process with the persisted seed, which is the failure mode users see.
 const LAB_CONTROL_TOKEN = process.env.RELAY_LAB_CONTROL_TOKEN ?? '';
+
+/** `Authorization: Bearer <LAB_CONTROL_TOKEN>`, compared in constant time. */
+function hasControlToken(header: string | undefined): boolean {
+  if (!LAB_CONTROL_TOKEN || typeof header !== 'string') return false;
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(header), digest(`Bearer ${LAB_CONTROL_TOKEN}`));
+}
 
 // ── Deterministic PeerID ──────────────────────────────────────────────────────
 // Persist a seed so the relay keeps the same PeerID (and thus the same circuit
@@ -407,6 +417,10 @@ async function sendWebPushNotification(sub: { endpoint: string; keys: { p256dh: 
     pushWakes.inc({ transport: 'webpush', result: 'vapid_not_configured' });
     return;
   }
+  if (!isAllowedWebPushEndpoint(sub.endpoint)) {
+    pushWakes.inc({ transport: 'webpush', result: 'failed' });
+    return;
+  }
   const { createCipheriv, randomBytes } = await import('crypto');
   const subtle = (await import('crypto')).webcrypto.subtle;
   try {
@@ -711,7 +725,7 @@ const httpServer = createServer((req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/__lab/restart' && LAB_CONTROL_TOKEN) {
-    if (req.headers.authorization !== `Bearer ${LAB_CONTROL_TOKEN}`) {
+    if (!hasControlToken(req.headers.authorization)) {
       res.writeHead(403); res.end(); return;
     }
     res.writeHead(202, { 'Content-Type': 'application/json' });
@@ -739,7 +753,7 @@ const httpServer = createServer((req, res) => {
       res.end(JSON.stringify({ error: 'authorization header required' }));
       return;
     }
-    if (auth !== `Bearer ${LAB_CONTROL_TOKEN}`) {
+    if (!hasControlToken(auth)) {
       log.warn({ event: 'admin.auth.bad_token' }, 'admin request with bad token');
       res.writeHead(403, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'invalid authorization token' }));
@@ -868,6 +882,18 @@ const httpServer = createServer((req, res) => {
           end();
           return;
         }
+        const requestedKeys = requestedKeysOf(data);
+        // The signature covers only the signing key; never let an unproven key
+        // overwrite another device's entry (registry.ts).
+        for (const key of requestedKeys) {
+          if (!mayWriteRegistryKey(peerRegistry.get(key), key, verifyKeyHex, data.peerId ?? '')) {
+            registerRequests.inc({ result: 'key_taken' });
+            res.writeHead(409, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'key is registered by another device' }));
+            end();
+            return;
+          }
+        }
         // Record the nonce with an expiry; the age-based sweep reclaims it.
         usedNonces.set(data.nonce, Date.now() + NONCE_TTL_MS);
         const entry = {
@@ -875,7 +901,6 @@ const httpServer = createServer((req, res) => {
           peerId: data.peerId ?? '',
           registeredAt: Date.now(),
         };
-        const requestedKeys = requestedKeysOf(data);
         if (REGISTER_REQUIRES_CONNECTION) capDeviceKeys(data.peerId, requestedKeys);
         let newKeyCount = 0;
         for (const key of requestedKeys) {
@@ -1098,67 +1123,79 @@ const httpServer = createServer((req, res) => {
     return;
   }
 
-  if (req.method === 'POST' && req.url === '/push/subscribe') {
+  if (req.method === 'POST' && (req.url === '/push/subscribe' || req.url === '/push/unsubscribe')) {
+    const subscribing = req.url === '/push/subscribe';
+    const reply = (status: number, payload: Record<string, unknown>) => {
+      res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(payload));
+    };
     let body = '';
-    req.on('data', (c: Buffer) => { body += c.toString(); });
+    let bodySize = 0;
+    req.on('data', (chunk: Buffer) => {
+      bodySize += chunk.length;
+      if (bodySize > PUSH_MAX_BODY) { req.destroy(); return; }
+      body += chunk;
+    });
     req.on('end', async () => {
       try {
-        const { identityKeyHex, token, type } = JSON.parse(body);
-        if (!identityKeyHex || !token || !type) {
-          res.writeHead(400); res.end(JSON.stringify({ error: 'missing fields' })); return;
+        // Only the identity itself may change where its wake-ups go (pushAuth.ts).
+        const data = JSON.parse(body);
+        const request = readPushRequest(data, Date.now(), sodium);
+        if ('error' in request) { reply(400, { error: request.error }); return; }
+        if (usedNonces.has(request.nonce)) { reply(400, { error: 'nonce already used' }); return; }
+        const { identityKeyHex } = request;
+
+        if (!subscribing) {
+          if (!verifyPushSignature(sodium, identityKeyHex, pushUnsubscribeMessage(request.timestamp, request.nonce), request.sig)) {
+            reply(403, { error: 'invalid signature' }); return;
+          }
+          usedNonces.set(request.nonce, Date.now() + NONCE_TTL_MS);
+          pushSubscriptions.delete(identityKeyHex);
+          lastWakeAt.delete(identityKeyHex);
+          publishPushMetrics();
+          if (PUSH_PROXY_URL) void callPushProxy('/register', 'DELETE', JSON.stringify({ identityKeyHex }));
+          reply(200, { ok: true });
+          return;
         }
+
+        const { token, type } = data;
+        if ((type !== 'fcm' && type !== 'webpush') || typeof token !== 'string' || !token || token.length > PUSH_MAX_TOKEN) {
+          reply(400, { error: 'a push type and token are required' }); return;
+        }
+        if (!verifyPushSignature(sodium, identityKeyHex, pushSubscribeMessage(request.timestamp, request.nonce, type, token), request.sig)) {
+          reply(403, { error: 'invalid signature' }); return;
+        }
+        let record: PushRecord;
+        if (type === 'webpush') {
+          const subscription = parseWebPushSubscription(token);
+          if (!subscription) { reply(400, { error: 'unsupported web push subscription' }); return; }
+          record = { type: 'webpush', subscription };
+        } else {
+          record = { type: 'fcm', token };
+        }
+        if (!pushSubscriptions.has(identityKeyHex) && pushSubscriptions.size >= MAX_REGISTRY_ENTRIES) {
+          res.setHeader('Retry-After', '30');
+          reply(503, { error: 'push subscription capacity reached' }); return;
+        }
+        usedNonces.set(request.nonce, Date.now() + NONCE_TTL_MS);
         if (type === 'fcm') {
           // Forward FCM token to the push proxy — relay never holds Firebase credentials.
-          if (PUSH_PROXY_URL) {
-            const registered = await callPushProxy('/register', 'POST', JSON.stringify({ identityKeyHex, token }));
-            if (!registered.ok) {
-              res.writeHead(502); res.end(JSON.stringify({ error: 'push proxy unavailable' })); return;
-            }
-          } else {
+          if (!PUSH_PROXY_URL) {
             // Accepting the token here would report success to a device that can
             // never actually be woken. Fail loudly so the operator sees it.
             log.error({ event: 'push.subscribe_rejected', key: identityKeyHex.slice(0, 12) },
               'FCM subscribe rejected: PUSH_PROXY_URL is not configured on this relay');
-            res.writeHead(501, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-            res.end(JSON.stringify({ error: 'relay has no push proxy configured' }));
+            reply(501, { error: 'relay has no push proxy configured' });
             return;
           }
-          // Also keep a local record so sendPushNotification knows to call the proxy for this key.
-          pushSubscriptions.set(identityKeyHex, { type: 'fcm', token });
-        } else if (type === 'webpush') {
-          const sub = JSON.parse(token);
-          pushSubscriptions.set(identityKeyHex, { type: 'webpush', subscription: sub });
-        } else {
-          res.writeHead(400); res.end(JSON.stringify({ error: 'unknown type' })); return;
+          const registered = await callPushProxy('/register', 'POST', JSON.stringify({ identityKeyHex, token }));
+          if (!registered.ok) { reply(502, { error: 'push proxy unavailable' }); return; }
         }
+        // Also keep a local record so sendPushNotification knows how to wake this key.
+        pushSubscriptions.set(identityKeyHex, record);
         publishPushMetrics();
         log.info({ event: 'push.subscribe', key: identityKeyHex.slice(0, 12), type }, 'push subscription registered');
-        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-        res.end(JSON.stringify({ ok: true }));
-      } catch {
-        res.writeHead(400); res.end();
-      }
-    });
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/push/unsubscribe') {
-    let body = '';
-    req.on('data', (c: Buffer) => { body += c.toString(); });
-    req.on('end', () => {
-      try {
-        const { identityKeyHex } = JSON.parse(body);
-        if (identityKeyHex) {
-          pushSubscriptions.delete(identityKeyHex);
-          lastWakeAt.delete(identityKeyHex);
-          publishPushMetrics();
-          // Also deregister from the proxy
-          if (PUSH_PROXY_URL) {
-            void callPushProxy('/register', 'DELETE', JSON.stringify({ identityKeyHex }));
-          }
-        }
-        res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
-        res.end(JSON.stringify({ ok: true }));
+        reply(200, { ok: true });
       } catch {
         res.writeHead(400); res.end();
       }

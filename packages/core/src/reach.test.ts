@@ -6,7 +6,7 @@ import { peerIdFromPrivateKey } from '@libp2p/peer-id';
 import { getSodium } from './sodium.js';
 import { DB_NAME } from './db.js';
 import { addContact, dropForeignContactAddr, getContact, setContactRelay, updateContactAddr } from './contacts.js';
-import { addrReaches, contactRelayUrl, peerIdForIdentity } from './reach.js';
+import { addrReaches, contactRelayUrl, identityForPeerId, peerIdForIdentity } from './reach.js';
 import { lookupAtRelay } from './index.js';
 
 const RELAY = '12D3KooWRBy97UB99e3J6hiPesre1MZeuNQvfan4gBziswrRJsNK';
@@ -40,6 +40,19 @@ describe('peerIdForIdentity', () => {
   test('is empty for malformed keys', () => {
     assert.equal(peerIdForIdentity('zz'), '');
     assert.equal(peerIdForIdentity('a'.repeat(63)), '');
+  });
+});
+
+describe('identityForPeerId', () => {
+  test('recovers the identity a node runs under', async () => {
+    const { hex, peerId } = await identity();
+    assert.equal(identityForPeerId(peerId), hex);
+  });
+
+  test('is empty for anything that is not an Ed25519 PeerID', () => {
+    for (const value of ['', 'nope', RELAY.slice(1), 'QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N', undefined as unknown as string]) {
+      assert.equal(identityForPeerId(value), '', String(value));
+    }
   });
 });
 

@@ -4,7 +4,7 @@ import {
   createNode, getRelayInfo, sendPing, sendReceipt,
   ratchetEncrypt, ratchetDecrypt,
   initSenderRatchet, initReceiverRatchet,
-  x3dhSend, x3dhReceive, ed25519ToX25519,
+  x3dhSend, x3dhReceive, x3dhInitMatchesIdentity, ed25519ToX25519,
   fetchPreKeyBundle, buildPrivateBundle,
   addContact, getContact, getContacts, deleteContact, updateContactAddr,
   setContactRelay, dropForeignContactAddr, lookupAtRelay, peerIdForIdentity, addrReaches, contactRelayUrl,
@@ -1291,7 +1291,17 @@ export function useKant() {
           // ── X3DH handshake ────────────────────────────────────────────────
           if (parsed.type === 'x3dh-init') {
             if (!identityRef.current) return;
-            const senderHex: string = parsed.fromPubKeyHex ?? '';
+            const senderHex: string = typeof parsed.fromPubKeyHex === 'string' ? parsed.fromPubKeyHex.toLowerCase() : '';
+            // The init is plaintext and may come through an onion hop, so the
+            // claimed sender is only trusted when the identity key it carries
+            // is the one derived from that sender's public key. Checked before
+            // anything else: even the tiebreak below drops a live session.
+            let aliceIdentityPub: Uint8Array;
+            try { aliceIdentityPub = new Uint8Array(Object.values(parsed.aliceIdentityPublic)); } catch { return; }
+            if (!await x3dhInitMatchesIdentity(senderHex, aliceIdentityPub)) {
+              addLog(`⚠️ Ignored x3dh-init: identity key does not belong to ${senderHex.slice(0, 12) || '?'}…`);
+              return;
+            }
 
             // Deterministic tiebreak: the peer with the lexicographically
             // larger public key becomes the sender; the other becomes the
@@ -1343,7 +1353,6 @@ export function useKant() {
 
             try {
               const privateBundle    = await buildPrivateBundle(identityRef.current);
-              const aliceIdentityPub = new Uint8Array(Object.values(parsed.aliceIdentityPublic));
               const ephemeralPub     = new Uint8Array(Object.values(parsed.ephemeralPublic));
               // Burn the OPK if the sender used one — one-time use
               let opkPrivateKey: Uint8Array | undefined;

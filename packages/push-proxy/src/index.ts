@@ -13,7 +13,7 @@
 // This proxy intentionally never stores message content. It only knows which
 // device token corresponds to an identity key, and it triggers a wake ping.
 
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
@@ -42,6 +42,14 @@ function failFast(): never {
 
 if (!FCM_PROJECT_ID || !FCM_SERVICE_ACCOUNT) {
   failFast();
+}
+
+// The proxy is reachable from the internet (Caddy routes /proxy/*), and every
+// write endpoint changes which device an identity's wake-ups reach. Without a
+// secret anyone could re-point or delete them, so refuse to run without one.
+if (!SECRET) {
+  log.error({ event: 'config.invalid', required: ['PUSH_PROXY_SECRET'] }, 'Push proxy requires PUSH_PROXY_SECRET');
+  process.exit(1);
 }
 
 try {
@@ -266,8 +274,10 @@ function parseJsonBody<T>(req: IncomingMessage): Promise<T> {
 }
 
 function checkSecret(req: IncomingMessage): boolean {
-  if (!SECRET) return true;
-  return req.headers.authorization === `Bearer ${SECRET}`;
+  const header = req.headers.authorization;
+  if (!SECRET || typeof header !== 'string') return false;
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(header), digest(`Bearer ${SECRET}`));
 }
 
 function sendJson(res: ServerResponse, statusCode: number, payload: Record<string, unknown>): void {

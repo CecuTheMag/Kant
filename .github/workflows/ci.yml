@@ -35,6 +35,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/app exec tsc --noEmit -p .
+      - run: pnpm --dir packages/app test
       - run: pnpm --dir packages/app exec vite build
 
   relay:
@@ -49,6 +50,19 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/relay build
+      - run: pnpm --dir packages/relay test
+
+  audit:
+    name: Dependencies — known vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm audit --prod --audit-level high
 
   site:
     name: Website — typecheck & build

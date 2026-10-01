@@ -19,17 +19,17 @@ export {
   generateX25519Keypair, ed25519ToX25519, ed25519PubToX25519,
   x3dhSend, x3dhReceive,
   initSenderRatchet, initReceiverRatchet,
-  ratchetEncrypt, ratchetDecrypt
+  ratchetEncrypt, ratchetDecrypt, x3dhInitMatchesIdentity
 } from './ratchet.js';
 export type { X25519Keypair, X3DHPublicBundle, X3DHPrivateBundle, RatchetState, EncryptedMessage } from './ratchet.js';
 export { saveRatchet, loadRatchets, deleteRatchet } from './ratchetStore.js';
 export { configureFederation, ensureRelayConnection, routeDialAddr, federatedRelays, parseCircuit, isTunnelMultiaddr } from './federation.js';
 export type { RelayFederationInfo } from './federation.js';
 export { DB_NAME } from './db.js';
-export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, findSPKByPublicKey, replenishOPKPool, reserveOPK, getOPK, burnOPK, PREKEY_PROTOCOL } from './prekey.js';
+export { fetchPreKeyBundle, verifyPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, findSPKByPublicKey, replenishOPKPool, reserveOPK, getOPK, burnOPK, PREKEY_PROTOCOL } from './prekey.js';
 
 export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactRelay, dropForeignContactAddr, setContactTrust, normalizeContact, addContactCaps } from './contacts.js';
-export { peerIdForIdentity, addrReaches, contactRelayUrl } from './reach.js';
+export { peerIdForIdentity, identityForPeerId, addrReaches, contactRelayUrl } from './reach.js';
 export type { Contact } from './contacts.js';
 
 export { saveMessage, hasMessage, setMessageStatus, editStoredMessage, setStoredReaction, deleteStoredMessage, removeStoredMessage, markOpSynced, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
@@ -482,6 +482,26 @@ export async function sendPing(node: Libp2p, peerMultiaddr: string, message: str
     clog(`PING out → ${dst}… [${kind}] FAIL: ${String(e?.message ?? e).replace(/[\r\n]/g, ' ').slice(0, 120)}`);
     throw e;
   }
+}
+
+/**
+ * Body for the relay's /push/subscribe (with `push`) or /push/unsubscribe:
+ * only the identity itself may change which device its wake-ups go to, so the
+ * request is signed with the identity key. The signed strings must match
+ * packages/relay/src/pushAuth.ts.
+ */
+export async function signPushRequest(
+  identity: { publicKeyHex: string; privateKey: Uint8Array },
+  push?: { type: 'fcm' | 'webpush'; token: string },
+): Promise<Record<string, unknown>> {
+  const sodium = await getSodium();
+  const timestamp = Date.now();
+  const nonce = sodium.to_hex(sodium.randombytes_buf(16));
+  const message = push
+    ? `kant-push-subscribe|${timestamp}|${nonce}|${push.type}|${push.token}`
+    : `kant-push-unsubscribe|${timestamp}|${nonce}`;
+  const sig = sodium.to_hex(sodium.crypto_sign_detached(new TextEncoder().encode(message), identity.privateKey));
+  return { identityKeyHex: identity.publicKeyHex, timestamp, nonce, sig, ...push };
 }
 
 export async function registerWithRelay(httpPort: number, publicKeyHex: string, circuitAddr: string, clientPeerId: string, privateKey: Uint8Array, explicitUrl?: string, identityOverride?: { publicKeyHex: string; privateKey: Uint8Array }): Promise<void> {

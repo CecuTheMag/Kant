@@ -17,7 +17,7 @@ It never stores message content. It only wakes the app so it can reconnect and f
 
 - Firebase credentials live only on the proxy host
 - relay operators need only `PUSH_PROXY_URL` and `PUSH_PROXY_SECRET`
-- wake requests are authenticated with a bearer token when `PUSH_PROXY_SECRET` is configured
+- every write request (`/wake`, `/register`) must carry `Authorization: Bearer $PUSH_PROXY_SECRET`; the proxy refuses to start without a secret
 - token storage is persisted atomically with mode `0600` when `PUSH_PROXY_DATA_FILE` is set
 - no payload data is sent through the FCM wake event
 

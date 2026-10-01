@@ -10,7 +10,7 @@ import {
   createNode, getRelayInfo, connectToRelay, sendPing,
   ratchetEncrypt, ratchetDecrypt,
   initSenderRatchet, initReceiverRatchet,
-  x3dhSend, x3dhReceive, ed25519ToX25519,
+  x3dhSend, x3dhReceive, x3dhInitMatchesIdentity, ed25519ToX25519, identityForPeerId,
   fetchPreKeyBundle, buildPrivateBundle,
   addContact, getContacts, deleteContact,
   startDiscovery, startQueueRetry,
@@ -178,9 +178,16 @@ async function setupNode(relayUrl: string, identity: StoredKeypair, opts?: { nee
     if (parsed.type === 'x3dh-init') {
       dbg('CRYPTO', `X3DH-INIT from peer=${fromPeer.slice(0,12)}…`);
       try {
+        // Sessions are keyed by the Noise-authenticated PeerID, so the identity
+        // key in the init must be the one that PeerID was derived from.
+        const alicePub = new Uint8Array(Object.values(parsed.aliceIdentityPublic));
+        if (!await x3dhInitMatchesIdentity(identityForPeerId(fromPeer), alicePub)) {
+          dbg('CRYPTO', `X3DH-INIT REJECTED: identity key does not belong to peer=${fromPeer.slice(0,12)}…`);
+          log('Handshake rejected: identity key does not match the sending peer');
+          return;
+        }
         dbg('CRYPTO', 'Building private bundle…');
         const bundle = await buildPrivateBundle(identity);
-        const alicePub = new Uint8Array(Object.values(parsed.aliceIdentityPublic));
         const ephPub = new Uint8Array(Object.values(parsed.ephemeralPublic));
         dbg('CRYPTO', `x3dhReceive alicePub=${alicePub.length}B ephPub=${ephPub.length}B`);
         const ss = await x3dhReceive(bundle, alicePub, ephPub);
@@ -552,6 +559,8 @@ async function cmdSend(opts: Opts) {
       const peerAddr = `/p2p/${targetPeerId}`;
       const handshake = JSON.stringify({
         type: 'x3dh-init',
+        // Receivers accept an init only for the identity this key derives from.
+        fromPubKeyHex: id.publicKeyHex,
         aliceIdentityPublic: Array.from(myX25519.publicKey),
         ephemeralPublic: Array.from(ephemeralPublic),
       });

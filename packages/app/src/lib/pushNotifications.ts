@@ -16,6 +16,10 @@
  */
 
 import { Capacitor } from '@capacitor/core';
+import { signPushRequest } from '@kant/core';
+
+/** The identity push registrations are signed with — the relay only lets an identity change its own. */
+type PushIdentity = { publicKeyHex: string; privateKey: Uint8Array };
 
 const SW_PATH = '/sw.js';
 
@@ -27,15 +31,15 @@ function isCapacitor(): boolean {
   return Capacitor.isNativePlatform();
 }
 
-export async function setupPushNotifications(relayHttpUrl: string, identityKeyHex: string): Promise<void> {
+export async function setupPushNotifications(relayHttpUrl: string, identity: PushIdentity): Promise<void> {
   if (isCapacitor()) {
-    await setupCapacitorPush(relayHttpUrl, identityKeyHex);
+    await setupCapacitorPush(relayHttpUrl, identity);
   } else {
-    await setupWebPush(relayHttpUrl, identityKeyHex);
+    await setupWebPush(relayHttpUrl, identity);
   }
 }
 
-export async function teardownPushNotifications(relayHttpUrl: string, identityKeyHex: string): Promise<void> {
+export async function teardownPushNotifications(relayHttpUrl: string, identity: PushIdentity): Promise<void> {
   // Stop the persistent registration listener from re-registering this identity
   // if FCM rotates the token after the user signs out.
   pushTarget = null;
@@ -44,7 +48,7 @@ export async function teardownPushNotifications(relayHttpUrl: string, identityKe
     await fetch(`${base}/push/unsubscribe`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ identityKeyHex }),
+      body: JSON.stringify(await signPushRequest(identity)),
     });
   } catch { /* best-effort */ }
 
@@ -66,10 +70,10 @@ export async function teardownPushNotifications(relayHttpUrl: string, identityKe
  * module-level cell so a reconnect to a different relay retargets the existing
  * listener rather than installing a second one.
  */
-let pushTarget: { relayHttpUrl: string; identityKeyHex: string } | null = null;
+let pushTarget: { relayHttpUrl: string; identity: PushIdentity } | null = null;
 let listenersInstalled = false;
 
-async function setupCapacitorPush(relayHttpUrl: string, identityKeyHex: string): Promise<void> {
+async function setupCapacitorPush(relayHttpUrl: string, identity: PushIdentity): Promise<void> {
   // FCM without a Firebase config fails in native code ("Default FirebaseApp is
   // not initialized"), which no JS try/catch can intercept — the app just
   // closes. Skip push entirely; the foreground service still keeps the relay
@@ -87,7 +91,7 @@ async function setupCapacitorPush(relayHttpUrl: string, identityKeyHex: string):
     const { receive } = await PushNotifications.requestPermissions();
     if (receive !== 'granted') return;
 
-    pushTarget = { relayHttpUrl, identityKeyHex };
+    pushTarget = { relayHttpUrl, identity };
 
     // The listeners live for the lifetime of the app, deliberately.
     //
@@ -101,7 +105,7 @@ async function setupCapacitorPush(relayHttpUrl: string, identityKeyHex: string):
       await PushNotifications.addListener('registration', (token) => {
         const target = pushTarget;
         if (!target) return;
-        void registerTokenWithRelay(target.relayHttpUrl, target.identityKeyHex, token.value, 'fcm')
+        void registerTokenWithRelay(target.relayHttpUrl, target.identity, token.value, 'fcm')
           .catch((err) => console.warn('[push] token registration failed', err));
       });
       await PushNotifications.addListener('registrationError', (err) => {
@@ -121,7 +125,7 @@ async function setupCapacitorPush(relayHttpUrl: string, identityKeyHex: string):
  * Browser (PWA) — Web Push / service worker path
  * ------------------------------------------------------------------ */
 
-async function setupWebPush(relayHttpUrl: string, identityKeyHex: string): Promise<void> {
+async function setupWebPush(relayHttpUrl: string, identity: PushIdentity): Promise<void> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
   const permission = await Notification.requestPermission();
@@ -145,7 +149,7 @@ async function setupWebPush(relayHttpUrl: string, identityKeyHex: string): Promi
       applicationServerKey: urlBase64ToArrayBuffer(key),
     });
 
-    await registerTokenWithRelay(relayHttpUrl, identityKeyHex, JSON.stringify(sub.toJSON()), 'webpush');
+    await registerTokenWithRelay(relayHttpUrl, identity, JSON.stringify(sub.toJSON()), 'webpush');
   } catch (err) {
     console.warn('[push] web push setup failed', err);
   }
@@ -157,7 +161,7 @@ async function setupWebPush(relayHttpUrl: string, identityKeyHex: string): Promi
 
 async function registerTokenWithRelay(
   relayHttpUrl: string,
-  identityKeyHex: string,
+  identity: PushIdentity,
   token: string,
   type: 'fcm' | 'webpush',
 ): Promise<void> {
@@ -168,7 +172,8 @@ async function registerTokenWithRelay(
       const response = await fetch(`${base}/push/subscribe`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ identityKeyHex, token, type }),
+        // Signed afresh on every attempt: the relay refuses a reused nonce.
+        body: JSON.stringify(await signPushRequest(identity, { type, token })),
       });
       if (response.ok) return;
       error = new Error(`push subscription rejected with HTTP ${response.status}`);

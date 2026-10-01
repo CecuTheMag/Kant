@@ -621,11 +621,11 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
      in-memory pushSubscriptions map stays current after relay restarts. */
   const lastPushCircuitRef = useRef('');
   useEffect(() => {
-    if (!kant.circuitAddr || !meHex || !kant.activeRelayUrl) return;
+    if (!kant.circuitAddr || !kant.identity || !kant.activeRelayUrl) return;
     if (kant.circuitAddr === lastPushCircuitRef.current) return;
     lastPushCircuitRef.current = kant.circuitAddr;
-    void setupPushNotifications(kant.activeRelayUrl, meHex);
-  }, [kant.circuitAddr, meHex, kant.activeRelayUrl]);
+    void setupPushNotifications(kant.activeRelayUrl, kant.identity);
+  }, [kant.circuitAddr, kant.identity, kant.activeRelayUrl]);
 
   /* Reset push tracking when identity changes (wipe + recreate). */
   useEffect(() => {

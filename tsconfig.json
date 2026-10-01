@@ -20,5 +20,5 @@
     "types": ["node"]
   },
   "include": ["packages/**/*.ts", "packages/**/*.tsx"],
-  "exclude": ["node_modules", "packages/site"]
+  "exclude": ["node_modules", "packages/site", "packages/desktop/relay-runtime", "packages/desktop/release"]
 }

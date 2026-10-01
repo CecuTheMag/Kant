@@ -31,6 +31,7 @@ Client invariants:
 - **The microphone is live only while recording.** Every exit path (send, cancel, leaving the chat, a failed start) stops the capture tracks; audio goes from memory straight into the encrypted file transfer.
 - **Received files are untrusted.** Previews decrypt to memory and render only through inert elements (text nodes, `<img>`, `<audio>`, `<video>`): no HTML is rendered, remote images inside documents are never fetched, and links leave the app only for `http(s)`/`mailto` after the user confirms. Plaintext touches disk only for "Open with…", under `cache/kant-open/`, which is swept at cold start, on resume and on erase.
 - **"Erase this device" clears every IndexedDB store** (enumerated from the database, not a hard-coded list), identifying local settings and temporary files, with networking stopped first.
+- **A session is only ever filed under the identity that can complete it.** An `x3dh-init` names its sender in plaintext, so the receiver checks that the X25519 identity key it carries is the one derived from that sender's Ed25519 key before touching any session (`x3dhInitMatchesIdentity`). Without the check anyone holding a contact's public prekey bundle could open a session under that contact's name.
 - **Relay federation carries only ciphertext.** A user on relay 1 reaches a user on relay 2 through relay 1's `/fed/<relay2>` tunnel, which splices the WebSocket byte for byte onto relay 2; Noise runs from the client to relay 2 and again end to end to the contact, so neither relay can read or alter content, and relay 2 sees relay 1's IP, not the user's. Tunnels only go to pinned, configured peer relays, only for clients currently connected to relay 1 (short-lived single-use token signed with the client's key), and are capped per client and globally. Federated lookups are non-recursive and an answer is accepted only if it points at the relay that gave it. While federation is on, clients refuse direct dials to federated relays.
 - **No OS backup on Android.** `allowBackup` is off and the data-extraction rules exclude everything: a restored copy would put the encrypted identity in a cloud account and fork every double-ratchet session.
 
@@ -45,6 +46,8 @@ Primary risks:
 - relay identity impersonation
 
 Security assumptions:
+- push registrations (`/push/subscribe`, `/push/unsubscribe`) are signed by the identity they change, so nobody else can redirect or remove an identity's wake-ups; Web Push endpoints must be https URLs of a browser push service, so a subscription cannot aim the relay at internal addresses
+- a registration owns only the key that signed it; an unsigned ephemeral key may take a free registry slot or refresh its own, never another device's
 - the relay should sit behind TLS termination and a public firewall policy
 - the relay is not a message store
 - the relay should not expose administrative surfaces without auth
