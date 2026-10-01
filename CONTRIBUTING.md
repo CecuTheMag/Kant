@@ -12,8 +12,11 @@ By taking part you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 - **Bugs:** open an issue with the bug report template. Say which part is
   affected (Android, desktop, web, CLI, relay), the version, and how to
   reproduce it.
-- **Feature ideas:** open an issue with the feature request template, or start
-  a conversation on Discord.
+- **Questions:** ask in [Discussions](https://github.com/CecuTheMag/Kant/discussions)
+  rather than opening an issue.
+- **Feature ideas:** start a thread in [Discussions](https://github.com/CecuTheMag/Kant/discussions/categories/ideas)
+  or on Discord. Once an idea is concrete, open an issue with the feature
+  request template.
 
 ## Development setup
 
