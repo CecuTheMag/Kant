@@ -37,8 +37,10 @@ packages/app/android/keystore/
 # gstack (global install)
 .amazonq/rules/gstack.md
 
-# Claude Code local settings (may reference local paths/IPs, not for public repo)
-.claude/settings.local.json
+# Local AI assistant files (never committed)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
 
 # Generated knowledge-graph output (local tooling artifact, not repo content)
 graphify-out/
