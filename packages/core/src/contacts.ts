@@ -4,6 +4,7 @@
 
 import QRCode from 'qrcode';
 import { openDB, idbGet as dbGetContact, idbPut as dbPutContact, idbDelete as dbDeleteContact, idbGetAll as dbGetAllContacts } from './db.js';
+import { addrReaches, contactRelayUrl } from './reach.js';
 
 export interface Contact {
   /** Stable contact id — NEVER changes. Defaults to publicKeyHex for legacy records.
@@ -12,7 +13,12 @@ export interface Contact {
   publicKeyHex: string;
   nickname?: string;
   addedAt: number;
-  lastCircuitAddr?: string;  // persisted so we never ask again
+  /** Last circuit address that names this contact's PeerID (see reach.ts).
+   *  Kept across failed dials: a contact who is merely offline comes back here. */
+  lastCircuitAddr?: string;
+  /** HTTP base URL of the relay the contact said they use (invite link or
+   *  presence), so they can be looked up there when our relay doesn't know them. */
+  relayUrl?: string;
   lastSeen?: number;         // Unix ms of last presence
   /** Trust state for the identity-verification UI (design pass 2026-08-17).
    *  unverified = default; verified = completed ceremony only; changed = observed key rotation. */
@@ -56,12 +62,14 @@ export async function setContactTrust(publicKeyHex: string, trust: Contact['trus
 const STORE = 'contacts';
 
 /** Add or update a contact.
- *  `flags` sets the request/blocked state; omitted flags keep their stored value. */
+ *  `flags` sets the request/blocked state; omitted flags keep their stored value.
+ *  `flags.relayUrl` records the relay their invite named. A circuit address or
+ *  relay URL that can't belong to this contact is ignored. */
 export async function addContact(
   publicKeyHex: string,
   nickname?: string,
   circuitAddr?: string,
-  flags?: { request?: boolean; blocked?: boolean },
+  flags?: { request?: boolean; blocked?: boolean; relayUrl?: string },
 ): Promise<void> {
   if (!/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) throw new Error('Invalid public key hex');
   const db       = await openDB();
@@ -71,20 +79,53 @@ export async function addContact(
     publicKeyHex,
     nickname:       nickname ?? existing?.nickname,
     addedAt:        existing?.addedAt ?? Date.now(),
-    lastCircuitAddr: circuitAddr ?? existing?.lastCircuitAddr,
+    lastCircuitAddr: addrReaches(circuitAddr, publicKeyHex) ? circuitAddr : existing?.lastCircuitAddr,
+    relayUrl:       contactRelayUrl(flags?.relayUrl) ?? existing?.relayUrl,
     request:        flags?.request ?? existing?.request,
     blocked:        flags?.blocked ?? existing?.blocked,
   });
   db.close();
 }
 
-/** Persist a fresh circuit address for a contact */
-export async function updateContactAddr(publicKeyHex: string, circuitAddr: string): Promise<void> {
+/**
+ * Persist a fresh circuit address for a contact. Only an address that names
+ * the contact's own PeerID is stored, and a failed dial never clears it: the
+ * last good address is how we find someone who was merely offline. Returns
+ * true when the address was accepted.
+ */
+export async function updateContactAddr(publicKeyHex: string, circuitAddr: string): Promise<boolean> {
+  if (!addrReaches(circuitAddr, publicKeyHex)) return false;
   const db       = await openDB();
   const existing = await dbGetContact<Contact>(db, STORE, publicKeyHex);
-  if (!existing) { db.close(); return; }
+  if (!existing) { db.close(); return false; }
   await dbPutContact(db, STORE, { ...existing, lastCircuitAddr: circuitAddr, lastSeen: Date.now() });
   db.close();
+  return true;
+}
+
+/** Record the relay a contact told us they use. Returns true when it changed. */
+export async function setContactRelay(publicKeyHex: string, relayUrl: string): Promise<boolean> {
+  const url = contactRelayUrl(relayUrl);
+  if (!url) return false;
+  const db       = await openDB();
+  const existing = await dbGetContact<Contact>(db, STORE, publicKeyHex);
+  if (!existing || existing.relayUrl === url) { db.close(); return false; }
+  await dbPutContact(db, STORE, { ...existing, relayUrl: url });
+  db.close();
+  return true;
+}
+
+/**
+ * Drop a stored address that provably isn't the contact's (it names another
+ * PeerID — written by an old build). A merely unreachable address is kept.
+ */
+export async function dropForeignContactAddr(publicKeyHex: string): Promise<boolean> {
+  const db       = await openDB();
+  const existing = await dbGetContact<Contact>(db, STORE, publicKeyHex);
+  if (!existing?.lastCircuitAddr || addrReaches(existing.lastCircuitAddr, publicKeyHex)) { db.close(); return false; }
+  await dbPutContact(db, STORE, { ...existing, lastCircuitAddr: undefined });
+  db.close();
+  return true;
 }
 
 /**

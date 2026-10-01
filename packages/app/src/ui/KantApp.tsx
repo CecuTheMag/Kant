@@ -92,7 +92,7 @@ function Shell() {
     if (!state.meHex) return;
     const pending = takePendingInvite();
     if (pending && pending.hex !== state.meHex) {
-      store.addContact(pending.hex, pending.name ?? '');
+      store.addContact(pending.hex, pending.name ?? '', undefined, pending.relay);
       toast(`Added ${pending.name || 'your friend'}`, <Check size={18} />);
       openWhenReady(pending.hex);
     }

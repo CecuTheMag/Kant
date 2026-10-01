@@ -12,7 +12,8 @@
     "lint": "pnpm run typecheck",
     "test:lab": "pnpm --dir tests/lab test",
     "test:lab:ui": "pnpm --dir tests/lab test:ui",
-    "test:lab:preflight": "bash tests/lab/scripts/preflight.sh"
+    "test:lab:preflight": "bash tests/lab/scripts/preflight.sh",
+    "test:reconnect": "pnpm --dir packages/relay run build && pnpm --dir packages/app run build && node --test --test-concurrency=1 --test-timeout=3600000 tests/lab/local/reconnect.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

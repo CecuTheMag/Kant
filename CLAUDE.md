@@ -62,6 +62,14 @@ pnpm test
 ### Relay tests
 `packages/relay`: `pnpm test` (unit tests for federation parsing, tokens, tunnel splice, wire-safe limits). Two-relay federation end-to-end (real relay processes + real libp2p nodes): `pnpm --dir packages/core test:federation`.
 
+### Device on/off reconnect test (local, real browsers)
+`tests/lab/local/reconnect.test.mjs` drives the built web app in two persistent Chromium profiles ("devices"), each on its own real relay, and switches devices (and relays) off and on in awkward orders — staggered restarts, a message written while the other is off, a full power cycle, a relay move — asserting both directions of the chat still work without re-sending invite links. Runs locally (no Docker), ~5–10 min:
+```bash
+pnpm run test:reconnect                    # unfederated relays
+KANT_FEDERATE=1 pnpm run test:reconnect    # relays federated with each other
+```
+Relays are reached as `relay-*.test` (mapped to 127.0.0.1 in Chromium) because the app ignores loopback relay URLs from contacts. `KANT_APP_DIST` runs the same scenarios against another build; `HEADED=1` shows the browsers; `KANT_ALONE_MS` shortens the offline windows.
+
 ### Root-level lab / E2E tests
 `tests/lab` is a disposable Docker-based lab (protocol, relay, network, browser UI, desktop smoke tests) — **not** run locally by default, designed to run on a dedicated test node:
 ```bash
@@ -92,6 +100,7 @@ See `tests/lab/README.md` for the Docker-compose based workflow (`tests/lab/scri
 - Group messaging, file transfer (chunked, encrypted, resumable), and onion routing (`onion.ts`, cover traffic via `COVER_TYPE`) are each separate protocols/handlers registered on the same node, all exported from `packages/core/src/index.ts`.
 - DM and group payloads carry structured content (reply quotes, edits) in the content envelope (`packages/core/src/envelope.ts`) *inside* the encryption. Never add content fields to the outer wire JSON. DMs only send the envelope to peers that advertised `content-envelope-1` in `kant-presence` (`caps`, persisted on the contact); older peers get the text without the quote. Edits (`edit: { id }`) need `message-edit-1`; older peers get the correction as a new message prefixed with ✎. DM edits rewrite the stored message (`editStoredMessage`); group edits are stored as their own rows and folded onto the target when a group loads (`rowsToThread` in `useGroups.ts`). Reactions (`react: { id, emoji }`, `message-react-1`) and delete for everyone (`del: { id }`, `message-delete-1`) are sent only to peers advertising them. DM changes (edit/react/delete) go out as control messages via `sendControl` in `useKant.ts` and are recorded on the target as `unsynced` until the peer's receipt (`markOpSynced`), so `reclaimUnacked` can re-send them — like unacknowledged text — after a session reset. Deletion tombstones the message and scrubs quotes of it (`deleteStoredMessage`; groups: `purgeGroupMessage`, which also drops the edit/reaction rows that carry its content and remembers deletions that arrive before the message). Reactions are encrypted at rest like text.
 - Voice notes are ordinary file transfers whose FILE_META carries `voice: { durationMs, waveform }`; group files carry `groupId` so the receiver's file handler (in `useKant`) hands them to `useGroups.handleIncomingFile` instead of the sender's DM. Group file messages are persisted with `saveGroupFileRecord`.
+- Reaching contacts (`packages/core/src/reach.ts`): a contact's PeerID is derived from their identity key, so only addresses passing `addrReaches` (circuit target = their PeerID) are ever stored or dialled, and a failed dial never clears a contact's `lastCircuitAddr` — it is how an offline contact is found again. Contacts carry the `relayUrl` from their invite / presence; `lookupRoutes` in `useKant.ts` asks our relay first, then the contact's relay via `lookupAtRelay` (signed with a throwaway key). Presence pings are accepted only when the sending connection's PeerID matches the claimed identity. Session retries back off to 5 min and never give up while online (`scheduleSessionRetry`). Two unfederated relays end to end: `reach.e2e.test.ts` (runs with `test:federation`).
 - All core logging goes through `clog()` / `setCoreLogger()` so the app can surface low-level transport events (dial retries, onion forwarding, inbound frames) in its in-app `DebugLog` component, not just the browser devtools console.
 
 ### App layer (`packages/app`)

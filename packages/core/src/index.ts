@@ -28,7 +28,8 @@ export type { RelayFederationInfo } from './federation.js';
 export { DB_NAME } from './db.js';
 export { fetchPreKeyBundle, buildPrivateBundle, buildPublicBundle, getOrCreateSPK, findSPKByPublicKey, replenishOPKPool, reserveOPK, getOPK, burnOPK, PREKEY_PROTOCOL } from './prekey.js';
 
-export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactTrust, normalizeContact, addContactCaps } from './contacts.js';
+export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR, updateContactAddr, setContactRelay, dropForeignContactAddr, setContactTrust, normalizeContact, addContactCaps } from './contacts.js';
+export { peerIdForIdentity, addrReaches, contactRelayUrl } from './reach.js';
 export type { Contact } from './contacts.js';
 
 export { saveMessage, hasMessage, setMessageStatus, editStoredMessage, setStoredReaction, deleteStoredMessage, removeStoredMessage, markOpSynced, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
@@ -247,6 +248,7 @@ import { applyTorTransport } from './tor.js';
 import type { TorConfig } from './tor.js';
 import { withSendLock, getOrDialPeer } from './send-lock.js';
 import { relayTunnelTransport, rememberNodeKey, denyDirectFederatedDial, ensureRelayConnection } from './federation.js';
+import { addrReaches, contactRelayUrl } from './reach.js';
 
 export type ReceiptHandler = (fromPeerId: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string}) => void;
 
@@ -503,6 +505,8 @@ export async function registerWithRelay(httpPort: number, publicKeyHex: string, 
   }
 }
 
+const LOOKUP_TIMEOUT_MS = 10_000;
+
 export async function lookupPeers(httpPort: number, publicKeyHexes: string[], explicitUrl?: string, identity?: { publicKeyHex: string; privateKey: Uint8Array }): Promise<Record<string, string>> {
   if (publicKeyHexes.length === 0) return {};
   try {
@@ -517,6 +521,9 @@ export async function lookupPeers(httpPort: number, publicKeyHexes: string[], ex
       const res = await fetch(`${base}/lookup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // A relay that accepts the connection but never answers must not
+        // stall the send or reconnect path that is waiting on this lookup.
+        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
         body: JSON.stringify({
           keys: publicKeyHexes,
           publicKeyHex: identity.publicKeyHex,
@@ -535,6 +542,30 @@ export async function lookupPeers(httpPort: number, publicKeyHexes: string[], ex
   } catch {
     return {};
   }
+}
+
+/**
+ * Look contacts up at *their* relay — the one they told us about — for when
+ * our relay (and the relays it federates with) doesn't know them.
+ *
+ * The request is signed with a throwaway key: their relay must see a valid
+ * signature, but has no reason to learn who is asking. Its answer is untrusted
+ * and only addresses that name each contact's own PeerID are returned (see
+ * reach.ts), so a hostile relay can make a dial fail but never redirect it.
+ */
+export async function lookupAtRelay(relayUrl: string, publicKeyHexes: string[]): Promise<Record<string, string>> {
+  const base = contactRelayUrl(relayUrl);
+  const keys = publicKeyHexes.filter((k) => /^[0-9a-f]{64}$/.test(k)).slice(0, 100);
+  if (!base || !keys.length) return {};
+  const sodium = await getSodium();
+  const throwaway = sodium.crypto_sign_keypair();
+  const found = await lookupPeers(0, keys, base, { publicKeyHex: sodium.to_hex(throwaway.publicKey), privateKey: throwaway.privateKey });
+  const out: Record<string, string> = {};
+  for (const key of keys) {
+    const addr = found?.[key];
+    if (addrReaches(addr, key)) out[key] = addr;
+  }
+  return out;
 }
 
 export function ping(): string {

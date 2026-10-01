@@ -92,7 +92,7 @@ export function AddContactSheet({ onClose, onAdded, initial }: {
 
   const add = () => {
     if (!found) return;
-    store.addContact(found.hex, name.trim());
+    store.addContact(found.hex, name.trim(), undefined, found.relay);
     onAdded(found.hex);
     onClose();
   };

@@ -7,6 +7,7 @@ import {
   x3dhSend, x3dhReceive, ed25519ToX25519,
   fetchPreKeyBundle, buildPrivateBundle,
   addContact, getContact, getContacts, deleteContact, updateContactAddr,
+  setContactRelay, dropForeignContactAddr, lookupAtRelay, peerIdForIdentity, addrReaches, contactRelayUrl,
   saveRatchet, loadRatchets,
   saveMessage, setMessageStatus, getConversation,
   startDiscovery, enqueue, startQueueRetry,
@@ -18,7 +19,7 @@ import {
   setCoreLogger, burnOPK,
   incrementUnread, clearUnread, getAllUnread,
   generateX25519Keypair,
-  configureFederation, ensureRelayConnection, hasMessage,
+  configureFederation, ensureRelayConnection, federatedRelays, parseCircuit, hasMessage,
   encodeContent, decodeContent, addContactCaps, sanitizeCaps,
   CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, SUPPORTED_CAPS, scrubQueuedLegacyWireFields,
   editStoredMessage, sanitizeVoiceMeta, sanitizeGroupRef,
@@ -231,9 +232,11 @@ export function useKant() {
   // Per-contact lock: prevents concurrent tryAutoSession calls from racing
   // each other and overwriting a valid ratchet that arrived via x3dh-init.
   const sessionInFlightRef = useRef<Set<string>>(new Set());
-  // Per-contact NO_RESERVATION retry counter — shared across retry closures so
-  // the 24-attempt cap is global per contact, not per closure.
+  // Per-contact session retry state, shared across retry closures: the
+  // attempt count drives the backoff, and at most one retry timer is pending
+  // per contact so presence pings and refreshes can't stack up retry chains.
   const sessionRetryCountRef = useRef<Map<string, number>>(new Map());
+  const sessionRetryTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   // Per-contact in-memory queue for messages that couldn't be encrypted yet
   // because the receiver-side ratchet sending chain wasn't initialised.
   // Flushed after the first successful decrypt triggers the DH ratchet step.
@@ -291,6 +294,52 @@ export function useKant() {
 
   const instanceNum = (relayHttpPort - 3001) / 2 + 1;
   const activeRelayUrl = sharedRelayUrl ?? relayUrl;
+
+  // Contact relay URL → last lookup there, so the send and refresh paths that
+  // run close together share one request instead of each asking again.
+  const foreignLookupRef = useRef<Map<string, { at: number; keys: Set<string>; found: Record<string, string> }>>(new Map());
+
+  /**
+   * Where contacts can be reached now. Our relay answers first (it also asks
+   * the relays it federates with); anyone it doesn't know is looked up at the
+   * relay they told us they use, so contacts on an unfederated relay are found
+   * after a restart instead of only through a stored address.
+   *
+   * Every address returned names the contact's own PeerID (addrReaches), and
+   * the dial's Noise handshake proves that PeerID, so no answer — from any
+   * relay — can route a message to someone else.
+   */
+  async function lookupRoutes(hexes: string[]): Promise<Record<string, string>> {
+    const keys = [...new Set(hexes.filter(Boolean))];
+    if (!keys.length) return {};
+    const found: Record<string, string> = {};
+    const local = await lookupPeers(relayHttpPort, keys, activeRelayUrl, identityRef.current ?? undefined).catch(() => ({} as Record<string, string>));
+    for (const key of keys) if (addrReaches(local[key], key)) found[key] = local[key];
+    const missing = new Set(keys.filter(key => !found[key]));
+    if (!missing.size) return found;
+
+    const ownRelay = contactRelayUrl(activeRelayUrl);
+    // A relay ours federates with is only ever reached through ours (see
+    // federation.ts); our lookup above already asked it.
+    const federated = new Set(nodeRef.current ? federatedRelays(nodeRef.current) : []);
+    const byRelay = new Map<string, string[]>();
+    for (const c of await getContacts().catch(() => [] as Contact[])) {
+      if (!missing.has(c.publicKeyHex) || !c.relayUrl || c.relayUrl === ownRelay) continue;
+      const lastRelay = c.lastCircuitAddr ? parseCircuit(c.lastCircuitAddr)?.relayPeer : undefined;
+      if (lastRelay && federated.has(lastRelay)) continue;
+      byRelay.set(c.relayUrl, [...(byRelay.get(c.relayUrl) ?? []), c.publicKeyHex]);
+    }
+    await Promise.all([...byRelay].map(async ([url, wanted]) => {
+      const cached = foreignLookupRef.current.get(url);
+      let result = cached && Date.now() - cached.at < 15_000 && wanted.every(k => cached.keys.has(k)) ? cached.found : undefined;
+      if (!result) {
+        result = await lookupAtRelay(url, wanted).catch(() => ({} as Record<string, string>));
+        foreignLookupRef.current.set(url, { at: Date.now(), keys: new Set(wanted), found: result });
+      }
+      for (const key of wanted) if (result[key]) found[key] = result[key];
+    }));
+    return found;
+  }
 
   // Guards startNode against re-entrant/concurrent invocation.  Without it two
   // overlapping calls each build a libp2p node on the same deterministic PeerID;
@@ -640,9 +689,12 @@ export function useKant() {
     } catch (e: any) {
       addLog(`⚠️ Could not restore ratchets: ${e?.message ?? e}`);
     }
-    // Restore in-memory addr map from persisted lastCircuitAddr
+    // Restore in-memory addr map from persisted lastCircuitAddr. An address
+    // naming some other PeerID (stored by an old build) can never reach the
+    // contact and is dropped; lookups find them instead.
     for (const c of all) {
-      if (c.lastCircuitAddr) contactAddrRef.current.set(c.publicKeyHex, c.lastCircuitAddr);
+      if (addrReaches(c.lastCircuitAddr, c.publicKeyHex)) contactAddrRef.current.set(c.publicKeyHex, c.lastCircuitAddr);
+      else if (c.lastCircuitAddr) void dropForeignContactAddr(c.publicKeyHex).catch(() => false);
     }
     // Restore persisted unread counts
     const savedUnread = await getAllUnread();
@@ -842,58 +894,58 @@ export function useKant() {
       sessionInFlightRef.current.delete(contact.publicKeyHex);
       const msg: string = e?.message ?? String(e);
       if (isRetryableRelayRouteError(msg)) {
-        const count = (sessionRetryCountRef.current.get(contact.publicKeyHex) ?? 0) + 1;
-        sessionRetryCountRef.current.set(contact.publicKeyHex, count);
-        if (count >= 24) {
-          addLog(`⚠️ ${contact.nickname ?? contact.publicKeyHex.slice(0, 12)}… unreachable after 24 attempts`);
-        } else {
-          const baseDelayMs = Math.min(30_000, 2_000 * (2 ** Math.min(count - 1, 4)));
-          const retryDelayMs = baseDelayMs + Math.floor(Math.random() * 500);
-          addLog(`⏳ ${contact.nickname ?? contact.publicKeyHex.slice(0, 12)}… not reachable yet (${count}/24), retrying in ${Math.ceil(retryDelayMs / 1000)}s`);
-          setTimeout(async () => {
-            if (ratchetMapRef.current.has(contact.publicKeyHex)) return;
-            const fresh = await lookupPeers(relayHttpPort, [contact.publicKeyHex], activeRelayUrl, identityRef.current ?? undefined)
-              .catch(() => ({} as Record<string, string>));
-            const freshAddr = fresh[contact.publicKeyHex] ?? addr;
-            if (!freshAddr) return;
-            contactAddrRef.current.set(contact.publicKeyHex, freshAddr);
-            if (freshAddr !== contact.lastCircuitAddr) {
-              await updateContactAddr(contact.publicKeyHex, freshAddr).catch(() => {});
-              setContacts(await getContacts());
-            }
-            tryAutoSession({ ...contact, lastCircuitAddr: freshAddr }, freshAddr).catch(() => {});
-          }, retryDelayMs);
-        }
+        // Usually just "they're offline". Keep trying for as long as we are
+        // online — a contact who comes back an hour later must still be found.
+        scheduleSessionRetry(contact, addr);
       } else if (msg.includes('does not match expected remote identity key')) {
-        // Stale PeerID in stored address — the contact hasn't reconnected with
-        // their new deterministic PeerID yet. Clear the bad address and poll
-        // the relay registry until they register a fresh one, then retry.
-        addLog(`🔄 Stale address for ${contact.nickname ?? contact.publicKeyHex.slice(0, 12)}…, waiting for them to reconnect`);
-        contactAddrRef.current.delete(contact.publicKeyHex);
-        updateContactAddr(contact.publicKeyHex, '').catch(() => {});
-
-        let attempts = 0;
-        const poll = async (): Promise<void> => {
-          if (ratchetMapRef.current.has(contact.publicKeyHex)) return;
-          if (attempts++ >= 12) { addLog(`⚠️ ${contact.nickname ?? contact.publicKeyHex.slice(0, 12)}… still not online after 60s`); return; }
-          const fresh = await lookupPeers(relayHttpPort, [contact.publicKeyHex], activeRelayUrl, identityRef.current ?? undefined)
-            .catch(() => ({} as Record<string, string>));
-          const freshAddr = fresh[contact.publicKeyHex];
-          if (freshAddr && freshAddr !== addr) {
-            contactAddrRef.current.set(contact.publicKeyHex, freshAddr);
-            updateContactAddr(contact.publicKeyHex, freshAddr).catch(() => {});
-            setContacts(await getContacts());
-            tryAutoSession(contact, freshAddr).catch(() => {});
-          } else {
-            setTimeout(poll, 5000);
-          }
-        };
-        setTimeout(poll, 5000);
+        // The stored address names another PeerID (written by an old build
+        // before PeerIDs were derived from the identity). It can never reach
+        // this contact, so it is the one address we do drop; a merely
+        // unreachable address is kept.
+        addLog(`🔄 Stale address for ${contact.nickname ?? contact.publicKeyHex.slice(0, 12)}…, looking them up again`);
+        if (!addrReaches(addr, contact.publicKeyHex)) {
+          contactAddrRef.current.delete(contact.publicKeyHex);
+          hopRegistryRef.current.delete(contact.publicKeyHex);
+          await dropForeignContactAddr(contact.publicKeyHex).catch(() => false);
+        }
+        scheduleSessionRetry(contact, '');
       } else {
         addLog(`Auto-session fail (${contact.publicKeyHex.slice(0, 12)}…): ${msg}`);
       }
       return false;
     }
+  }
+
+  /**
+   * Retry a session with a contact we couldn't reach, re-resolving where they
+   * are on every attempt (our relay, then theirs, then the last good address).
+   * Backs off to one attempt every 5 minutes and never gives up while the node
+   * is up; a reconnect cancels pending retries (see startNode).
+   */
+  function scheduleSessionRetry(contact: Contact, lastAddr: string) {
+    const hex = contact.publicKeyHex;
+    if (sessionRetryTimerRef.current.has(hex) || !shouldReconnectRef.current) return;
+    const count = (sessionRetryCountRef.current.get(hex) ?? 0) + 1;
+    sessionRetryCountRef.current.set(hex, count);
+    const delayMs = Math.min(300_000, 2_000 * (2 ** Math.min(count - 1, 8))) + Math.floor(Math.random() * 1_000);
+    const epoch = lifecycleEpochRef.current;
+    addLog(`⏳ ${contact.nickname ?? hex.slice(0, 12)}… not reachable yet (attempt ${count}), retrying in ${Math.ceil(delayMs / 1000)}s`);
+    sessionRetryTimerRef.current.set(hex, setTimeout(async () => {
+      sessionRetryTimerRef.current.delete(hex);
+      if (epoch !== lifecycleEpochRef.current || !shouldReconnectRef.current) return;
+      if (ratchetMapRef.current.has(hex)) return;
+      const fresh = await lookupRoutes([hex]).catch(() => ({} as Record<string, string>));
+      const stored = await getContact(hex).catch(() => undefined);
+      if (!stored) return; // removed meanwhile
+      const addr = fresh[hex] ?? contactAddrRef.current.get(hex) ?? stored.lastCircuitAddr ?? lastAddr;
+      if (!addrReaches(addr, hex)) { scheduleSessionRetry(stored, ''); return; }
+      contactAddrRef.current.set(hex, addr);
+      if (addr !== stored.lastCircuitAddr) {
+        await updateContactAddr(hex, addr).catch(() => false);
+        setContacts(await getContacts());
+      }
+      tryAutoSession({ ...stored, lastCircuitAddr: addr }, addr).catch(() => {});
+    }, delayMs));
   }
 
   function clearDeliveryPending(msgId: string) {
@@ -1120,6 +1172,8 @@ export function useKant() {
     // we are about to stop and will never complete.
     sessionInFlightRef.current.clear();
     sessionRetryCountRef.current.clear();
+    for (const timer of sessionRetryTimerRef.current.values()) clearTimeout(timer);
+    sessionRetryTimerRef.current.clear();
     setCircuitAddr('');
     setDiscoveredPeers([]);
     setNodeStatus('connecting');
@@ -1179,6 +1233,15 @@ export function useKant() {
           if (parsed.type === 'kant-presence') {
             const { fromPubKeyHex, circuitAddr: theirAddr, ephemeralPubHex: theirEphHex } = parsed;
             if (!fromPubKeyHex || !theirAddr) return;
+            // Presence is plaintext, so bind it to the connection: the stream
+            // must come from the PeerID of the identity it claims (Noise proved
+            // that PeerID), and the address it advertises must lead back there.
+            // Otherwise anyone could re-point a contact's route and black-hole
+            // our messages to them.
+            if (fromPeer !== peerIdForIdentity(fromPubKeyHex) || !addrReaches(theirAddr, fromPubKeyHex)) {
+              addLog(`⚠️ Ignored presence claiming ${String(fromPubKeyHex).slice(0, 12)}… from ${fromPeer.slice(0, 12)}…`);
+              return;
+            }
 
             // Check if this is a known contact
             const allContacts = await getContacts();
@@ -1191,9 +1254,11 @@ export function useKant() {
               return;
             }
 
-            // Update in-memory and IDB addr
+            // Update in-memory and IDB addr, and the relay they say they use
+            // now — this is how a contact who switched relays is followed.
             contactAddrRef.current.set(fromPubKeyHex, theirAddr);
             await updateContactAddr(fromPubKeyHex, theirAddr);
+            if (typeof parsed.relayUrl === 'string') await setContactRelay(fromPubKeyHex, parsed.relayUrl);
             await addContactCaps(fromPubKeyHex, sanitizeCaps(parsed.caps));
             // B1: Store ephemeral key in hop registry if provided, else fall back to identity key.
             hopRegistryRef.current.set(fromPubKeyHex, { circuitAddr: theirAddr, ed25519PubHex: theirEphHex ?? fromPubKeyHex });
@@ -1438,7 +1503,7 @@ export function useKant() {
               void (async () => {
                 let senderAddr = contactAddrRef.current.get(hintedSender);
                 if (!senderAddr) {
-                  const lookup = await lookupPeers(relayHttpPort, [hintedSender], activeRelayUrl, identityRef.current ?? undefined);
+                  const lookup = await lookupRoutes([hintedSender]);
                   senderAddr = lookup[hintedSender];
                   if (senderAddr) contactAddrRef.current.set(hintedSender, senderAddr);
                 }
@@ -1526,7 +1591,7 @@ export function useKant() {
                 let theirAddr = contactAddrRef.current.get(fromHex);
                 if (!theirAddr) {
                   try {
-                    const lookedUp = await lookupPeers(relayHttpPort, [fromHex], activeRelayUrl, identityRef.current ?? undefined);
+                    const lookedUp = await lookupRoutes([fromHex]);
                     if (lookedUp[fromHex]) {
                       theirAddr = lookedUp[fromHex];
                       contactAddrRef.current.set(fromHex, theirAddr);
@@ -1738,7 +1803,7 @@ export function useKant() {
           const allContacts = await getContacts();
           const hexes = allContacts.map(contact => contact.publicKeyHex);
           if (hexes.length) {
-            const lookedUp = await lookupPeers(relayHttpPort, hexes, activeRelayUrl, identityRef.current ?? undefined);
+            const lookedUp = await lookupRoutes(hexes);
             for (const [hex, peerAddr] of Object.entries(lookedUp)) {
               contactAddrRef.current.set(hex, peerAddr);
               void updateContactAddr(hex, peerAddr);
@@ -2146,6 +2211,8 @@ export function useKant() {
       fromPubKeyHex: kp.publicKeyHex,
       circuitAddr: myCircuit,
       ...(eph ? { ephemeralPubHex: eph.pubHex } : {}),
+      // Where to look us up if our address goes stale (e.g. we move relays).
+      relayUrl: contactRelayUrl(activeRelayUrl),
       caps: SUPPORTED_CAPS,
     });
     try { await sendPing(node, addr, presence); } catch { /* best effort — the periodic broadcast still runs */ }
@@ -2162,14 +2229,17 @@ export function useKant() {
       fromPubKeyHex: kp.publicKeyHex,
       circuitAddr: myCircuit,
       ...(eph ? { ephemeralPubHex: eph.pubHex } : {}),
+      // Where to look us up if our address goes stale (e.g. we move relays).
+      relayUrl: contactRelayUrl(activeRelayUrl),
       caps: SUPPORTED_CAPS,
     });
     // Fresh relay lookup before sending — stored addresses may have stale PeerIDs
     // from a previous session. A single batch lookup is cheaper than per-contact.
     const hexes = allContacts.map(c => c.publicKeyHex).filter(Boolean);
+    let fresh: Record<string, string> = {};
     if (hexes.length) {
       try {
-        const fresh = await lookupPeers(relayHttpPort, hexes, activeRelayUrl, identityRef.current ?? undefined);
+        fresh = await lookupRoutes(hexes);
         for (const [hex, addr] of Object.entries(fresh)) {
           contactAddrRef.current.set(hex, addr);
           void updateContactAddr(hex, addr);
@@ -2178,42 +2248,31 @@ export function useKant() {
     }
     for (let i = 0; i < allContacts.length; i++) {
       const c = allContacts[i];
-      // Prefer hopRegistryRef — it's updated by incoming presence pings and
+      // A registry answer from this round is the most current; otherwise
+      // prefer hopRegistryRef — it's updated by incoming presence pings and
       // is more current than contactAddrRef (which may hold a stale circuit
       // address from before the peer's last reconnect).
-      const addr = hopRegistryRef.current.get(c.publicKeyHex)?.circuitAddr
+      const addr = fresh[c.publicKeyHex]
+        ?? hopRegistryRef.current.get(c.publicKeyHex)?.circuitAddr
         ?? contactAddrRef.current.get(c.publicKeyHex)
         ?? c.lastCircuitAddr;
       if (!addr) continue;
       if (i > 0) await new Promise(r => setTimeout(r, i * 300));
-      const attemptPresence = (attAddr: string, att: number) => {
-        sendPing(node, attAddr, presence).catch(async (e: any) => {
-          const msg = String(e?.message ?? e);
-          if (isRetryableRelayRouteError(msg) && shouldReconnectRef.current) {
-            // A stale /p2p-circuit route is a dead-end: once the relay says
-            // NO_RESERVATION, the address is no longer usable. Look up a fresh
-            // registry entry once; if that still yields the same stale route,
-            // invalidate the cached address so the next heartbeat re-registers it
-            // instead of spamming the console every 5s with the same failure.
-            await new Promise(r => setTimeout(r, 5000));
-            const freshRetry = await lookupPeers(relayHttpPort, [c.publicKeyHex], activeRelayUrl, identityRef.current ?? undefined).catch(() => ({} as Record<string,string>));
-            const nextAddr = freshRetry[c.publicKeyHex];
-            if (nextAddr) {
-              contactAddrRef.current.set(c.publicKeyHex, nextAddr);
-              if (nextAddr !== attAddr) {
-                void updateContactAddr(c.publicKeyHex, nextAddr).catch(() => {});
-              }
-              if (att < 24) attemptPresence(nextAddr, att + 1);
-              return;
-            }
-            if (attAddr) {
-              contactAddrRef.current.delete(c.publicKeyHex);
-              void updateContactAddr(c.publicKeyHex, '').catch(() => {});
-            }
-          }
-        });
-      };
-      attemptPresence(addr, 0);
+      sendPing(node, addr, presence).catch(async (e: any) => {
+        const msg = String(e?.message ?? e);
+        if (!isRetryableRelayRouteError(msg) || !shouldReconnectRef.current) return;
+        // Most often the contact is simply offline. Their address is kept —
+        // it is how we reach them when they return, and this broadcast runs
+        // again every minute. Only if they registered somewhere new in the
+        // meantime is it worth one immediate second try.
+        await new Promise(r => setTimeout(r, 5000));
+        const retry = await lookupRoutes([c.publicKeyHex]).catch(() => ({} as Record<string, string>));
+        const nextAddr = retry[c.publicKeyHex];
+        if (!nextAddr || nextAddr === addr || nodeRef.current !== node) return;
+        contactAddrRef.current.set(c.publicKeyHex, nextAddr);
+        void updateContactAddr(c.publicKeyHex, nextAddr).catch(() => {});
+        sendPing(node, nextAddr, presence).catch(() => { /* next broadcast retries */ });
+      });
     }
   }
 
@@ -2295,7 +2354,7 @@ export function useKant() {
       } as any);
       let peerAddr = contactAddrRef.current.get(contact.publicKeyHex) ?? contact.lastCircuitAddr ?? '';
       try {
-        const fresh = await lookupPeers(relayHttpPort, [contact.publicKeyHex], activeRelayUrl, identityRef.current ?? undefined);
+        const fresh = await lookupRoutes([contact.publicKeyHex]);
         peerAddr = fresh[contact.publicKeyHex] ?? peerAddr;
         if (peerAddr) {
           contactAddrRef.current.set(contact.publicKeyHex, peerAddr);
@@ -2312,7 +2371,7 @@ export function useKant() {
     // address may outlive the peer's reservation after sleep/reconnect.
     let peerAddr = contactAddrRef.current.get(contact.publicKeyHex) ?? contact.lastCircuitAddr ?? '';
     try {
-      const fresh = await lookupPeers(relayHttpPort, [contact.publicKeyHex], activeRelayUrl, identityRef.current ?? undefined);
+      const fresh = await lookupRoutes([contact.publicKeyHex]);
       if (fresh[contact.publicKeyHex]) {
         peerAddr = fresh[contact.publicKeyHex];
         contactAddrRef.current.set(contact.publicKeyHex, peerAddr);
@@ -2464,7 +2523,7 @@ export function useKant() {
       return;
     }
     try {
-      const fresh = await lookupPeers(relayHttpPort, [hex], activeRelayUrl, kp);
+      const fresh = await lookupRoutes([hex]);
       if (fresh[hex]) {
         peerAddr = fresh[hex];
         contactAddrRef.current.set(hex, peerAddr);
@@ -2541,7 +2600,7 @@ export function useKant() {
       return 'resent';
     }
     try {
-      const fresh = await lookupPeers(relayHttpPort, [hex], activeRelayUrl, kp);
+      const fresh = await lookupRoutes([hex]);
       if (fresh[hex]) { addr = fresh[hex]; contactAddrRef.current.set(hex, addr); void updateContactAddr(hex, addr); }
     } catch { /* keep the last known route */ }
     const node = nodeRef.current;
@@ -2719,7 +2778,7 @@ export function useKant() {
       if (hasCircuit && !addr && Date.now() - lastLookup >= 3000) {
         lastLookup = Date.now();
         try {
-          const found = await lookupPeers(relayHttpPort, [contact.publicKeyHex], activeRelayUrl, identityRef.current ?? undefined);
+          const found = await lookupRoutes([contact.publicKeyHex]);
           const fresh = found[contact.publicKeyHex] ?? '';
           if (fresh) {
             contactAddrRef.current.set(contact.publicKeyHex, fresh);
@@ -2847,14 +2906,26 @@ export function useKant() {
     await addContactCaps(hex, caps);
   }
 
-  async function addNewContact(hex: string, nick?: string, circuitAddr?: string) {
+  async function addNewContact(hex: string, nick?: string, circuitAddr?: string, relayUrl?: string) {
     // Adding someone yourself is consent: it accepts a pending request and
-    // lifts a block.
-    await addContact(hex, nick, circuitAddr, { request: false, blocked: false });
+    // lifts a block. The relay from their invite is kept so they can be
+    // looked up there whenever ours doesn't know them.
+    await addContact(hex, nick, circuitAddr, { request: false, blocked: false, relayUrl });
     await adoptPendingCaps(hex);
     const all = await getContacts();
     setContacts(all);
-    if (circuitAddr) contactAddrRef.current.set(hex, circuitAddr);
+    if (addrReaches(circuitAddr, hex)) contactAddrRef.current.set(hex, circuitAddr);
+    // Reach out now rather than at the next directory refresh.
+    const contact = all.find(c => c.publicKeyHex === hex);
+    if (contact && nodeRef.current && !ratchetMapRef.current.has(hex)) {
+      void lookupRoutes([hex]).then(found => {
+        const addr = found[hex];
+        if (!addr) return;
+        contactAddrRef.current.set(hex, addr);
+        void updateContactAddr(hex, addr);
+        void tryAutoSession(contact, addr);
+      }).catch(() => {});
+    }
   }
 
   async function renameContact(hex: string, nick: string) {

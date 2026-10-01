@@ -92,7 +92,8 @@ export interface Store {
   /** Whether a conversation is the view on screen (drives unread + notifications). */
   setConversationVisible: (visible: boolean) => void;
   setTrust: (contactId: string, trust: TrustState) => void;
-  addContact: (hex: string, nickname: string, circuitAddr?: string) => void;
+  /** `relay`: the relay their invite link named, so they can be found there. */
+  addContact: (hex: string, nickname: string, circuitAddr?: string, relay?: string) => void;
   renameContact: (contactId: string, nickname: string) => void;
   acceptRequest: (contactId: string, nickname?: string) => void;
   blockContact: (contactId: string, blocked: boolean) => void;

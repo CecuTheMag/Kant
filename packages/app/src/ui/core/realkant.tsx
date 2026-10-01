@@ -429,8 +429,8 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     void setContactTrust(c.publicKeyHex, trust).catch(() => {});
   }, [contacts]);
 
-  const addContact = useCallback((hex: string, nickname: string, circuitAddr?: string) => {
-    void kant.addNewContact(hex.trim().toLowerCase(), nickname.trim() || undefined, circuitAddr?.trim() || undefined);
+  const addContact = useCallback((hex: string, nickname: string, circuitAddr?: string, relay?: string) => {
+    void kant.addNewContact(hex.trim().toLowerCase(), nickname.trim() || undefined, circuitAddr?.trim() || undefined, relay);
   }, [kant]);
 
   const coreById = useCallback(
