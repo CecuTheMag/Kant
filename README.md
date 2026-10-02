@@ -6,6 +6,10 @@
   <p>
     <a href="https://kant.network"><img src="https://img.shields.io/badge/Website-kant.network-4f8ef7?style=flat-square" alt="Website"></a>
     <a href="https://discord.gg/kdn2tAPtRX"><img src="https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
+    <a href="https://t.me/kantmessenger"><img src="https://img.shields.io/badge/Telegram-Channel-26A5E4?style=flat-square&logo=telegram&logoColor=white" alt="Telegram"></a>
+    <a href="https://x.com/kantmessenger"><img src="https://img.shields.io/badge/X-@kantmessenger-000000?style=flat-square&logo=x&logoColor=white" alt="X"></a>
+    <a href="https://www.instagram.com/kantmessenger/"><img src="https://img.shields.io/badge/Instagram-@kantmessenger-E4405F?style=flat-square&logo=instagram&logoColor=white" alt="Instagram"></a>
+    <a href="https://www.tiktok.com/@kantapps"><img src="https://img.shields.io/badge/TikTok-@kantapps-000000?style=flat-square&logo=tiktok&logoColor=white" alt="TikTok"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-22d3ee?style=flat-square" alt="License: AGPL-3.0"></a>
     <a href="docs/security"><img src="https://img.shields.io/badge/Security-Threat%20Model-2fbf71?style=flat-square" alt="Security"></a>
   </p>
