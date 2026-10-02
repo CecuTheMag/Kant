@@ -107,8 +107,8 @@ export default function Home() {
           <ul className="trust-row anim-rise d3" aria-label="Highlights">
             <li><IconCheck /> End-to-end encrypted</li>
             <li><IconCheck /> No phone number needed</li>
-            <li><IconCheck /> Free for personal use</li>
-            <li><a href={SITE.githubUrl} target="_blank" rel="noreferrer"><IconCheck /> Public source code</a></li>
+            <li><IconCheck /> Free for everyone</li>
+            <li><a href={SITE.githubUrl} target="_blank" rel="noreferrer"><IconCheck /> Open source (AGPL-3.0)</a></li>
           </ul>
 
           <div className="stage">
@@ -281,7 +281,7 @@ export default function Home() {
             <div className="tile">
               <span className="tile-icon green"><IconHeart size={22} /></span>
               <p className="tile-text">
-                <strong>Free for personal use.</strong> No ads, no
+                <strong>Free and open source.</strong> No ads, no
                 subscriptions, and no data about you to sell.
               </p>
             </div>
@@ -437,7 +437,7 @@ export default function Home() {
             Take back your conversations.
           </h2>
           <p className="lede">
-            Free for personal use. Available today for Android and Linux.
+            Free and open source. Available today for Android and Linux.
           </p>
           <div className="cta-row center stack">
             <Link href="/download" className="btn btn-primary">

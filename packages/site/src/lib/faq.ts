@@ -3,7 +3,7 @@
 export const FAQ = [
   {
     q: "Is Kant really free?",
-    a: "Yes. Kant is free and open source under the AGPL-3.0, for anyone. Organisations can buy optional admin and governance tools, or a commercial licence if they'd rather not publish their changes, but the messenger itself is never paywalled.",
+    a: "Yes. Kant is free and open source under the AGPL-3.0, for anyone. Every feature is in the open-source app, with nothing held back behind a paid tier. Organisations that would rather not publish their changes can buy a commercial licence instead.",
   },
   {
     q: "Do I need a phone number or an email address?",
