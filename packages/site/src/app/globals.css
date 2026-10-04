@@ -270,6 +270,8 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 700; 
   font-size: 17px;
 }
 .link:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* A link inside a sentence takes the sentence's size. */
+.link.inline { display: inline; font-size: inherit; }
 .link .chev { transition: transform 0.2s var(--ease); }
 .link:hover .chev { transform: translateX(3px); }
 
@@ -985,6 +987,10 @@ h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 700; 
   background: transparent; box-shadow: none; border: 1px dashed var(--line);
   padding: 26px 30px;
 }
+/* A platform that isn't out yet, as a regular card in the grid. */
+.platform-later { background: transparent; box-shadow: none; border: 1px dashed var(--line); }
+.platform-later .tile-icon { background: var(--bg-elev); color: var(--text-2); }
+.platform-later-link { margin-top: auto; padding-top: 18px; }
 @media (max-width: 734px) {
   .platforms { grid-template-columns: 1fr; gap: 14px; margin-top: 40px; }
   .platform { padding: 28px 24px; }

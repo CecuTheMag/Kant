@@ -21,7 +21,7 @@ import {
   IconWifi,
   IconX,
 } from "@/components/icons";
-import { RELEASE, SITE } from "@/lib/config";
+import { PLATFORMS, RELEASE, SITE } from "@/lib/config";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -437,7 +437,7 @@ export default function Home() {
             Take back your conversations.
           </h2>
           <p className="lede">
-            Free and open source. Available today for Android and Linux.
+            Free and open source. Available today for {PLATFORMS}.
           </p>
           <div className="cta-row center stack">
             <Link href="/download" className="btn btn-primary">

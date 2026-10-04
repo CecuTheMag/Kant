@@ -13,6 +13,9 @@ export const SITE = {
 
 const releaseBase = `${SITE.githubUrl}/releases/download/0.5.0-beta`;
 
+export type Download = { file: string; url: string; size: string; sha256: string };
+type WindowsDownloads = Record<"x64" | "arm64", { installer: Download; portable: Download }>;
+
 export const RELEASE = {
   version: "0.5.0",
   channel: "Beta",
@@ -30,15 +33,48 @@ export const RELEASE = {
     size: "119 MB",
     sha256: "e8a92a43313909ab879a4fcfefd16a7b805115ab596a5a58ff011f21003a7fdb",
   },
-  // Windows builds come from the release workflow (0.5.0 on). Leave null for a
-  // release without one and the download page shows Windows as "not yet".
+  // Windows builds come from the release workflow (0.5.0 on): an installer and
+  // a portable exe for each architecture. Leave null for a release without
+  // them and the site shows Windows as "not yet".
   windows: {
-    file: "Kant-Setup-0.5.0-x64.exe",
-    url: `${releaseBase}/Kant-Setup-0.5.0-x64.exe`,
-    size: "92 MB",
-    sha256: "27d4c397afc71c7e3e76af29f3506910546086839a1054f3050152caa7fec56d",
-  } as null | { file: string; url: string; size: string; sha256: string },
+    x64: {
+      installer: {
+        file: "Kant-Setup-0.5.0-x64.exe",
+        url: `${releaseBase}/Kant-Setup-0.5.0-x64.exe`,
+        size: "92 MB",
+        sha256: "27d4c397afc71c7e3e76af29f3506910546086839a1054f3050152caa7fec56d",
+      },
+      portable: {
+        file: "Kant-0.5.0-x64-portable.exe",
+        url: `${releaseBase}/Kant-0.5.0-x64-portable.exe`,
+        size: "91 MB",
+        sha256: "e75eb8e1dd210b2290cc283fce8a5c11675058dea0477f7b2f25f394024bc9e5",
+      },
+    },
+    arm64: {
+      installer: {
+        file: "Kant-Setup-0.5.0-arm64.exe",
+        url: `${releaseBase}/Kant-Setup-0.5.0-arm64.exe`,
+        size: "98 MB",
+        sha256: "7695e1ca8c6790a6e46e172d8423767d6578ec8e60ef4c43cae4e89ff3faf3c8",
+      },
+      portable: {
+        file: "Kant-0.5.0-arm64-portable.exe",
+        url: `${releaseBase}/Kant-0.5.0-arm64-portable.exe`,
+        size: "98 MB",
+        sha256: "042f93686f05f1c968a90305c6fa131a6ffa1298f17d05da68790d3a63db4f78",
+      },
+    },
+  } as WindowsDownloads | null,
 };
+
+/** Every Windows file in this release, for checksums and listings. */
+export const WINDOWS_FILES: Download[] = RELEASE.windows
+  ? [RELEASE.windows.x64.installer, RELEASE.windows.x64.portable, RELEASE.windows.arm64.installer, RELEASE.windows.arm64.portable]
+  : [];
+
+/** "Android, Linux and Windows" — the platforms this release ships for. */
+export const PLATFORMS = RELEASE.windows ? "Android, Linux and Windows" : "Android and Linux";
 
 export const NAV_LINKS = [
   { href: "/how-it-works", label: "How it works" },

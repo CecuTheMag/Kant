@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   IconAndroid,
+  IconApple,
   IconChevron,
   IconDiscord,
   IconDownload,
@@ -10,9 +11,7 @@ import {
   IconShield,
   IconWindows,
 } from "@/components/icons";
-import { RELEASE, SITE } from "@/lib/config";
-
-const PLATFORMS = RELEASE.windows ? "Android, Linux and Windows" : "Android and Linux";
+import { PLATFORMS, RELEASE, SITE, WINDOWS_FILES } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: `Download Kant for ${PLATFORMS}`,
@@ -90,31 +89,58 @@ export default function Download() {
                   <span className="tile-icon teal"><IconWindows size={28} /></span>
                   <div>
                     <h2>Windows</h2>
-                    <div className="meta">Installer · {RELEASE.windows.size}</div>
+                    <div className="meta">Installer · {RELEASE.windows.x64.installer.size}</div>
                   </div>
                 </div>
                 <p className="body-text" style={{ margin: 0 }}>
                   Windows 10 and 11. If SmartScreen says the publisher is
                   unknown, choose “More info” → “Run anyway”.
                 </p>
-                <a href={RELEASE.windows.url} className="btn btn-primary" download>
+                <a href={RELEASE.windows.x64.installer.url} className="btn btn-primary" download>
                   <IconDownload /> Download for Windows
                 </a>
+                <p className="small-text" style={{ margin: 0 }}>
+                  No install:{" "}
+                  <a href={RELEASE.windows.x64.portable.url} className="link inline" download>portable version</a>
+                  {" "}· Windows on ARM:{" "}
+                  <a href={RELEASE.windows.arm64.installer.url} className="link inline" download>installer</a>
+                  {" "}or{" "}
+                  <a href={RELEASE.windows.arm64.portable.url} className="link inline" download>portable</a>
+                </p>
               </div>
             )}
 
-            <div className="platform platform-soon">
-              <div>
-                <h3 className="h-4">{RELEASE.windows ? "iPhone and Mac" : "iPhone, Windows and Mac"}</h3>
-                <p className="small-text" style={{ margin: "4px 0 0" }}>
-                  Not packaged yet. {RELEASE.windows ? "Mac" : "Windows and Mac"} can be built from the source
-                  code today. Join the community to hear first when they land.
+            {RELEASE.windows ? (
+              <div className="platform platform-later">
+                <div className="platform-head">
+                  <span className="tile-icon"><IconApple size={28} /></span>
+                  <div>
+                    <h2>iPhone &amp; Mac</h2>
+                    <div className="meta">Coming later</div>
+                  </div>
+                </div>
+                <p className="body-text" style={{ margin: 0 }}>
+                  Not packaged yet. Join the community to hear first when
+                  Kant lands on Apple devices.
                 </p>
+                <a href={SITE.discordUrl} className="link platform-later-link" target="_blank" rel="noreferrer">
+                  Get notified on Discord <IconChevron />
+                </a>
               </div>
-              <a href={SITE.discordUrl} className="link" target="_blank" rel="noreferrer">
-                Get notified on Discord <IconChevron />
-              </a>
-            </div>
+            ) : (
+              <div className="platform platform-soon">
+                <div>
+                  <h3 className="h-4">iPhone, Windows and Mac</h3>
+                  <p className="small-text" style={{ margin: "4px 0 0" }}>
+                    Not packaged yet. Windows and Mac can be built from the source
+                    code today. Join the community to hear first when they land.
+                  </p>
+                </div>
+                <a href={SITE.discordUrl} className="link" target="_blank" rel="noreferrer">
+                  Get notified on Discord <IconChevron />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -170,12 +196,12 @@ export default function Download() {
               <div className="h-4" style={{ marginBottom: 12 }}>{RELEASE.linux.file}</div>
               <div className="hash">{RELEASE.linux.sha256}</div>
             </div>
-            {RELEASE.windows && (
-              <div className="card">
-                <div className="h-4" style={{ marginBottom: 12 }}>{RELEASE.windows.file}</div>
-                <div className="hash">{RELEASE.windows.sha256}</div>
+            {WINDOWS_FILES.map((d) => (
+              <div className="card" key={d.file}>
+                <div className="h-4" style={{ marginBottom: 12 }}>{d.file}</div>
+                <div className="hash">{d.sha256}</div>
               </div>
-            )}
+            ))}
           </div>
           <div className="code-block reveal" style={{ marginTop: 20 }}>
             <div><span className="c-muted"># Linux / macOS</span></div>
@@ -183,7 +209,7 @@ export default function Download() {
             {RELEASE.windows && (
               <>
                 <div><span className="c-muted"># Windows (PowerShell)</span></div>
-                <div><span className="c-muted">&gt;</span> Get-FileHash {RELEASE.windows.file}</div>
+                <div><span className="c-muted">&gt;</span> Get-FileHash {RELEASE.windows.x64.installer.file}</div>
               </>
             )}
           </div>

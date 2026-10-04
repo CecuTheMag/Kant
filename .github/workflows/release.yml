@@ -203,5 +203,5 @@ jobs:
         run: |
           notes=release-notes/$VERSION.md
           if [ -f "$notes" ]; then notes_arg=(--notes-file "$notes"); else notes_arg=(--generate-notes); fi
-          gh release create "$GITHUB_REF_NAME" dist/* --draft --prerelease \
+          gh release create "$GITHUB_REF_NAME" dist/* --draft --latest \
             --title "Kant $VERSION (Beta)" "${notes_arg[@]}"

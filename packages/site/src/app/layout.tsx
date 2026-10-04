@@ -98,7 +98,7 @@ const structuredData = [
     "@type": "SoftwareApplication",
     name: SITE.name,
     applicationCategory: "CommunicationApplication",
-    operatingSystem: "Android, Linux",
+    operatingSystem: RELEASE.windows ? "Android, Linux, Windows" : "Android, Linux",
     softwareVersion: RELEASE.version,
     description: SITE.description,
     url: SITE.url,

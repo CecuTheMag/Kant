@@ -55,7 +55,7 @@ The tag format is `X.Y.Z-beta` (no `v`): the website's download links use it.
 2. checks the tag and all three version numbers agree;
 3. builds the signed APK and verifies its signing certificate;
 4. builds the Linux AppImage and the Windows installer and portable exe, and **launches each one** — it has to start, its bundled relay has to answer `/healthz`, and the window has to render the app ([`packages/desktop/scripts/smoke.mjs`](../../packages/desktop/scripts/smoke.mjs));
-5. creates a **draft** prerelease with all files and `SHA256SUMS.txt`.
+5. creates a **draft** release, marked as the latest (the site links to `releases/latest`), with all files and `SHA256SUMS.txt`.
 
 To build and smoke-test without releasing, run the workflow by hand from the Actions tab; the files are attached to the run as artifacts.
 
