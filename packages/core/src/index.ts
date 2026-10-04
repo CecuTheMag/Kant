@@ -131,6 +131,33 @@ export const CLIENT_CONNECTION_LIMITS = {
   maxIncomingPendingConnections: 100,
 };
 
+/**
+ * Relayed connections a client may hold open at once, in each direction.
+ * Each one keeps a circuit-relay stream open on our connection to the relay
+ * (HOP when we dialled, STOP when they did) for as long as it lives, and
+ * libp2p caps streams per protocol per connection — 64 outbound HOP here, 32
+ * inbound HOP at the relay (raised there by RELAY_MAX_CIRCUITS_PER_PEER). At
+ * the defaults a group owner could not reach their 33rd member at all.
+ */
+export const CLIENT_MAX_RELAYED_CONNECTIONS = 1024;
+
+/**
+ * circuitRelayTransport, with its HOP streams allowed past libp2p's default
+ * of 64. The limit has to arrive in the options of the transport's own dial:
+ * libp2p's dial queue rebuilds the options it passes down from a fixed set of
+ * fields, so it can't be set on node.dial().
+ */
+function relayTransport(init: Parameters<typeof circuitRelayTransport>[0]) {
+  const factory = circuitRelayTransport(init);
+  return (components: any) => {
+    const transport: any = factory(components);
+    const dial = transport.dial.bind(transport);
+    transport.dial = (ma: any, options: any = {}) =>
+      dial(ma, { ...options, maxOutboundStreams: CLIENT_MAX_RELAYED_CONNECTIONS });
+    return transport;
+  };
+}
+
 // ── Core log sink ───────────────────────────────────────────────────────────
 // Transport-level events (dial attempts, retries, onion forwarding, inbound
 // frames) happen inside core, below the React layer, so they normally only
@@ -301,8 +328,9 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
       // We already listen on one configured relay. Suppress topology discovery:
       // if it reserves this relay first, the explicit listener sees an existing
       // reservation but never publishes its /p2p-circuit address.
-      circuitRelayTransport({
-        discoveryFilter: { has: () => true, add: () => {}, remove: () => {} }
+      relayTransport({
+        discoveryFilter: { has: () => true, add: () => {}, remove: () => {} },
+        maxInboundStopStreams: CLIENT_MAX_RELAYED_CONNECTIONS,
       })
     ],
     connectionEncrypters: [noise()],

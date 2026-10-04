@@ -1,0 +1,3 @@
+Releases are now built and checked automatically, with SHA-256 checksums for every file.
+Kant is now available for Windows (from the GitHub release).
+Fixes from testing every feature end to end before release.

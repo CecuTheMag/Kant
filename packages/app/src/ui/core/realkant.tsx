@@ -27,6 +27,7 @@ import type { Contact as CoreContact } from '@kant/core';
 import { getConversation, setContactTrust } from '@kant/core';
 import { setupPushNotifications } from '../../lib/pushNotifications';
 import { AI_CONTACT_PUBKEY } from '../../lib/aiClient';
+import { isOnline } from '../lib';
 import type { AttachmentData, OpenAttachmentResult, Settings, State, Store, ThemePref, VoiceRecording } from './store';
 import { canOpenExternally, openExternally } from '../../lib/fileActions';
 import { exportAndroidFile } from '../../lib/fileExport';
@@ -266,11 +267,18 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
   }, [meHex, kant.contacts.length, kant.contacts.map(c => c.publicKeyHex).join(','), ceremony]);
 
   /* ---- derived state ---- */
+  // Re-evaluate who is online as time passes, not only when someone pings.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const contacts: Contact[] = useMemo(() => kant.contacts.map((c: CoreContact) => {
     const id = c.id ?? c.publicKeyHex;
     const thread = threadsById[id] ?? [];
     const last = thread[thread.length - 1];
-    const online = c.publicKeyHex === AI_CONTACT_PUBKEY || kant.onlineContacts.has(c.publicKeyHex);
+    const heardAt = kant.onlineContacts.get(c.publicKeyHex);
+    const online = c.publicKeyHex === AI_CONTACT_PUBKEY || isOnline(heardAt, clock);
     const t = trustOverride[id] ?? { trust: c.trust ?? 'unverified' as TrustState };
     return {
       id,
@@ -281,7 +289,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       previousKeyHex: t.previousKeyHex,
       verifiedAt: t.verifiedAt ?? c.verifiedAt,
       online,
-      lastSeen: c.lastSeen,
+      lastSeen: Math.max(c.lastSeen ?? 0, heardAt ?? 0) || undefined,
       lastMessage: last ? previewText(last) : undefined,
       lastMessageTs: last?.ts ?? c.addedAt,
       unread: kant.unreadCounts.get(c.publicKeyHex) ?? 0,
@@ -289,7 +297,7 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
       blocked: !!c.blocked,
       caps: c.caps,
     } satisfies Contact;
-  }), [kant.contacts, kant.onlineContacts, kant.unreadCounts, threadsById, trustOverride]);
+  }), [kant.contacts, kant.onlineContacts, kant.unreadCounts, threadsById, trustOverride, clock]);
 
   const groups: Group[] = useMemo(() => groupsApi.groups.map(g => {
     const last = groupLast[g.id];

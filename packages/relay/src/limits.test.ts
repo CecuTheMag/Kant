@@ -24,3 +24,10 @@ test('connection limits: defaults carry thousands of clients, env overrides, bad
   assert.equal(connectionLimits({ RELAY_MAX_CONNECTIONS: '5000', RELAY_MAX_RESERVATIONS: '4000' }).maxReservations, 4000);
   for (const bad of ['0', '-1', '12abc', '1.5']) assert.throws(() => connectionLimits({ RELAY_MAX_CONNECTIONS: bad }), /RELAY_MAX_CONNECTIONS/);
 });
+
+test('circuits per peer: well above libp2p\'s 32-stream default, overridable', async () => {
+  const { connectionLimits } = await import('./limits.js');
+  assert.ok(connectionLimits({}).maxCircuitsPerPeer >= 256, 'at 32 a user could not reach their 33rd contact or group member');
+  assert.equal(connectionLimits({ RELAY_MAX_CIRCUITS_PER_PEER: '64' }).maxCircuitsPerPeer, 64);
+  assert.throws(() => connectionLimits({ RELAY_MAX_CIRCUITS_PER_PEER: '0' }), /RELAY_MAX_CIRCUITS_PER_PEER/);
+});

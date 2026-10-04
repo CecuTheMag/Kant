@@ -13,6 +13,7 @@ import { getConversation, getFileBlob } from '@kant/core';
 import type { useKant } from './useKant';
 import type { useGroups } from './useGroups';
 import type { GroupMember } from '@kant/core';
+import { isOnline } from '../ui/lib';
 
 type Kant = ReturnType<typeof useKant>;
 type Groups = ReturnType<typeof useGroups>;
@@ -60,7 +61,7 @@ export function useAiBridge(kant: Kant, groups: Groups): void {
               pubkeyHex: c.publicKeyHex,
               nickname: c.nickname ?? null,
               circuitAddr: c.lastCircuitAddr ?? null,
-              online: (kant.onlineContacts as any)?.has?.(c.publicKeyHex) ?? false,
+              online: isOnline(kant.onlineContacts.get(c.publicKeyHex)),
             })),
           };
 

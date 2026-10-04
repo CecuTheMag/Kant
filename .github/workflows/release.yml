@@ -1,0 +1,207 @@
+name: Release
+
+# Builds every client from the tagged commit, checks each one actually starts,
+# and attaches them to a DRAFT GitHub release with SHA-256 checksums. Nothing
+# is published until a maintainer reviews the draft and presses Publish.
+#
+# Trigger: push a tag like 0.5.0-beta (the website's download links use the
+# tag without a "v"). Or run it by hand (Actions → Release → Run workflow) to
+# build and smoke-test without creating a release.
+#
+# Repository setup (Settings → Secrets and variables → Actions):
+#   variable KANT_DEFAULT_RELAY      relay baked into the clients, e.g. https://relay.example.com
+#   secret   ANDROID_KEYSTORE_BASE64 base64 of packages/app/android/keystore/kant-release.keystore
+#   secret   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_PASSWORD  (from kant-release.keystore.properties)
+#   secret   GOOGLE_SERVICES_JSON    optional: Firebase config for push notifications
+# See docs/runbooks/release-process.md.
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+.[0-9]+*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # SHA-256 of the release signing certificate (the key generated for 0.3.0).
+  # An APK signed with anything else can't update existing installs, so the
+  # build fails instead of shipping it.
+  ANDROID_CERT_SHA256: 1106d101d96408811865881462eb498cb1744ccd8c09f87e8d915bd47a4faee9
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/ci.yml
+
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Tag, package.json and Android versions agree
+        run: |
+          app=$(node -p "require('./packages/app/package.json').version")
+          desktop=$(node -p "require('./packages/desktop/package.json').version")
+          android=$(sed -n 's/^ *versionName "\(.*\)"/\1/p' packages/app/android/app/build.gradle)
+          echo "app=$app desktop=$desktop android=$android"
+          [ "$app" = "$desktop" ] && [ "$app" = "$android" ] || { echo "::error::versions differ"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            [ "${GITHUB_REF_NAME%%-*}" = "$app" ] || { echo "::error::tag $GITHUB_REF_NAME does not match version $app"; exit 1; }
+          fi
+          [ -n "${{ vars.KANT_DEFAULT_RELAY }}" ] || { echo "::error::repository variable KANT_DEFAULT_RELAY is not set"; exit 1; }
+          echo "version=$app" >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Android APK
+    needs: [checks, version]
+    runs-on: ubuntu-latest
+    env:
+      VITE_RELAY_URL: ${{ vars.KANT_DEFAULT_RELAY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: pnpm install --frozen-lockfile
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_PASSWORD" ] \
+            || { echo "::error::Android signing secrets are not set"; exit 1; }
+          mkdir -p packages/app/android/keystore
+          echo "$KEYSTORE" | base64 -d > packages/app/android/keystore/kant-release.keystore
+          printf 'storeFile=kant-release.keystore\nstorePassword=%s\nkeyAlias=kant\nkeyPassword=%s\n' \
+            "$STORE_PASSWORD" "$KEY_PASSWORD" > packages/app/android/keystore/kant-release.keystore.properties
+      - name: Firebase config (optional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > packages/app/android/app/google-services.json
+          else
+            echo "No GOOGLE_SERVICES_JSON secret: building without push notifications, like the local release builds."
+          fi
+      - run: pnpm --dir packages/app run build
+      - run: pnpm --dir packages/app exec cap sync android
+      - name: Gradle assembleRelease
+        working-directory: packages/app/android
+        run: ./gradlew --no-daemon assembleRelease
+      - name: Verify signature and certificate
+        run: |
+          apk=packages/app/android/app/build/outputs/apk/release/app-release.apk
+          [ -f "$apk" ] || { echo "::error::no signed APK (unsigned builds are named app-release-unsigned.apk)"; ls -R packages/app/android/app/build/outputs/apk; exit 1; }
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$apksigner" verify --verbose "$apk"
+          cert=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          [ "$cert" = "$ANDROID_CERT_SHA256" ] || { echo "::error::APK signed with $cert, expected $ANDROID_CERT_SHA256"; exit 1; }
+          mkdir -p out && cp "$apk" "out/Kant-${{ needs.version.outputs.version }}.apk"
+      - run: rm -rf packages/app/android/keystore packages/app/android/app/google-services.json
+        if: always()
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: out/*
+          if-no-files-found: error
+
+  linux:
+    name: Linux AppImage
+    needs: [checks, version]
+    runs-on: ubuntu-22.04
+    env:
+      VITE_RELAY_URL: ${{ vars.KANT_DEFAULT_RELAY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir packages/desktop run build:appimage --publish never
+      - name: Smoke test (app starts, bundled relay healthy, UI renders)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+          appimage=packages/desktop/release/Kant-${{ needs.version.outputs.version }}.AppImage
+          chmod +x "$appimage"
+          xvfb-run -a node packages/desktop/scripts/smoke.mjs "$appimage"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: packages/desktop/release/Kant-${{ needs.version.outputs.version }}.AppImage
+          if-no-files-found: error
+
+  windows:
+    name: Windows installer
+    needs: [checks, version]
+    runs-on: windows-latest
+    env:
+      VITE_RELAY_URL: ${{ vars.KANT_DEFAULT_RELAY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The build scripts use POSIX shell syntax (VAR=1 cmd, rm -rf).
+      - run: pnpm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
+      # One installer per architecture (x64, arm64). build:win passes
+      # --publish never to both electron-builder runs itself: on a tag build
+      # electron-builder would otherwise try to upload to GitHub on its own.
+      - run: pnpm --dir packages/desktop run build:win
+      - name: Smoke test (app starts, bundled relay healthy, UI renders)
+        shell: bash
+        # The runner is x64, so this exercises the x64 build; arm64 is built but can't run here.
+        run: node packages/desktop/scripts/smoke.mjs packages/desktop/release/win-unpacked/Kant.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            packages/desktop/release/Kant-Setup-${{ needs.version.outputs.version }}-*.exe
+            packages/desktop/release/Kant-${{ needs.version.outputs.version }}-*-portable.exe
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    needs: [version, android, linux, windows]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * | tee SHA256SUMS.txt
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          notes=release-notes/$VERSION.md
+          if [ -f "$notes" ]; then notes_arg=(--notes-file "$notes"); else notes_arg=(--generate-notes); fi
+          gh release create "$GITHUB_REF_NAME" dist/* --draft --latest \
+            --title "Kant $VERSION (Beta)" "${notes_arg[@]}"

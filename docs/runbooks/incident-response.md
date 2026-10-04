@@ -127,7 +127,7 @@ $ docker compose logs --no-color relay | grep -E ' (ERROR|FATAL) '
 **Symptoms:** `RelayHighNoReservationRate` or `RelayNoReservationElevated` alert; users report "I can connect but cannot send messages" or peers go offline intermittently.
 
 **Likely causes:**
-- Relay is at or near `RELAY_MAX_RESERVATIONS` (1024 default).
+- Relay is at or near `RELAY_MAX_RESERVATIONS` (defaults to `RELAY_MAX_CONNECTIONS`, 4096).
 - Reservation TTL is too short, or clients are not refreshing in time.
 - libp2p upgrade or client regression causing reservation churn.
 - Network instability between clients and relay forcing rapid reconnect.
@@ -164,7 +164,7 @@ NO_RESERVATION rate high
 ```bash
 # Quick: increase the cap (requires restart)
 $ docker compose -f docker-compose.https.yml down
-# Edit .env or compose file: RELAY_MAX_RESERVATIONS=2048
+# Edit .env or compose file: RELAY_MAX_CONNECTIONS=8192 (reservations follow it)
 $ RELAY_DOMAIN=relay.example.com docker compose -f docker-compose.https.yml up -d
 
 # Better long-term: scale horizontally. Add a second relay and

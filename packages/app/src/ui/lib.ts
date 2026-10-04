@@ -248,6 +248,16 @@ export function listTime(ts?: number): string {
   return d.toLocaleDateString([], { day: 'numeric', month: 'short', year: d.getFullYear() === now.getFullYear() ? undefined : '2-digit' });
 }
 
+/**
+ * How long after we last heard from a contact (a presence ping, sent every
+ * 60 s, or any message from them) we still show them as online.
+ */
+export const ONLINE_WINDOW_MS = 150_000;
+
+export function isOnline(heardAt: number | undefined, now = Date.now()): boolean {
+  return heardAt !== undefined && now - heardAt < ONLINE_WINDOW_MS;
+}
+
 export function seenLabel(c: Pick<Contact, 'online' | 'lastSeen'>): string {
   if (c.online) return 'Online';
   if (!c.lastSeen) return '';

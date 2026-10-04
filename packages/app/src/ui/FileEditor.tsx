@@ -16,7 +16,7 @@ import { useStore } from './core/store';
 import { Alert, ArrowUp, Check, ChevronUp, Download, Plus, Redo, Spinner, Trash, Undo } from './icons';
 import { Confirm, Menu, Segmented, Sheet, SheetHead, useToast } from './parts';
 import type { MenuItem } from './parts';
-import { Markdown } from './preview/Markdown';
+import { Markdown } from './preview/MarkdownView';
 import { parseMarkdown } from './preview/markdown';
 import type { Block } from './preview/markdown';
 import { PREVIEW_LIMITS } from './preview/fileKind';

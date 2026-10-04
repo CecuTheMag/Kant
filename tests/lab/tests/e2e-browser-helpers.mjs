@@ -100,9 +100,184 @@ function settleWithin(promise, ms) {
   ]);
 }
 
+/* ── UI driver ────────────────────────────────────────────────────────────────
+ * Every interaction with the app's screens goes through these functions, so a
+ * UI change means updating one place rather than every test. They follow the
+ * same flows a person does (terms → network → name and password, invite
+ * links, the composer), and match the selectors tests/lab/local/harness.mjs
+ * uses for the reconnect suite.
+ */
+
+export const passwordFor = label => `KantE2E-${label}-2026!`;
+
+const chatsReady = page => page.getByRole('button', { name: 'New message' });
+
+/** Text that is exactly `name` — "Member1" must not match "Member15". */
+const exactly = name => new RegExp(`^\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`);
+
+/** On a phone-width layout an open chat covers the list; go back to it. */
+export async function toChatList(page) {
+  if (!isPhoneLayout(page)) return;
+  const back = page.getByRole('button', { name: 'Back to chats' });
+  if (await back.isVisible().catch(() => false)) await back.click();
+  await chatsReady(page).waitFor({ timeout: 10_000 });
+}
+
+/** Below 768 px the app shows the list or one chat, never both (kant.css). */
+function isPhoneLayout(page) {
+  return (page.viewportSize()?.width ?? 1280) < 768;
+}
+
+/** The chat-list row for a person or group, by exact name. */
+export function chatRow(page, name) {
+  return page.locator('.k-row-name').filter({ hasText: exactly(name) }).first();
+}
+
+function watchConsole(page, label, onLine) {
+  page.on('console', message => {
+    const value = message.text();
+    onLine?.(value);
+    // Full passthrough in debug mode (KANT_DEBUG_CONSOLE=1) so the app's
+    // addLog console.debug trail and every warning reach the test log.
+    if (process.env.KANT_DEBUG_CONSOLE === '1') {
+      process.stderr.write(`[${label}] ${value}\n`);
+      return;
+    }
+    if (/createNode|reservation|reconnect|queue|NO_RESERVATION|PING|session|x3dh|group|key|distribut|bundle|fetch/i.test(value)) {
+      process.stderr.write(`[${label}] ${value}\n`);
+    }
+  });
+  page.on('pageerror', error => process.stderr.write(`[${label}] page error: ${error.message}\n`));
+}
+
+/** First run: terms, then the network step (skipped by builds with a default relay), then name and password. */
+export async function onboard(page, label, relay = relayUrl) {
+  await page.getByRole('button', { name: 'Agree and continue' }).click({ timeout: 60_000 });
+  const relayField = page.locator('#relay');
+  const nameField = page.getByPlaceholder('How friends will see you');
+  await relayField.or(nameField).first().waitFor({ timeout: 60_000 });
+  if (await relayField.isVisible()) {
+    await relayField.fill(relay);
+    await relayField.press('Enter');
+  }
+  await nameField.fill(label, { timeout: 60_000 });
+  await page.getByPlaceholder('At least 8 characters').fill(passwordFor(label));
+  await page.getByPlaceholder('Type it again').fill(passwordFor(label));
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await chatsReady(page).waitFor({ timeout: 90_000 });
+}
+
+/** A reload or restart of an existing profile lands on the unlock screen. */
+export async function unlock(page, label) {
+  await page.getByLabel('Password', { exact: true }).fill(passwordFor(label), { timeout: 60_000 });
+  await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await chatsReady(page).waitFor({ timeout: 90_000 });
+}
+
+/** The link "Copy link" in My code produces (ui/lib.ts buildInvite). Same relay, so no `r`. */
+export function inviteLink(hex, name) {
+  return `https://kant.network/add#${new URLSearchParams({ k: hex, n: name })}`;
+}
+
+/** Add a contact the way a person does: paste their invite link. */
+export async function addContact(page, hex, name) {
+  await toChatList(page);
+  const emptyState = page.getByRole('button', { name: 'Add a contact' });
+  if (await emptyState.isVisible().catch(() => false)) {
+    await emptyState.click();
+  } else {
+    await chatsReady(page).click();
+    await page.getByRole('dialog', { name: 'New message' }).getByRole('button', { name: 'Add contact', exact: true }).click();
+  }
+  const sheet = page.getByRole('dialog', { name: 'Add contact' });
+  const invite = sheet.locator('#invite');
+  if (!await invite.isVisible().catch(() => false)) await sheet.getByRole('button', { name: 'Paste link' }).click();
+  await invite.fill(inviteLink(hex, name));
+  await sheet.getByRole('button', { name: 'Add contact', exact: true }).last().click();
+  await sheet.waitFor({ state: 'detached', timeout: 15_000 }).catch(() => {});
+  // On a phone, adding opens the new chat over the list.
+  if (isPhoneLayout(page)) await page.getByRole('button', { name: 'Back to chats' }).waitFor({ timeout: 10_000 });
+  await toChatList(page);
+  await chatRow(page, name).waitFor({ timeout: 15_000 });
+}
+
+/** Open a person's or group's chat from the chat list. */
+export async function openChat(page, name) {
+  await toChatList(page);
+  await chatRow(page, name).click();
+  await composer(page).waitFor({ timeout: 30_000 });
+}
+
+export function composer(page) {
+  return page.getByLabel('Message', { exact: true });
+}
+
+/** Type and send in the open chat. The Send button enables once the app is connected to its relay. */
+export async function sendText(page, text) {
+  await composer(page).fill(text);
+  await page.getByRole('button', { name: 'Send', exact: true }).click({ timeout: 120_000 });
+  await page.locator('.k-msg.out', { hasText: text }).first().waitFor({ timeout: 10_000 });
+}
+
+export function incoming(page, text) {
+  return page.locator('.k-msg.in', { hasText: text }).first();
+}
+
+export async function sendMessage(sender, receiver, text) {
+  await sendText(sender, text);
+  await incoming(receiver, text).waitFor({ timeout: 90_000 });
+}
+
 /**
- * Create a browser pair for 2-member E2E tests (Alice and Bob).
- * @deprecated Use createBrowserGroup(n) for scalable N-member tests.
+ * Send a message from sender to all receivers in parallel.
+ * @param {import('@playwright/test').Page} sender
+ * @param {Array<import('@playwright/test').Page>} receivers
+ * @param {string} text
+ * @param {number} [timeoutMs=90000]
+ */
+export async function sendMessageToAll(sender, receivers, text, timeoutMs = 90_000) {
+  await sendText(sender, text);
+  await Promise.all(receivers.map(receiver => incoming(receiver, text).waitFor({ timeout: timeoutMs })));
+}
+
+/** Attach a file in the open chat through the composer's Attach → File menu. */
+export async function attachFile(page, file) {
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Attach' }).click({ timeout: 120_000 });
+  await page.getByRole('menuitem', { name: 'File' }).click();
+  await (await chooser).setFiles(file);
+}
+
+/** Press a received file's Save button and return the Playwright download. */
+export async function saveFile(page, name) {
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: `Save ${name}` }).last().click();
+  return download;
+}
+
+/** New message → New group: name it, pick members by contact name, Create. */
+export async function createGroupUI(page, groupName, memberNames) {
+  await toChatList(page);
+  await chatsReady(page).click();
+  await page.getByRole('dialog', { name: 'New message' }).getByRole('button', { name: 'New group' }).click();
+  const sheet = page.getByRole('dialog', { name: 'New group' });
+  await sheet.getByLabel('Group name').fill(groupName);
+  for (const name of memberNames) {
+    await sheet.locator('button.k-cell').filter({ has: page.locator('.k-cell-label', { hasText: exactly(name) }) }).click();
+  }
+  // The header counts the selection; a mis-click would otherwise go unnoticed.
+  await sheet.getByText(`Members · ${memberNames.length} selected`, { exact: true }).waitFor({ timeout: 5_000 });
+  await sheet.getByRole('button', { name: 'Create', exact: true }).click();
+  await toChatList(page);
+  await chatRow(page, groupName).waitFor({ timeout: 15_000 });
+}
+
+/* ── Fixtures ──────────────────────────────────────────────────────────────── */
+
+/**
+ * Two fresh clients, Alice and Bob, who have added each other by invite link
+ * and are both online with each other's live address. Each has the other's
+ * chat open when this resolves.
  */
 export async function createBrowserPair() {
   const browser = await chromium.launch(CHROMIUM_LAUNCH_OPTS);
@@ -116,126 +291,28 @@ export async function createBrowserPair() {
   }
 }
 
+/** A fresh, onboarded client in its own browser context. */
+export async function createClient(browser, label) {
+  const context = await browser.newContext({ acceptDownloads: true });
+  const page = await context.newPage();
+  watchConsole(page, label);
+  await page.goto(webUrl);
+  await onboard(page, label);
+  return { context, page };
+}
+
 async function setupBrowserPair(browser) {
-  const makeClient = async label => {
-    const context = await browser.newContext({ acceptDownloads: true });
-    // Force legacy UI so tests target the production component tree
-    await context.addInitScript((opts) => {
-      try {
-        localStorage.setItem('kant_relay_url', opts.relayUrl);
-        localStorage.setItem('kant_direction', 'instrument');
-      } catch {}
-    }, { relayUrl });
-    const page = await context.newPage();
-    page.on('console', message => {
-      const value = message.text();
-      // Full passthrough in debug mode (KANT_DEBUG_CONSOLE=1) so the app's
-      // addLog console.debug trail and every warning reach the test log.
-      if (process.env.KANT_DEBUG_CONSOLE === '1') {
-        process.stderr.write(`[${label}] ${value}\n`);
-        return;
-      }
-      if (/createNode|reservation|reconnect|queue|NO_RESERVATION|PING|session|x3dh|group|key|distribut|bundle|fetch/i.test(value)) {
-        process.stderr.write(`[${label}] ${value}\n`);
-      }
-    });
-    page.on('pageerror', error => process.stderr.write(`[${label}] page error: ${error.message}\n`));
-    await page.goto(webUrl);
-    // Local/manual labs commonly use the app's loopback default, which the UI
-    // deliberately asks the user to confirm. CI uses a non-loopback service
-    // URL and skips this screen, so handle both startup paths explicitly.
-    const useRelay = page.getByRole('button', { name: 'Use this relay' });
-    if (await useRelay.isVisible().catch(() => false)) {
-      await page.getByPlaceholder('https://relay.example.com').fill(relayUrl);
-      await useRelay.click();
-    }
-    const password = `KantE2E-${label}-2026!`;
-    await page.getByPlaceholder('Enter password').fill(password);
-    await page.getByPlaceholder('Repeat password').fill(password);
-    await page.getByRole('button', { name: 'Create Identity' }).click();
-    await page.getByRole('button', { name: 'Add contact' }).first().waitFor({ timeout: 90_000 });
-    return { context, page };
-  };
-  const alice = await makeClient('Alice');
-  const bob = await makeClient('Bob');
+  const [alice, bob] = await Promise.all([createClient(browser, 'Alice'), createClient(browser, 'Bob')]);
   const [aliceKey, bobKey] = await Promise.all([identityKey(alice.page), identityKey(bob.page)]);
   assert.match(aliceKey, /^[0-9a-f]{64}$/);
   assert.match(bobKey, /^[0-9a-f]{64}$/);
-  const add = async (page, peerKey, name) => {
-    // Target the icon button in the header by aria-label to avoid strict-mode
-    // violations — the page has multiple 'Add contact' buttons (header icon,
-    // GetStarted step, modal submit, footer).
-    await page.getByRole('button', { name: 'Add contact' }).and(page.locator('[aria-label="Add contact"]')).click();
-    await page.getByPlaceholder('64 hex characters…').fill(peerKey);
-    const nickInput = page.getByPlaceholder('e.g. Mara').or(page.getByPlaceholder('e.g. Alice')).first();
-    await nickInput.fill(name);
-    // Modal submit — scoped inside the open modal to avoid matching other buttons.
-    await page.locator('.modal, [role="dialog"]').getByRole('button', { name: /^Add [Cc]ontact$/ }).click();
-    const entry = page.getByText(name, { exact: false }).first();
-    await entry.waitFor();
-    await entry.click();
-  };
-  await Promise.all([add(alice.page, bobKey, 'Bob E2E'), add(bob.page, aliceKey, 'Alice E2E')]);
-  // Connect both nodes to the relay so circuit addresses are populated
-  const connect = async (page) => {
-    const connectBtn = page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtn.isVisible().catch(() => false)) await connectBtn.click();
-    const deadline = Date.now() + 180_000;
-    while (Date.now() < deadline) {
-      const addr = await page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => '');
-      if (addr && addr.includes('/p2p-circuit')) return;
-      await new Promise(r => setTimeout(r, 500));
-    }
-    throw new Error('Node did not get a circuit address within 180s');
-  };
-  await Promise.all([connect(alice.page), connect(bob.page)]);
-  // Read each peer's circuit address from window.__kantCircuitAddr (set by useKant)
-  // and inject it into the other peer's contacts IDB so the group modal doesn't
-  // show the "Enter circuit address" fallback input.
-  const getCircuitAddr = async (page) => {
-    const deadline = Date.now() + 15_000;
-    while (Date.now() < deadline) {
-      const addr = await page.evaluate(() => window.__kantCircuitAddr ?? '');
-      if (addr && addr.includes('/p2p-circuit')) return addr;
-      await new Promise(r => setTimeout(r, 300));
-    }
-    return '';
-  };
-  const [aliceCircuit, bobCircuit] = await Promise.all([
-    getCircuitAddr(alice.page),
-    getCircuitAddr(bob.page),
-  ]);
-  const injectAddr = async (page, hex, addr) => {
-    if (!addr) return;
-    await page.evaluate(async ({ hex, addr }) => {
-      await new Promise((resolve) => {
-        const r = indexedDB.open('kant');
-        r.onsuccess = () => {
-          const tx = r.result.transaction('contacts', 'readwrite');
-          const store = tx.objectStore('contacts');
-          const get = store.get(hex);
-          get.onsuccess = () => {
-            const rec = get.result ?? { publicKeyHex: hex };
-            store.put({ ...rec, lastCircuitAddr: addr });
-            tx.oncomplete = resolve;
-          };
-        };
-      });
-    }, { hex, addr });
-  };
+  await Promise.all([addContact(alice.page, bobKey, 'Bob E2E'), addContact(bob.page, aliceKey, 'Alice E2E')]);
+  // Group delivery needs a live circuit address for each member, which only a
+  // presence exchange provides — wait for it rather than for UI "online" text.
   await Promise.all([
-    injectAddr(alice.page, bobKey, bobCircuit),
-    injectAddr(bob.page, aliceKey, aliceCircuit),
+    waitForContactOnline(alice.page, 'Bob E2E', 180_000),
+    waitForContactOnline(bob.page, 'Alice E2E', 180_000),
   ]);
-
-  // Wait for presence exchange so React state has live lastCircuitAddr before
-  // any group creation. createGroup reads c.lastCircuitAddr from React state
-  // (not IDB directly), which is only updated when a presence ping arrives.
-  await Promise.all([
-    waitForContactOnline(alice.page, 'Bob E2E'),
-    waitForContactOnline(bob.page, 'Alice E2E'),
-  ]);
-
   return {
     browser, alice, bob,
     async close() {
@@ -247,9 +324,8 @@ async function setupBrowserPair(browser) {
 
 /**
  * Create N browser contexts with identities, suitable for scale testing.
- * Each member gets its stable public identity key. Contacts are injected
- * directly into IndexedDB so the owner can create the group without O(n)
- * modal setup.
+ * Member0 is the owner; only the owner has contacts (injected straight into
+ * IndexedDB so setup stays O(n)).
  *
  * @param {number} n - Number of browser members to create
  * @param {string} [relayUrlOverride] - Optional relay URL override
@@ -269,10 +345,9 @@ export async function createBrowserGroup(n, relayUrlOverride = relayUrl, webUrlO
   /** @type {Array<{page: import('@playwright/test').Page, context: import('@playwright/test').BrowserContext, publicKeyHex: string, sessionReadyContacts: Set<string>}>} */
   const members = [];
 
-  // Launch all contexts in parallel for faster setup
   console.log(`[createBrowserGroup] Creating ${n} contexts...`);
   const contexts = await Promise.all(
-    Array.from({ length: n }, (_, i) => browser.newContext({ acceptDownloads: true }))
+    Array.from({ length: n }, () => browser.newContext({ acceptDownloads: true }))
   );
   const closeTimeout = (ms) => new Promise(resolve => {
     const timer = setTimeout(resolve, ms);
@@ -289,62 +364,24 @@ export async function createBrowserGroup(n, relayUrlOverride = relayUrl, webUrlO
     ]);
   };
 
-  // Set up each member's page and identity — in parallel batches so the
-  // N-member fixture finishes inside the scale tests' budgets. The old
-  // sequential goto+identity flow cost ~15s per member, which alone blew the
-  // 120s budget at N=10 on a 4-vCPU runner.
   const setupMember = async (i) => {
     const label = `Member${i}`;
-    const context = contexts[i];
-    // Use an options object to reliably serialize and guard storage access
-    await context.addInitScript((opts) => {
-      try {
-        localStorage.setItem('kant_relay_url', opts.relayUrl);
-        localStorage.setItem('kant_direction', 'instrument');
-      } catch {}
-    }, { relayUrl: relayUrlOverride });
-    const page = await context.newPage();
+    const page = await contexts[i].newPage();
     const sessionReadyContacts = new Set();
-    page.on('console', message => {
-      const value = message.text();
+    watchConsole(page, label, value => {
       const ready = value.match(/Session ready:\s*(Member\d+)/);
       if (ready) sessionReadyContacts.add(ready[1]);
-      if (/createNode|reservation|reconnect|queue|NO_RESERVATION|PING|session|x3dh|group/i.test(value)) {
-        process.stderr.write(`[${label}] ${value}\n`);
-      }
     });
-    page.on('pageerror', error => process.stderr.write(`[${label}] page error: ${error.message}\n`));
-
     await page.goto(webUrlOverride);
-    const useRelay = page.getByRole('button', { name: 'Use this relay' });
-    if (await useRelay.isVisible().catch(() => false)) {
-      await page.getByPlaceholder('https://relay.example.com').fill(relayUrlOverride);
-      await useRelay.click();
-    }
-
-    // Stored identity has one keypair record; the scale fixture needs only
-    // publicKeyHex because group distribution fetches current prekey bundles
-    // over the live circuit.
-    const existing = await getIdentityRecord(page);
-    let publicKeyHex = existing?.publicKeyHex;
-
-    if (typeof publicKeyHex === 'string' && publicKeyHex.length > 0) {
-      console.log(`[${label}] Reusing existing identity: ${publicKeyHex.slice(0, 16)}...`);
-    } else {
-      const password = `KantE2E-${label}-2026!`;
-      await page.getByPlaceholder('Enter password').fill(password);
-      await page.getByPlaceholder('Repeat password').fill(password);
-      await page.getByRole('button', { name: 'Create Identity' }).click();
-      publicKeyHex = await eventually(async () => {
-        const record = await getIdentityRecord(page);
-        assert.ok(record?.publicKeyHex, `${label}: identity creation has not committed yet`);
-        return record.publicKeyHex;
-      }, 90_000);
-      console.log(`[${label}] Created new identity: ${publicKeyHex.slice(0, 16)}...`);
-    }
-
-    assert.match(publicKeyHex, /^[0-9a-f]{64}$/, `${label}: publicKeyHex is required`);
-    return { page, context, publicKeyHex, sessionReadyContacts };
+    await onboard(page, label, relayUrlOverride);
+    const record = await eventually(async () => {
+      const value = await getIdentityRecord(page);
+      assert.ok(value?.publicKeyHex, `${label}: identity creation has not committed yet`);
+      return value;
+    }, 90_000);
+    assert.match(record.publicKeyHex, /^[0-9a-f]{64}$/, `${label}: publicKeyHex is required`);
+    console.log(`[${label}] Created identity: ${record.publicKeyHex.slice(0, 16)}...`);
+    return { page, context: contexts[i], publicKeyHex: record.publicKeyHex, sessionReadyContacts };
   };
 
   // Two concurrent Argon2/key-generation flows are the stable ceiling for
@@ -359,71 +396,62 @@ export async function createBrowserGroup(n, relayUrlOverride = relayUrl, webUrlO
       );
       members.push(...batch);
     }
+
+    console.log(`[createBrowserGroup] Injecting owner-centered contacts for ${n} members...`);
+    // These tests exercise one owner's group fan-out. A complete contact mesh is
+    // unrelated to that flow and starts n*(n-1) background DM/X3DH handshakes.
+    // Only the owner needs contacts for the group sheet; recipients learn the
+    // full membership from the signed group-key payload.
+    const ownerContacts = members.slice(1).map((member, index) => ({
+      publicKeyHex: member.publicKeyHex,
+      nickname: `Member${index + 1}`,
+      trusted: true,
+    }));
+    await injectContacts(members[0].page, ownerContacts);
+
+    // Direct IDB writes avoid O(n²) UI work, but React already captured the
+    // owner's contacts state. Reload only the owner so the app loads them.
+    const owner = members[0];
+    owner.sessionReadyContacts.clear();
+    await owner.page.reload();
+    await unlock(owner.page, 'Member0');
+    console.log(`[createBrowserGroup] Owner contacts hydrated in app state.`);
+
+    // Do not let group creation race circuit reservations. A relay can accept a
+    // WebSocket connection while dropping its first reservation request; recover
+    // only those members with one full reload, as the smaller fixture does.
+    const waitForCircuit = (member, index, timeoutMs) => eventually(async () => {
+      const addr = await member.page.evaluate(() => window.__kantCircuitAddr ?? '');
+      assert.ok(addr.includes('/p2p-circuit'), `Member${index}: circuit reservation is not ready`);
+      return addr;
+    }, timeoutMs);
+    const missingCircuits = [];
+    await Promise.all(members.map(async (member, index) => {
+      await waitForCircuit(member, index, 45_000).catch(() => missingCircuits.push(index));
+    }));
+    for (const index of missingCircuits) {
+      const member = members[index];
+      console.log(`[createBrowserGroup] Recovering Member${index} circuit with one reload.`);
+      await member.page.reload();
+      await unlock(member.page, `Member${index}`);
+      await waitForCircuit(member, index, 90_000);
+    }
+    await Promise.all(members.slice(1).map((_, index) =>
+      waitForContactOnline(owner.page, `Member${index + 1}`, 90_000, { open: false })
+    ));
+    await eventually(() => {
+      const missing = members.slice(1)
+        .map((_, index) => `Member${index + 1}`)
+        .filter(name => !owner.sessionReadyContacts.has(name));
+      assert.equal(missing.length, 0, `Owner sessions not ready: ${missing.join(', ')}`);
+      return true;
+    }, 90_000);
   } catch (error) {
     // A failed fixture used to leak every context and keep node alive until
     // an external timeout killed it — close everything so the runner exits.
     await closeFixture();
     throw error;
   }
-
-  console.log(`[createBrowserGroup] Injecting owner-centered contacts for ${n} members...`);
-  // These tests exercise one owner's group fan-out. A complete contact mesh is
-  // unrelated to that flow and starts n*(n-1) background DM/X3DH handshakes.
-  // Besides overwhelming small runners, those handshakes contend for the same
-  // advertised OPKs as group-key delivery. Only the owner needs contacts for
-  // the creation modal; recipients learn the full membership from the signed
-  // group-key payload.
-  const ownerContacts = members.slice(1).map((member, index) => ({
-    publicKeyHex: member.publicKeyHex,
-    nickname: `Member${index + 1}`,
-    trusted: true,
-  }));
-  await injectContacts(members[0].page, ownerContacts);
-  console.log(`[createBrowserGroup] All contacts injected.`);
-
-  // Direct IDB writes deliberately avoid O(n²) UI work, but React already
-  // captured the owner's contacts state. Reload only the owner so the real app
-  // executes getContacts(); reloading recipients needlessly replaces nine
-  // healthy relay reservations even though they have no contact state to load.
-  const owner = members[0];
-  owner.sessionReadyContacts.clear();
-  await owner.page.reload();
-  await owner.page.getByPlaceholder('Enter password').fill('KantE2E-Member0-2026!');
-  await owner.page.getByRole('button', { name: 'Unlock' }).click();
-  await owner.page.getByRole('button', { name: 'Groups' }).waitFor({ timeout: 90_000 });
-  console.log(`[createBrowserGroup] Owner contacts hydrated in app state.`);
-
-  // Do not let group creation race circuit reservations. A relay can accept a
-  // WebSocket connection while dropping its first reservation request; recover
-  // only those members with one full reload, as the smaller lab fixture does.
-  const waitForCircuit = (member, index, timeoutMs) => eventually(async () => {
-    const addr = await member.page.evaluate(() => window.__kantCircuitAddr ?? '');
-    assert.ok(addr.includes('/p2p-circuit'), `Member${index}: circuit reservation is not ready`);
-    return addr;
-  }, timeoutMs);
-  const missingCircuits = [];
-  await Promise.all(members.map(async (member, index) => {
-    await waitForCircuit(member, index, 45_000).catch(() => missingCircuits.push(index));
-  }));
-  for (const index of missingCircuits) {
-    const member = members[index];
-    console.log(`[createBrowserGroup] Recovering Member${index} circuit with one reload.`);
-    await member.page.reload();
-    await member.page.getByPlaceholder('Enter password').fill(`KantE2E-Member${index}-2026!`);
-    await member.page.getByRole('button', { name: 'Unlock' }).click();
-    await member.page.getByRole('button', { name: 'Groups' }).waitFor({ timeout: 90_000 });
-    await waitForCircuit(member, index, 90_000);
-  }
-  await Promise.all(members.slice(1).map((_, index) =>
-    waitForContactOnline(members[0].page, `Member${index + 1}`, 90_000)
-  ));
-  await eventually(() => {
-    const missing = members.slice(1)
-      .map((_, index) => `Member${index + 1}`)
-      .filter(name => !owner.sessionReadyContacts.has(name));
-    assert.equal(missing.length, 0, `Owner sessions not ready: ${missing.join(', ')}`);
-    return true;
-  }, 90_000);
   console.log(`[createBrowserGroup] All circuits and owner sessions ready for ${n - 1} live members.`);
 
   const endMem = process.memoryUsage().heapUsed;
@@ -434,25 +462,19 @@ export async function createBrowserGroup(n, relayUrlOverride = relayUrl, webUrlO
     members,
     async close() {
       console.log('[createBrowserGroup] Closing browser...');
-      const closeStart = process.memoryUsage().heapUsed;
       await closeFixture();
-      const closeEnd = process.memoryUsage().heapUsed;
-      console.log(`[createBrowserGroup] Cleanup heap: ${Math.round(closeEnd / 1024 / 1024)} MB (freed ~${Math.round((closeEnd - closeStart) / 1024 / 1024)} MB)`);
     }
   };
 }
 
 /**
- * Click a contact by name and wait for "Online" to appear in the conversation header.
- * This confirms a presence ping has been received and React state has the live circuit address.
+ * Wait until `page` holds a live circuit address for the contact named
+ * `contactName` — the actual prerequisite for delivery, which only a presence
+ * exchange provides. UI "online" text can lag it by a render. Opens the
+ * contact's chat first unless `open: false`.
  */
-export async function waitForContactOnline(page, contactName, timeoutMs = 60_000) {
-  // Keep the conversation selected, but verify the actual prerequisite for
-  // group delivery: the presence handler persisted a live circuit address.
-  // UI "Online" text is presentation state and can lag a successful presence
-  // update by a render; waiting on it made the lab randomly reject healthy
-  // ratchets/circuits.
-  await page.locator('.inst-rows button.row', { hasText: contactName }).first().click();
+export async function waitForContactOnline(page, contactName, timeoutMs = 60_000, { open = true } = {}) {
+  if (open) await openChat(page, contactName);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const liveAddr = await page.evaluate((nickname) => new Promise((resolve) => {
@@ -473,58 +495,4 @@ export async function waitForContactOnline(page, contactName, timeoutMs = 60_000
     await new Promise(resolve => setTimeout(resolve, 500));
   }
   throw new Error(`Contact ${contactName} did not receive a live circuit address within ${timeoutMs}ms`);
-}
-
-/**
- * Create a group via InstrumentApp's NewGroupModal.
- * Navigates to the Groups tab, opens the modal, fills the name,
- * selects members by nickname, and submits.
- */
-export async function createGroupUI(page, groupName, memberNicknames) {
-  await page.getByRole('button', { name: 'Groups' }).click();
-  await page.getByRole('button', { name: 'New group' }).first().click();
-  await page.getByPlaceholder('e.g. Roadtrip').fill(groupName);
-  for (const nick of memberNicknames) {
-    await page.locator('.modal button.row', { hasText: nick }).first().click();
-  }
-  await page.locator('.modal').getByRole('button', { name: 'Create group' }).click();
-  await page.getByText(groupName, { exact: false }).first().waitFor({ timeout: 15_000 });
-}
-
-export async function sendMessage(sender, receiver, text) {
-  const composer = sender.locator('textarea.composer-input');
-  // Wait for the composer to exist and become enabled.
-  // It is disabled until nodeStatus reaches 'chatting' (session established).
-  await composer.waitFor({ state: 'visible', timeout: 60_000 });
-  const deadline = Date.now() + 60_000;
-  while (Date.now() < deadline) {
-    const disabled = await composer.isDisabled().catch(() => true);
-    if (!disabled) break;
-    await new Promise(r => setTimeout(r, 500));
-  }
-  if (await composer.isDisabled().catch(() => true)) {
-    throw new Error('composer-input never became enabled (session not established within 60s)');
-  }
-  await composer.fill(text);
-  await composer.press('Enter');
-  await receiver.getByText(text, { exact: true }).waitFor({ timeout: 90_000 });
-}
-
-/**
- * Send a message from sender to all receivers in parallel.
- * @param {import('@playwright/test').Page} sender
- * @param {Array<import('@playwright/test').Page>} receivers
- * @param {string} text
- * @param {number} [timeoutMs=90000]
- */
-export async function sendMessageToAll(sender, receivers, text, timeoutMs = 90_000) {
-  const composer = sender.locator('textarea.composer-input');
-  await composer.fill(text);
-  await composer.press('Enter');
-  // Wait for all receivers in parallel
-  await Promise.all(
-    receivers.map(receiver =>
-      receiver.getByText(text, { exact: true }).waitFor({ timeout: timeoutMs })
-    )
-  );
 }

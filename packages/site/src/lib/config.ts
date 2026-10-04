@@ -11,26 +11,70 @@ export const SITE = {
   githubUrl: "https://github.com/CecuTheMag/Kant",
 };
 
-const releaseBase = `${SITE.githubUrl}/releases/download/0.4.3-beta`;
+const releaseBase = `${SITE.githubUrl}/releases/download/0.5.0-beta`;
+
+export type Download = { file: string; url: string; size: string; sha256: string };
+type WindowsDownloads = Record<"x64" | "arm64", { installer: Download; portable: Download }>;
 
 export const RELEASE = {
-  version: "0.4.3",
+  version: "0.5.0",
   channel: "Beta",
-  date: "2026-10-01",
+  date: "2026-10-03",
   notesUrl: `${SITE.githubUrl}/releases/latest`,
   android: {
-    file: "Kant-0.4.3.apk",
-    url: `${releaseBase}/Kant-0.4.3.apk`,
-    size: "5.7 MB",
-    sha256: "56df3dc9188eb87b0a489c2cd83fc5ed7f65d0425e08274b8b8779df3a5e5963",
+    file: "Kant-0.5.0.apk",
+    url: `${releaseBase}/Kant-0.5.0.apk`,
+    size: "5.8 MB",
+    sha256: "1dcbbfbd5dd87a7313ae24f4013dc7a3831c6675236565d3fc399433e0ffb228",
   },
   linux: {
-    file: "Kant-0.4.3.AppImage",
-    url: `${releaseBase}/Kant-0.4.3.AppImage`,
-    size: "118 MB",
-    sha256: "7f633fd2d4cfad5f32cf87ffea4c0333b067c475ad61c69b544fd2f508106ce7",
+    file: "Kant-0.5.0.AppImage",
+    url: `${releaseBase}/Kant-0.5.0.AppImage`,
+    size: "119 MB",
+    sha256: "e8a92a43313909ab879a4fcfefd16a7b805115ab596a5a58ff011f21003a7fdb",
   },
+  // Windows builds come from the release workflow (0.5.0 on): an installer and
+  // a portable exe for each architecture. Leave null for a release without
+  // them and the site shows Windows as "not yet".
+  windows: {
+    x64: {
+      installer: {
+        file: "Kant-Setup-0.5.0-x64.exe",
+        url: `${releaseBase}/Kant-Setup-0.5.0-x64.exe`,
+        size: "92 MB",
+        sha256: "27d4c397afc71c7e3e76af29f3506910546086839a1054f3050152caa7fec56d",
+      },
+      portable: {
+        file: "Kant-0.5.0-x64-portable.exe",
+        url: `${releaseBase}/Kant-0.5.0-x64-portable.exe`,
+        size: "91 MB",
+        sha256: "e75eb8e1dd210b2290cc283fce8a5c11675058dea0477f7b2f25f394024bc9e5",
+      },
+    },
+    arm64: {
+      installer: {
+        file: "Kant-Setup-0.5.0-arm64.exe",
+        url: `${releaseBase}/Kant-Setup-0.5.0-arm64.exe`,
+        size: "98 MB",
+        sha256: "7695e1ca8c6790a6e46e172d8423767d6578ec8e60ef4c43cae4e89ff3faf3c8",
+      },
+      portable: {
+        file: "Kant-0.5.0-arm64-portable.exe",
+        url: `${releaseBase}/Kant-0.5.0-arm64-portable.exe`,
+        size: "98 MB",
+        sha256: "042f93686f05f1c968a90305c6fa131a6ffa1298f17d05da68790d3a63db4f78",
+      },
+    },
+  } as WindowsDownloads | null,
 };
+
+/** Every Windows file in this release, for checksums and listings. */
+export const WINDOWS_FILES: Download[] = RELEASE.windows
+  ? [RELEASE.windows.x64.installer, RELEASE.windows.x64.portable, RELEASE.windows.arm64.installer, RELEASE.windows.arm64.portable]
+  : [];
+
+/** "Android, Linux and Windows" — the platforms this release ships for. */
+export const PLATFORMS = RELEASE.windows ? "Android, Linux and Windows" : "Android and Linux";
 
 export const NAV_LINKS = [
   { href: "/how-it-works", label: "How it works" },

@@ -1,81 +1,75 @@
-# Merge, Release, Canary, and Rollback
+# Releasing Kant
 
-## Required merge gates
+A release has two independent parts: the **clients** (Android, Linux, Windows),
+built by the release workflow, and the **relay**, deployed to your server.
+Clients and relays stay wire-compatible across minor versions, so they don't
+have to ship together.
 
-Protect `main` and require these CI jobs:
+## One-time repository setup
 
-- `Lockfile Check`
-- `Security Audit`
-- `Build and Test`
-- `Lab Tests (Playwright)`
-- `E2E Tests (Gated)`
+Settings → Secrets and variables → Actions:
 
-Require an up-to-date branch, one review, resolved conversations, and no administrator bypass. Direct pushes to `main` are not a release path.
+| Kind | Name | Value |
+| --- | --- | --- |
+| Variable | `KANT_DEFAULT_RELAY` | The relay baked into release builds, e.g. `https://relay.example.com`. Check `<url>/healthz` answers first. |
+| Secret | `ANDROID_KEYSTORE_BASE64` | `base64 -w0 packages/app/android/keystore/kant-release.keystore` |
+| Secret | `ANDROID_KEYSTORE_PASSWORD` | `storePassword` from `kant-release.keystore.properties` |
+| Secret | `ANDROID_KEY_PASSWORD` | `keyPassword` from the same file |
+| Secret | `GOOGLE_SERVICES_JSON` | Optional. Firebase config for push notifications; without it the APK builds without push, as local builds do. |
 
-## Release evidence
+The keystore is the only copy of the Android signing key that existing installs
+trust (certificate SHA-256 `1106d101…faee9`). Keep an offline backup — losing it
+means nobody can update in place again. The workflow refuses to publish an APK
+signed with any other certificate.
 
-A release candidate is eligible only when all of the following artifacts refer to the same commit:
+## Before tagging
 
-- Core unit and coverage output
-- Full Playwright E2E artifacts
-- Relay health/readiness/metrics smoke output
-- Group restart/churn output
-- 1 MiB file-transfer SHA-256 integrity output
-- A successful N>=100 load run from the previous 24 hours
-- `pnpm audit --prod --audit-level=high` with no high/critical findings
-- Dependency compatibility matrix reviewed for any libp2p change
-- External security review current for the release's scope; this is an external gate and cannot be self-certified
+All of these on the commit you are about to tag:
 
-## Candidate creation
+1. CI is green ([`ci.yml`](../../.github/workflows/ci.yml): core, federation, app, relay, site, CLI/push-proxy/admin/desktop builds, `pnpm audit --prod --audit-level high`).
+2. The Docker lab passes, including the browser suites:
+   ```bash
+   docker compose -f tests/lab/docker-compose.yml build
+   tests/lab/scripts/profile-up.sh lan
+   docker compose -f tests/lab/docker-compose.yml run --rm core
+   docker compose -f tests/lab/docker-compose.yml run --rm runner pnpm --dir tests/lab test
+   docker compose -f tests/lab/docker-compose.yml run --rm runner pnpm --dir tests/lab test:ui
+   docker compose -f tests/lab/docker-compose.yml down --remove-orphans
+   ```
+3. For changes to messaging or networking: `pnpm run test:reconnect` (about 8 minutes; `KANT_FEDERATE=1` for linked relays). It and the app builds share `packages/app/dist`, so don't build while it runs.
+4. Versions bumped together: `packages/app/package.json`, `packages/desktop/package.json`, and `versionCode` (+1) / `versionName` in `packages/app/android/app/build.gradle`. The workflow fails if they differ from each other or from the tag.
+5. Release notes written to `release-notes/<version>.md` — they become the release description.
+
+## Tag and build
 
 ```bash
-git checkout main
-git pull --ff-only
-git tag -s vX.Y.Z-rc.N -m "Kant vX.Y.Z release candidate N"
-git push origin vX.Y.Z-rc.N
+git tag -a 0.5.0-beta -m "Kant 0.5.0 (Beta)"
+git push origin 0.5.0-beta
 ```
 
-Never rebuild a published tag with different bytes. Create a new candidate.
+The tag format is `X.Y.Z-beta` (no `v`): the website's download links use it.
 
-## Staging deployment
+[`release.yml`](../../.github/workflows/release.yml) then:
 
-Use `.github/workflows/staging-canary.yml` with the signed candidate tag. The workflow:
+1. runs every CI check again on the tagged commit;
+2. checks the tag and all three version numbers agree;
+3. builds the signed APK and verifies its signing certificate;
+4. builds the Linux AppImage and the Windows installer and portable exe, and **launches each one** — it has to start, its bundled relay has to answer `/healthz`, and the window has to render the app ([`packages/desktop/scripts/smoke.mjs`](../../packages/desktop/scripts/smoke.mjs));
+5. creates a **draft** release, marked as the latest (the site links to `releases/latest`), with all files and `SHA256SUMS.txt`.
 
-1. Resolves the tag to a commit.
-2. Backs up the staging relay seed and current Git ref.
-3. Checks out the candidate.
-4. Rebuilds and starts the relay/web stack.
-5. Gates on `/healthz`, `/readyz`, and `/metrics`.
-6. Runs lab smoke and E2E tests.
-7. Automatically restores the previous ref if deployment or smoke verification fails.
+To build and smoke-test without releasing, run the workflow by hand from the Actions tab; the files are attached to the run as artifacts.
 
-Staging must use its own domain, TLS certificates, registry, and relay seed. It must otherwise mirror production limits and configuration.
+Never move or reuse a published tag. If something is wrong, fix it and tag the next patch version.
 
-## Canary
+## Publish
 
-- Advertise the staging-tested canary relay to at most 5% of opted-in clients.
-- Keep the stable relay available; do not rotate its seed during a software canary.
-- Observe for at least 60 minutes and at least 100 successful client sessions.
-- Promote only when all alert rates remain below the thresholds in `monitoring.md`.
+1. Download the draft's APK and AppImage and try them: install over the previous version, unlock, send a message both ways.
+2. Copy the sizes (decimal MB) and SHA-256s from `SHA256SUMS.txt` into the `RELEASE` block of `packages/site/src/lib/config.ts`, along with the version and date, and deploy the site.
+3. Publish the draft.
 
-Immediate rollback triggers:
+## Relay deployment
 
-- readiness false for 2 minutes
-- `NO_RESERVATION` above 50/min for 5 minutes
-- circuit error rate above 10/min for 5 minutes
-- any file hash mismatch
-- OPK burn failures above 5/min for 5 minutes
-- registry utilization above 95%
-
-## Production promotion
-
-Promote the exact candidate commit/image tested in staging. Record:
-
-- signed tag and immutable image digest
-- CI and load-test artifact URLs
-- previous production ref/image digest
-- deploy start/end UTC timestamps
-- relay PeerID before and after deployment (must match unless rotation was explicitly approved)
+Deploy relay changes with [`relay-deployment.md`](relay-deployment.md). Record the previous Git ref and the relay's PeerID before deploying; the PeerID must not change unless you rotated the seed on purpose.
 
 ## Rollback
 

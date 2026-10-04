@@ -6,7 +6,7 @@
 import { memo, useMemo, useRef, useState } from 'react';
 import type { TouchEvent as ReactTouchEvent } from 'react';
 import { parseMarkdown } from '../preview/markdown';
-import { Markdown } from '../preview/Markdown';
+import { Markdown } from '../preview/MarkdownView';
 import { Sheet } from '../parts';
 import { Plus } from '../icons';
 import { useChatPrefs } from './prefs';

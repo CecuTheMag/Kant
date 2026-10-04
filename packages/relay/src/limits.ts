@@ -44,6 +44,17 @@ export interface ConnectionLimits {
   inboundConnectionThreshold: number;
   /** Connections allowed to be mid-handshake at once. */
   maxIncomingPendingConnections: number;
+  /**
+   * Relayed connections one client may have open at once, in each direction.
+   * Every relayed connection holds a circuit-relay HOP stream open on the
+   * client's connection to the relay (and a STOP stream on the other end's)
+   * for as long as it lives, and libp2p caps streams per protocol per
+   * connection at 32 inbound by default. Left there, nobody could talk to more
+   * than 32 people at once: a group owner's 33rd member, or the 33rd contact
+   * online, got "The stream has been reset" on every attempt. Clients raise
+   * their own side to match (CLIENT_MAX_RELAYED_CONNECTIONS in @kant/core).
+   */
+  maxCircuitsPerPeer: number;
 }
 
 function positiveInt(env: Record<string, string | undefined>, name: string, fallback: number): number {
@@ -61,5 +72,6 @@ export function connectionLimits(env: Record<string, string | undefined> = proce
     maxReservations: positiveInt(env, 'RELAY_MAX_RESERVATIONS', maxConnections),
     inboundConnectionThreshold: positiveInt(env, 'RELAY_INBOUND_CONNECTIONS_PER_SECOND', 500),
     maxIncomingPendingConnections: positiveInt(env, 'RELAY_MAX_PENDING_CONNECTIONS', 256),
+    maxCircuitsPerPeer: positiveInt(env, 'RELAY_MAX_CIRCUITS_PER_PEER', 1024),
   };
 }

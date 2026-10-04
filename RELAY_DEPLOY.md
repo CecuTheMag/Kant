@@ -162,6 +162,11 @@ clients use ~510 MB RSS and under half a CPU core; 1000 clients reconnecting at
 once are all back within 5 s. Raise the cap only with the RAM for it (~0.5 MB
 per user).
 
+`RELAY_MAX_CIRCUITS_PER_PEER` (default 1024) is how many people one user can
+be connected to through the relay at the same time. libp2p's built-in default
+was 32, which before 0.5.0 meant nobody could reach a 33rd contact or group
+member; don't set it below a few hundred.
+
 `RELAY_INBOUND_CONNECTIONS_PER_SECOND` (default 500) is libp2p's per-IP connect
 rate limit. Behind Caddy every client arrives from Caddy's IP, so this is the
 relay's **total** connect rate — keep it well above your reconnect wave after a

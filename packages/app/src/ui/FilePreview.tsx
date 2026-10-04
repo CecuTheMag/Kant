@@ -25,7 +25,7 @@ import { parseCsv } from './preview/csv';
 import type { CsvTable } from './preview/csv';
 import { parseMarkdown } from './preview/markdown';
 import type { Block } from './preview/markdown';
-import { Markdown } from './preview/Markdown';
+import { Markdown } from './preview/MarkdownView';
 import { displayFileName, sanitizeMime } from './preview/sanitize';
 import { openExternalUrl } from '../lib/fileActions';
 import { FileEditor } from './FileEditor';

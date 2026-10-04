@@ -1,0 +1,19 @@
+<p>Kant is a free, open-source messenger that sends your messages straight to the people you talk to. There is no phone number or email to sign up with, and no company server keeping a copy of your conversations.</p>
+
+<p><b>How it works</b></p>
+<ul>
+<li>Every message, photo, file and voice note is end-to-end encrypted on your device (X3DH key agreement and a double ratchet, built on libsodium).</li>
+<li>Devices talk to each other peer-to-peer over libp2p. A relay only helps them find each other through NAT and firewalls; it forwards sealed data it cannot read and stores none of it.</li>
+<li>You can use a public relay, run your own with Docker, or link relays so friends on different networks can reach each other.</li>
+<li>Add people by scanning their code or pasting their invite link, then compare safety codes to be sure nobody is in the middle.</li>
+</ul>
+
+<p><b>Features</b></p>
+<ul>
+<li>One-to-one and group chats, with replies, reactions, edits and deletes</li>
+<li>Photos, files and voice notes</li>
+<li>Password and fingerprint lock, encrypted backups, and moving to a new phone</li>
+<li>Optional onion routing for people who also want to hide who is talking to whom</li>
+</ul>
+
+<p>Kant is in beta. The messenger, relay and core library are licensed under the GNU AGPL-3.0.</p>
