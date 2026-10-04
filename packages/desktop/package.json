@@ -12,12 +12,12 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm --filter @kant/app dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "prepare:relay-runtime": "rm -rf relay-runtime && pnpm --dir ../relay run build && CI=true pnpm --dir ../.. --filter @kant/relay --prod deploy --legacy packages/desktop/relay-runtime",
+    "prepare:relay-runtime": "rm -rf relay-runtime && pnpm --dir ../relay run build && CI=true pnpm --dir ../.. --filter @kant/relay --prod --config.node-linker=hoisted deploy --legacy packages/desktop/relay-runtime",
     "build:ci": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs",
     "build": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux --mac --win",
     "build:linux": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux",
     "build:mac": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --mac",
-    "build:win": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --win",
+    "build:win": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --win --x64 --publish never && electron-builder --win --arm64 --publish never",
     "build:appimage": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux AppImage",
     "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux deb"
   },
@@ -109,10 +109,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "Kant-Setup-${version}.${ext}"
+      "artifactName": "Kant-Setup-${version}-${arch}.${ext}"
     },
     "portable": {
-      "artifactName": "Kant-${version}-portable.${ext}"
+      "artifactName": "Kant-${version}-${arch}-portable.${ext}"
     }
   }
 }

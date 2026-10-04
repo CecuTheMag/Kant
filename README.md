@@ -89,7 +89,7 @@ Prebuilt clients are attached to each [GitHub release](https://github.com/CecuTh
 | --- | --- | --- |
 | Android | `Kant-<version>.apk` | Signed with the project's release key. Android will still show an "unknown developer" prompt on install — that's expected for any app installed outside the Play Store, not a sign of tampering. Verify the SHA-256 checksum from the release notes before installing. |
 | Linux | `Kant-<version>.AppImage` | Self-contained, no install required — `chmod +x` and run. |
-| Windows | `Kant-Setup-<version>.exe` / `Kant-<version>-portable.exe` | Built and smoke-tested on Windows by the [release workflow](.github/workflows/release.yml), from 0.5.0 on. The installer isn't code-signed yet, so SmartScreen shows an "unknown publisher" warning — verify the SHA-256 checksum from `SHA256SUMS.txt` first. |
+| Windows | `Kant-Setup-<version>-x64.exe` / `Kant-<version>-x64-portable.exe` (`-arm64` for ARM PCs) | Built by the [release workflow](.github/workflows/release.yml) from 0.5.0 on; the x64 build is smoke-tested there. The installer isn't code-signed yet, so SmartScreen shows an "unknown publisher" warning — verify the SHA-256 checksum from `SHA256SUMS.txt` first. |
 
 Every release asset is listed with its SHA-256 in the release's `SHA256SUMS.txt`. Android users can get update notifications by adding this repository to [Obtainium](https://github.com/ImranR98/Obtainium) (turn on **Include prereleases** while Kant is in beta).
 

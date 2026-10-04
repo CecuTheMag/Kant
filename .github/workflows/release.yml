@@ -164,16 +164,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The build scripts use POSIX shell syntax (VAR=1 cmd, rm -rf).
       - run: pnpm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
-      - run: pnpm --dir packages/desktop run build:win --publish never
+      # One installer per architecture (x64, arm64). build:win passes
+      # --publish never to both electron-builder runs itself: on a tag build
+      # electron-builder would otherwise try to upload to GitHub on its own.
+      - run: pnpm --dir packages/desktop run build:win
       - name: Smoke test (app starts, bundled relay healthy, UI renders)
         shell: bash
+        # The runner is x64, so this exercises the x64 build; arm64 is built but can't run here.
         run: node packages/desktop/scripts/smoke.mjs packages/desktop/release/win-unpacked/Kant.exe
       - uses: actions/upload-artifact@v4
         with:
           name: windows
           path: |
-            packages/desktop/release/Kant-Setup-${{ needs.version.outputs.version }}.exe
-            packages/desktop/release/Kant-${{ needs.version.outputs.version }}-portable.exe
+            packages/desktop/release/Kant-Setup-${{ needs.version.outputs.version }}-*.exe
+            packages/desktop/release/Kant-${{ needs.version.outputs.version }}-*-portable.exe
           if-no-files-found: error
 
   release:

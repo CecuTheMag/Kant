@@ -27,12 +27,17 @@ export const RELEASE = {
   linux: {
     file: "Kant-0.5.0.AppImage",
     url: `${releaseBase}/Kant-0.5.0.AppImage`,
-    size: "120 MB",
-    sha256: "0cf93495096effbddc8e87f536da2f835ae56d1100beb824b74cf4f86bc009ef",
+    size: "119 MB",
+    sha256: "e8a92a43313909ab879a4fcfefd16a7b805115ab596a5a58ff011f21003a7fdb",
   },
   // Windows builds come from the release workflow (0.5.0 on). Leave null for a
   // release without one and the download page shows Windows as "not yet".
-  windows: null as null | { file: string; url: string; size: string; sha256: string },
+  windows: {
+    file: "Kant-Setup-0.5.0-x64.exe",
+    url: `${releaseBase}/Kant-Setup-0.5.0-x64.exe`,
+    size: "92 MB",
+    sha256: "27d4c397afc71c7e3e76af29f3506910546086839a1054f3050152caa7fec56d",
+  } as null | { file: string; url: string; size: string; sha256: string },
 };
 
 export const NAV_LINKS = [

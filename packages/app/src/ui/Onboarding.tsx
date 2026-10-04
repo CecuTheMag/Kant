@@ -12,9 +12,12 @@ import { normalizeRelayUrl, parseInvite, savePendingInvite } from './lib';
 import { Sheet } from './parts';
 
 const TERMS_URL = 'https://kant.network/terms';
+// Relative to the build's base ('./' in the desktop app, which loads from
+// file:// where "/logo-clean.png" would point at the root of the drive).
+const LOGO_URL = `${(import.meta as any).env?.BASE_URL ?? '/'}logo-clean.png`;
 
 function AppIcon({ small }: { small?: boolean }) {
-  return <div className={`k-app-icon${small ? ' is-small' : ''}`}><img src="/logo-clean.png" alt="" /></div>;
+  return <div className={`k-app-icon${small ? ' is-small' : ''}`}><img src={LOGO_URL} alt="" /></div>;
 }
 
 function Shell({ children }: { children: ReactNode }) {
@@ -30,7 +33,7 @@ function Dots({ step, total }: { step: number; total: number }) {
 }
 
 export function Boot() {
-  return <div className="k-boot" aria-label="Loading"><img src="/logo-clean.png" alt="" /></div>;
+  return <div className="k-boot" aria-label="Loading"><img src={LOGO_URL} alt="" /></div>;
 }
 
 /* ── Welcome ──────────────────────────────────────────────────────── */
