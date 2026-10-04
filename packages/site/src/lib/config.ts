@@ -11,25 +11,28 @@ export const SITE = {
   githubUrl: "https://github.com/CecuTheMag/Kant",
 };
 
-const releaseBase = `${SITE.githubUrl}/releases/download/0.4.3-beta`;
+const releaseBase = `${SITE.githubUrl}/releases/download/0.5.0-beta`;
 
 export const RELEASE = {
-  version: "0.4.3",
+  version: "0.5.0",
   channel: "Beta",
-  date: "2026-10-01",
+  date: "2026-10-03",
   notesUrl: `${SITE.githubUrl}/releases/latest`,
   android: {
-    file: "Kant-0.4.3.apk",
-    url: `${releaseBase}/Kant-0.4.3.apk`,
-    size: "5.7 MB",
-    sha256: "56df3dc9188eb87b0a489c2cd83fc5ed7f65d0425e08274b8b8779df3a5e5963",
+    file: "Kant-0.5.0.apk",
+    url: `${releaseBase}/Kant-0.5.0.apk`,
+    size: "5.8 MB",
+    sha256: "1dcbbfbd5dd87a7313ae24f4013dc7a3831c6675236565d3fc399433e0ffb228",
   },
   linux: {
-    file: "Kant-0.4.3.AppImage",
-    url: `${releaseBase}/Kant-0.4.3.AppImage`,
-    size: "118 MB",
-    sha256: "7f633fd2d4cfad5f32cf87ffea4c0333b067c475ad61c69b544fd2f508106ce7",
+    file: "Kant-0.5.0.AppImage",
+    url: `${releaseBase}/Kant-0.5.0.AppImage`,
+    size: "120 MB",
+    sha256: "0cf93495096effbddc8e87f536da2f835ae56d1100beb824b74cf4f86bc009ef",
   },
+  // Windows builds come from the release workflow (0.5.0 on). Leave null for a
+  // release without one and the download page shows Windows as "not yet".
+  windows: null as null | { file: string; url: string; size: string; sha256: string },
 };
 
 export const NAV_LINKS = [

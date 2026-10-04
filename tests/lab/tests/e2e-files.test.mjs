@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 import sodiumModule from 'libsodium-wrappers-sumo';
 import { generateX25519Keypair } from '../../../packages/core/dist/ratchet.js';
-import { createBrowserPair, sendMessage } from './e2e-browser-helpers.mjs';
+import { createBrowserPair, sendMessage, attachFile, saveFile } from './e2e-browser-helpers.mjs';
 
 const sodium = sodiumModule.default ?? sodiumModule;
 await sodium.ready;
@@ -16,19 +16,15 @@ test('a 1 MiB file arrives intact and its sealed key cannot be opened by a third
   for (let i = 0; i < source.length; i++) source[i] = i % 251;
   try {
     await sendMessage(pair.alice.page, pair.bob.page, `file-session-ready-${Date.now()}`);
-    await pair.alice.page.locator('input[type=file]').setInputFiles({
-      name: 'one-meg.bin', mimeType: 'application/octet-stream', buffer: source,
-    });
-    const receivedFile = pair.bob.page.getByText('one-meg.bin', { exact: true }).last();
+    await attachFile(pair.alice.page, { name: 'one-meg.bin', mimeType: 'application/octet-stream', buffer: source });
+    const receivedFile = pair.bob.page.getByRole('button', { name: 'Save one-meg.bin' }).last();
     try {
       await receivedFile.waitFor({ timeout: 45_000 });
     } catch (error) {
       process.stderr.write(`Alice UI:\n${await pair.alice.page.locator('body').innerText()}\nBob UI:\n${await pair.bob.page.locator('body').innerText()}\n`);
       throw error;
     }
-    const downloadPromise = pair.bob.page.waitForEvent('download');
-    await pair.bob.page.getByRole('button', { name: 'Download one-meg.bin' }).click();
-    const download = await downloadPromise;
+    const download = await saveFile(pair.bob.page, 'one-meg.bin');
     // Save to a temp path and read back — createReadStream() is unreliable in
     // headless Playwright; path() is the stable cross-platform alternative.
     const tmpPath = await download.path();

@@ -8,13 +8,16 @@ import {
   IconGithub,
   IconLinux,
   IconShield,
+  IconWindows,
 } from "@/components/icons";
 import { RELEASE, SITE } from "@/lib/config";
 
+const PLATFORMS = RELEASE.windows ? "Android, Linux and Windows" : "Android and Linux";
+
 export const metadata: Metadata = {
-  title: "Download Kant for Android and Linux",
+  title: `Download Kant for ${PLATFORMS}`,
   description:
-    "Download Kant, the free end-to-end encrypted messenger, for Android and Linux. Step-by-step install guide and file fingerprints to confirm your download is genuine.",
+    `Download Kant, the free end-to-end encrypted messenger, for ${PLATFORMS}. Step-by-step install guide and file fingerprints to confirm your download is genuine.`,
   alternates: { canonical: "/download" },
 };
 
@@ -38,7 +41,7 @@ export default function Download() {
           <h1 className="h-1 anim-rise d1">Get Kant. It’s free.</h1>
           <p className="lede anim-rise d2">
             Version {RELEASE.version} {RELEASE.channel.toLowerCase()} for
-            Android and Linux. No account to create — just install, pick a
+            {" "}{PLATFORMS}. No account to create — just install, pick a
             password and start talking.
           </p>
         </div>
@@ -81,11 +84,30 @@ export default function Download() {
               </a>
             </div>
 
+            {RELEASE.windows && (
+              <div className="platform">
+                <div className="platform-head">
+                  <span className="tile-icon teal"><IconWindows size={28} /></span>
+                  <div>
+                    <h2>Windows</h2>
+                    <div className="meta">Installer · {RELEASE.windows.size}</div>
+                  </div>
+                </div>
+                <p className="body-text" style={{ margin: 0 }}>
+                  Windows 10 and 11. If SmartScreen says the publisher is
+                  unknown, choose “More info” → “Run anyway”.
+                </p>
+                <a href={RELEASE.windows.url} className="btn btn-primary" download>
+                  <IconDownload /> Download for Windows
+                </a>
+              </div>
+            )}
+
             <div className="platform platform-soon">
               <div>
-                <h3 className="h-4">iPhone, Windows and Mac</h3>
+                <h3 className="h-4">{RELEASE.windows ? "iPhone and Mac" : "iPhone, Windows and Mac"}</h3>
                 <p className="small-text" style={{ margin: "4px 0 0" }}>
-                  Not packaged yet. Windows and Mac can be built from the source
+                  Not packaged yet. {RELEASE.windows ? "Mac" : "Windows and Mac"} can be built from the source
                   code today. Join the community to hear first when they land.
                 </p>
               </div>
@@ -148,10 +170,22 @@ export default function Download() {
               <div className="h-4" style={{ marginBottom: 12 }}>{RELEASE.linux.file}</div>
               <div className="hash">{RELEASE.linux.sha256}</div>
             </div>
+            {RELEASE.windows && (
+              <div className="card">
+                <div className="h-4" style={{ marginBottom: 12 }}>{RELEASE.windows.file}</div>
+                <div className="hash">{RELEASE.windows.sha256}</div>
+              </div>
+            )}
           </div>
           <div className="code-block reveal" style={{ marginTop: 20 }}>
             <div><span className="c-muted"># Linux / macOS</span></div>
             <div><span className="c-muted">$</span> sha256sum {RELEASE.android.file}</div>
+            {RELEASE.windows && (
+              <>
+                <div><span className="c-muted"># Windows (PowerShell)</span></div>
+                <div><span className="c-muted">&gt;</span> Get-FileHash {RELEASE.windows.file}</div>
+              </>
+            )}
           </div>
           <div className="cta-row" style={{ marginTop: 32 }}>
             <a href={RELEASE.notesUrl} className="link" target="_blank" rel="noreferrer">

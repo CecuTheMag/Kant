@@ -12,7 +12,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@kant/core": "file:../core",
+    "@kant/core": "workspace:*",
     "@multiformats/multiaddr": "13.0.3",
     "blessed": "^0.1.81",
     "libp2p": "3.3.11",

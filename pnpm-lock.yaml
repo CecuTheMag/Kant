@@ -57,8 +57,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.4(@capacitor/core@6.2.1)
       '@kant/core':
-        specifier: file:../core
-        version: file:packages/core
+        specifier: workspace:*
+        version: link:../core
       '@multiformats/multiaddr':
         specifier: 13.0.3
         version: 13.0.3
@@ -106,8 +106,8 @@ importers:
   packages/cli:
     dependencies:
       '@kant/core':
-        specifier: file:../core
-        version: file:packages/core
+        specifier: workspace:*
+        version: link:../core
       '@multiformats/multiaddr':
         specifier: 13.0.3
         version: 13.0.3
@@ -882,9 +882,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
-
-  '@kant/core@file:packages/core':
-    resolution: {directory: packages/core, type: directory}
 
   '@leichtgewicht/ip-codec@2.0.5':
     resolution: {integrity: sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==}
@@ -2984,10 +2981,6 @@ packages:
     resolution: {integrity: sha512-HehCEsotFqbPW9sJ8WVYB6UbmIMv7kUUORIF2Nncq4VQvBfNBLibW9YZR5dlYCSUhwcD628pRllm7n+E+YTzJw==}
     engines: {node: '>= 14'}
 
-  socks@2.8.10:
-    resolution: {integrity: sha512-e0VyvkVTwVYViNovRkZ9aodhxVlyoMn7eJhVUPxZ+eK9P/7CBkxvvsBOHqFPEH416726W8tLXXXjKwqgTErrCQ==}
-    engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
-
   socks@2.8.9:
     resolution: {integrity: sha512-LJhUYUvItdQ0LkJTmPeaEObWXAqFyfmP85x0tch/ez9cahmhlBBLbIqDFnvBnUJGagb0JbIQrkBs1wJ+yRYpEw==}
     engines: {node: '>= 10.0.0', npm: '>= 3.0.0'}
@@ -3924,30 +3917,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@kant/core@file:packages/core':
-    dependencies:
-      '@libp2p/circuit-relay-v2': 4.2.13
-      '@libp2p/crypto': 5.1.23
-      '@libp2p/identify': 4.1.14
-      '@libp2p/interface': 3.3.0
-      '@libp2p/noise': 1.0.1
-      '@libp2p/peer-id': 6.0.15
-      '@libp2p/websockets': 10.1.21
-      '@libp2p/yamux': 8.0.3
-      '@multiformats/multiaddr': 13.0.3
-      '@types/qrcode': 1.5.6
-      libp2p: 3.3.11
-      libsodium-wrappers: 0.7.16
-      libsodium-wrappers-sumo: 0.8.2
-      qrcode: 1.5.4
-      socks: 2.8.10
-      socks-proxy-agent: 8.0.5
-      ws: 8.21.1
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
 
   '@leichtgewicht/ip-codec@2.0.5': {}
 
@@ -6352,11 +6321,6 @@ snapshots:
       socks: 2.8.9
     transitivePeerDependencies:
       - supports-color
-
-  socks@2.8.10:
-    dependencies:
-      ip-address: 10.7.2
-      smart-buffer: 4.2.0
 
   socks@2.8.9:
     dependencies:

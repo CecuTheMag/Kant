@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The release workflow runs these same checks before building anything.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -22,6 +24,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/core test
+      - run: pnpm --dir packages/core run test:federation
 
   app:
     name: App — typecheck & build
@@ -75,5 +78,49 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --dir packages/site exec tsc --noEmit -p .
+      - run: pnpm --dir packages/site run lint
       - run: pnpm --dir packages/site build
+
+  tools:
+    name: CLI, push proxy, admin & desktop — build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run typecheck
+      - run: pnpm --dir packages/core build
+      - run: pnpm --dir packages/cli build
+      - run: pnpm --dir packages/push-proxy build
+      - run: pnpm --dir packages/admin build
+      - run: pnpm --dir packages/desktop exec tsc --noEmit -p .
+
+  lab:
+    name: Lab — real relay, browsers driving the UI
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f tests/lab/docker-compose.yml build
+      - run: tests/lab/scripts/profile-up.sh lan
+      - name: Core protocol checks
+        run: docker compose -f tests/lab/docker-compose.yml run --rm core
+      - name: Messaging, files, offline delivery, ordering, relay restart, group churn, 10-member groups
+        run: docker compose -f tests/lab/docker-compose.yml run --rm runner pnpm --dir tests/lab test
+      - name: UI smoke and transport
+        run: docker compose -f tests/lab/docker-compose.yml run --rm runner pnpm --dir tests/lab test:ui
+      - name: Relay log
+        if: failure()
+        run: docker compose -f tests/lab/docker-compose.yml logs --tail 300 relay
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lab-artifacts
+          path: tests/lab/artifacts
+          if-no-files-found: ignore
+      - if: always()
+        run: docker compose -f tests/lab/docker-compose.yml down --remove-orphans

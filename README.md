@@ -89,7 +89,9 @@ Prebuilt clients are attached to each [GitHub release](https://github.com/CecuTh
 | --- | --- | --- |
 | Android | `Kant-<version>.apk` | Signed with the project's release key. Android will still show an "unknown developer" prompt on install — that's expected for any app installed outside the Play Store, not a sign of tampering. Verify the SHA-256 checksum from the release notes before installing. |
 | Linux | `Kant-<version>.AppImage` | Self-contained, no install required — `chmod +x` and run. |
-| Windows | — | Not currently built (cross-compiling from the Linux build environment requires Wine); build locally with `pnpm --dir packages/desktop run build:win` on Windows or via CI. |
+| Windows | `Kant-Setup-<version>.exe` / `Kant-<version>-portable.exe` | Built and smoke-tested on Windows by the [release workflow](.github/workflows/release.yml), from 0.5.0 on. The installer isn't code-signed yet, so SmartScreen shows an "unknown publisher" warning — verify the SHA-256 checksum from `SHA256SUMS.txt` first. |
+
+Every release asset is listed with its SHA-256 in the release's `SHA256SUMS.txt`. Android users can get update notifications by adding this repository to [Obtainium](https://github.com/ImranR98/Obtainium) (turn on **Include prereleases** while Kant is in beta).
 
 Alternatively, build any client from source — see [Local development](#local-development) below.
 
@@ -108,9 +110,11 @@ See [Production deployment](#production-deployment) below for the full environme
 A release built **without** a default relay opens on a "Connect to a network" step, which asks people for a relay address or a friend's invite link. For a public release, build the clients with your relay baked in so people go straight from install → password → chatting:
 
 ```bash
-VITE_RELAY_URL=https://relay.kant.network pnpm --dir packages/app run build:android
-VITE_RELAY_URL=https://relay.kant.network pnpm --dir packages/desktop run build:linux
+VITE_RELAY_URL=https://relay.your-domain.example pnpm --dir packages/app run build:android
+VITE_RELAY_URL=https://relay.your-domain.example pnpm --dir packages/desktop run build:linux
 ```
+
+Replace `relay.your-domain.example` with your relay's public address. Official releases are built by the [release workflow](.github/workflows/release.yml), which reads the address from the `KANT_DEFAULT_RELAY` repository variable — see [docs/runbooks/release-process.md](docs/runbooks/release-process.md).
 
 Anyone can still switch relays later in **Settings → Network → Relay**. Invite links include the sharer's relay (unless it's a loopback address), so a friend without a default network is set up automatically when they paste one.
 
@@ -384,6 +388,30 @@ Then launch the app:
 ```
 
 This matches the runtime behavior in [start.sh](start.sh): the app reads the relay URL from the environment or from the CLI override and connects to the relay without starting a local relay process.
+
+### Running the tests
+
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the unit tests, typechecks and builds on every push. Before a release, also run the two browser suites, which drive the real app against real relays:
+
+```bash
+# Unit tests: crypto, protocol, relay, app logic
+pnpm --dir packages/core test && pnpm --dir packages/core run test:federation
+pnpm --dir packages/relay build && pnpm --dir packages/relay test
+pnpm --dir packages/app test
+
+# Docker lab: messaging, offline delivery, ordering, 1 MiB files, relay restarts,
+# group churn and 10-member groups, through the real UI (needs Docker)
+docker compose -f tests/lab/docker-compose.yml build
+tests/lab/scripts/profile-up.sh lan
+docker compose -f tests/lab/docker-compose.yml run --rm runner pnpm --dir tests/lab test
+docker compose -f tests/lab/docker-compose.yml run --rm runner pnpm --dir tests/lab test:ui
+docker compose -f tests/lab/docker-compose.yml down --remove-orphans
+
+# Devices switched off and on across two relays (~8 minutes)
+pnpm run test:reconnect
+```
+
+The browser tests go through the same screens a person does, via the shared driver in [`tests/lab/tests/e2e-browser-helpers.mjs`](tests/lab/tests/e2e-browser-helpers.mjs) — when the UI changes, update it there.
 
 ---
 

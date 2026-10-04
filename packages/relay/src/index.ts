@@ -162,6 +162,10 @@ const node = await createLibp2p({
   services: {
     identify: identify(),
     relay: circuitRelayServer({
+      // See limits.ts: libp2p's default of 32 streams per protocol per
+      // connection capped every client at 32 simultaneous relayed peers.
+      maxInboundHopStreams: limits.maxCircuitsPerPeer,
+      maxOutboundStopStreams: limits.maxCircuitsPerPeer,
       reservations: {
         maxReservations: limits.maxReservations,
         // circuit-relay-v2 defaults cap each relayed connection at ~128 KiB /

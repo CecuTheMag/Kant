@@ -59,20 +59,29 @@ $ sudo ufw enable
 
 All variables are read at startup. The relay will refuse to start if a required variable is missing or invalid.
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `RELAY_PORT` | no | `3000` | libp2p WebSocket listener port. |
-| `RELAY_INFO_PORT` | no | `3001` | HTTP registry + metrics listener port. |
-| `RELAY_HTTP_BIND` | no | `0.0.0.0` | Bind address for the HTTP registry. |
-| `RELAY_PUBLIC_HOST` | **yes** | — | Public hostname or IP, advertised in `/relay-info`. |
-| `RELAY_PUBLIC_PORT` | no | `3000` | Public port advertised in `/relay-info` (use `443` behind Caddy). |
-| `RELAY_SECURE` | no | `false` | Set to `true` when fronted by TLS; advertised as `wss://` / `https://`. |
-| `RELAY_DATA_DIR` | no | `./relay-data` | Directory holding the PeerID seed (`peer-id.key`). |
-| `RELAY_MAX_RESERVATIONS` | no | `1024` | Max concurrent circuit reservations. |
-| `RELAY_MAX_CIRCUITS_PER_PEER` | no | `16` | Max open circuits per peer. |
-| `RELAY_REGISTRY_TTL_SECONDS` | no | `3600` | TTL for registry entries. |
-| `RELAY_LOG_LEVEL` | no | `info` | `trace` / `debug` / `info` / `warn` / `error`. |
-| `LOG_FORMAT` | no | `pretty` | `pretty` for humans, `json` for log aggregators. |
+| Variable | Default | Description |
+|---|---|---|
+| `RELAY_PUBLIC_HOST` | the machine's LAN IP | Public hostname or IP advertised in `/relay-info`. Set it on any internet-facing relay. |
+| `RELAY_PORT` | `3000` | libp2p WebSocket listener port. |
+| `RELAY_PUBLIC_PORT` | `443` if `RELAY_SECURE=true`, else `RELAY_PORT` | Public port advertised to clients. |
+| `RELAY_INFO_PORT` | `3001` | HTTP registry, health and metrics port. |
+| `RELAY_INFO_PUBLIC_PORT` | `RELAY_INFO_PORT` | Public HTTP port, when a proxy maps it elsewhere. |
+| `RELAY_HTTP_BIND` | `0.0.0.0` | Bind address for the HTTP API. |
+| `RELAY_SECURE` | `false` | `true` when fronted by TLS; clients are told to use `wss://` / `https://`. |
+| `RELAY_DATA_DIR` | `packages/relay/data` | Directory holding the relay's identity seed. Back it up: it is the relay's PeerID. |
+| `RELAY_MAX_CONNECTIONS` | `4096` | Concurrent connections (≈ online users). About 0.5 MB RAM each. |
+| `RELAY_MAX_RESERVATIONS` | `RELAY_MAX_CONNECTIONS` | Concurrent circuit reservations (one per online client). |
+| `RELAY_MAX_CIRCUITS_PER_PEER` | `1024` | Relayed connections one client may have open at once — how many people they can talk to simultaneously. Below 33 brings back the pre-0.5.0 limit where nobody could reach their 33rd contact or group member. |
+| `RELAY_INBOUND_CONNECTIONS_PER_SECOND` | `500` | New connections accepted per second per source IP. Behind Caddy that is the whole relay's connect rate. |
+| `RELAY_MAX_PENDING_CONNECTIONS` | `256` | Connections allowed mid-handshake at once. |
+| `RELAY_MAX_REGISTRY_ENTRIES` | derived from `RELAY_MAX_CONNECTIONS` | Cap on registry records. |
+| `RELAY_REGISTER_REQUIRES_CONNECTION` | `true` | Only accept a registration from a peer currently connected to this relay. |
+| `RELAY_FEDERATION` | — | Linked relays, `https://<relay>#<peerId>`, comma-separated. See `RELAY_DEPLOY.md`. |
+| `RELAY_FEDERATION_MAX_TUNNELS` / `_PER_CLIENT` | `1024` / `8` | Federation tunnels in total and per client. |
+| `PUSH_PROXY_URL`, `PUSH_PROXY_SECRET` | — | Push notification proxy (`packages/push-proxy`). |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | — | Web Push keys. |
+| `RELAY_LAB_CONTROL_TOKEN` | — | Enables the admin and test-lab endpoints. Leave unset in production. |
+| `LOG_LEVEL` | `info` | `trace` / `debug` / `info` / `warn` / `error`. |
 
 ### Example `.env` (HTTPS)
 
@@ -82,8 +91,7 @@ RELAY_DOMAIN=relay.example.com
 RELAY_PUBLIC_HOST=relay.example.com
 RELAY_PUBLIC_PORT=443
 RELAY_SECURE=true
-RELAY_LOG_LEVEL=info
-LOG_FORMAT=json
+LOG_LEVEL=info
 ```
 
 ---
@@ -122,7 +130,7 @@ relay     relay     Up (healthy)    3001/tcp
 
 ### 4. Wait for the PeerID to be generated
 
-The first start creates a new PeerID seed at `relay-data/peer-id.key`. Subsequent restarts reuse it.
+The first start creates a new PeerID seed, `relay-seed-<RELAY_PORT>.bin` (e.g. `relay-seed-3000.bin`), in `RELAY_DATA_DIR`. Subsequent restarts reuse it.
 
 ---
 
@@ -276,7 +284,7 @@ $ docker compose -f docker-compose.https.yml logs -f caddy
 
 ### JSON logs
 
-Set `LOG_FORMAT=json` for structured logs (recommended in production):
+The relay always logs one JSON object per line (pino), ready for jq or a log aggregator:
 
 ```bash
 $ docker compose -f docker-compose.https.yml logs relay | jq -r '"\(.time) \(.level) \(.msg)"'
@@ -315,12 +323,11 @@ See [`monitoring.md`](./monitoring.md) and [`incident-response.md`](./incident-r
 - [ ] `/relay-info` returns the correct public multiaddr.
 - [ ] Caddy has a valid Let's Encrypt certificate (`https://` works in a browser).
 - [ ] At least one external peer can connect over `wss://`.
-- [ ] `relay-data/peer-id.key` is created and backed up (see [`backup-recovery.md`](./backup-recovery.md)).
+- [ ] `relay-seed-3000.bin` is created and backed up (see [`backup-recovery.md`](./backup-recovery.md)).
 - [ ] Firewall is restricted to 80/443 (or 3000/3001 for HTTP variant).
-- [ ] `LOG_FORMAT=json` is set for production.
 - [ ] Prometheus scrape job configured against `/metrics` (see [`monitoring.md`](./monitoring.md)).
 - [ ] On-call alerting wired up (see [`monitoring.md`](./monitoring.md#alert-thresholds)).
 
 ---
 
-*See also: [`RELAY_DEPLOY.md`](../../RELAY_DEPLOY.md) for the prose deployment guide, [`monitoring.md`](./monitoring.md) for what to watch after deploy, [`backup-recovery.md`](./backup-recovery.md) for the `peer-id.key` backup procedure.*
+*See also: [`RELAY_DEPLOY.md`](../../RELAY_DEPLOY.md) for the prose deployment guide, [`monitoring.md`](./monitoring.md) for what to watch after deploy, [`backup-recovery.md`](./backup-recovery.md) for the relay seed backup procedure.*

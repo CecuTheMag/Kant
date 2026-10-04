@@ -1,6 +1,6 @@
 {
   "name": "kant-desktop",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "Kant — desktop app for Linux",
   "license": "AGPL-3.0-only",
   "author": {
@@ -108,7 +108,11 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Kant-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Kant-${version}-portable.${ext}"
     }
   }
 }

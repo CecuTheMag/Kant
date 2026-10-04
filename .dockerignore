@@ -1,0 +1,18 @@
+# Docker builds that use the repository root as context (the relay image and
+# the test lab) install dependencies and compile inside the image. Keep local
+# installs, build output and release files out of the build context.
+.git
+**/node_modules
+**/dist
+**/dist-test
+**/dist-electron
+**/.next
+**/*.tsbuildinfo
+packages/desktop/release
+packages/desktop/relay-runtime
+packages/app/android
+packages/relay/data
+tests/lab/artifacts
+.kant-secrets
+**/.env
+**/.env.*

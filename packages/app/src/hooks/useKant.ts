@@ -155,7 +155,8 @@ export function useKant() {
   const [circuitAddr, setCircuitAddr]         = useState('');
   const [log, setLog]                         = useState<string[]>([]);
   const [discoveredPeers, setDiscoveredPeers] = useState<DiscoveredPeer[]>([]);
-  // publicKeyHex → last-seen ms (for online indicator in contact list)
+  // publicKeyHex → when we last heard from them (presence or a message).
+  // Read it through isOnline(): an entry alone doesn't mean they still are.
   const [onlineContacts, setOnlineContacts]   = useState<Map<string, number>>(new Map());
   const [relayUrl, setRelayUrl] = useState<string>(() => {
     const envUrl  = (import.meta as any).env?.VITE_RELAY_URL;
@@ -1650,6 +1651,8 @@ export function useKant() {
 
             if (decrypted !== null) {
               addLog(`✅ decrypted from ${(senderHex || fromHint).slice(0, 12)}…`);
+              // Only that contact's ratchet opens it, so it proves they're online.
+              if (senderHex) setOnlineContacts(prev => new Map(prev).set(senderHex, Date.now()));
               // The receive advanced the chain — checkpoint it before doing
               // anything else, so a crash here cannot desync the conversation.
               if (senderHex) void persistRatchet(senderHex);

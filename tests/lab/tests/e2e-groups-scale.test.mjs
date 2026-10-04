@@ -17,14 +17,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   createBrowserGroup,
-  injectContacts,
-  sendMessageToAll,
   createGroupUI,
+  openChat,
+  chatRow,
+  sendText,
+  incoming,
 } from './e2e-browser-helpers.mjs';
 import { eventually } from './e2e-helpers.mjs';
 
-const webUrl = process.env.KANT_WEB_URL ?? 'http://web:80';
-const relayUrl = process.env.KANT_RELAY_URL ?? 'http://relay:3001';
 const KANT_RELAY_LAB_CONTROL_TOKEN = process.env.KANT_RELAY_LAB_CONTROL_TOKEN ?? 'kant-lab-restart-token';
 const relayInfoUrl = process.env.KANT_RELAY_INFO_URL ?? 'http://relay:3001/relay-info';
 const relayBaseUrl = relayInfoUrl.replace(/\/relay-info$/, '');
@@ -52,30 +52,15 @@ async function waitForRelay(timeoutMs = 60_000) {
   }
 }
 
-/** Helper: get a member's identity public key hex */
-async function getMemberKeyHex(page) {
-  return page.evaluate(async () => {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open('kant');
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => {
-        const get = request.result.transaction('identity', 'readonly').objectStore('identity').get('keypair');
-        get.onsuccess = () => resolve(get.result?.publicKeyHex ?? '');
-      };
-    });
-  });
-}
-
-/** Helper: create a group via InstrumentApp UI — delegates to shared helper */
+/** Helper: create a group through the New group sheet — delegates to shared helper */
 async function createGroupUILocal(ownerPage, groupName, memberNicknames) {
   return createGroupUI(ownerPage, groupName, memberNicknames);
 }
 
 /** Helper: wait for a group to appear on a member's page */
 async function waitForGroup(page, groupName, timeoutMs = 30_000, memberLabel = 'Member') {
-  // Wait for the receive handler to persist the group before changing tabs.
-  // Opening Groups while the initial loadGroups() call is still resolving can
-  // briefly render (and race in) an empty list under scale-test load.
+  // Wait for the receive handler to persist the group before looking for it
+  // in the chat list, which can briefly render empty under scale-test load.
   await eventually(
     async () => {
       return page.evaluate(async name => new Promise((resolve, reject) => {
@@ -91,15 +76,12 @@ async function waitForGroup(page, groupName, timeoutMs = 30_000, memberLabel = '
     { timeout: timeoutMs, message: `${memberLabel} did not persist group: ${groupName}` }
   );
 
-  await page.getByRole('button', { name: 'Groups', exact: true }).click();
-  await page.locator('.inst-rows[aria-label="Groups"] button.row', { hasText: groupName }).first()
-    .waitFor({ timeout: timeoutMs });
+  await chatRow(page, groupName).waitFor({ timeout: timeoutMs });
 }
 
 /** Helper: click on a group to open it in the chat area */
 async function openGroup(page, groupName) {
-  await page.getByText(groupName, { exact: true }).first().click();
-  await page.waitForTimeout(500); // Let the UI settle
+  await openChat(page, groupName);
 }
 
 /** Helper: check group key generation counter from the page */
@@ -128,13 +110,9 @@ async function getKeyGeneration(page) {
 
 /** Helper: send a group message and wait for delivery */
 async function sendGroupMessage(page, text, expectedReceivers, timeoutMs = 60_000) {
-  await page.locator('textarea.composer-input').fill(text);
-  await page.locator('textarea.composer-input').press('Enter');
+  await sendText(page, text);
   await Promise.all(
-    expectedReceivers.map(receiver => {
-      const receiverPage = receiver.page ?? receiver;
-      return receiverPage.getByText(text, { exact: true }).waitFor({ timeout: timeoutMs });
-    })
+    expectedReceivers.map(receiver => incoming(receiver.page ?? receiver, text).waitFor({ timeout: timeoutMs }))
   );
 }
 
@@ -156,9 +134,6 @@ test('group key delivery: 10 members under nominal conditions', { timeout: 600_0
   try {
     const [owner, ...members] = group.members;
     console.log(`[${N}-member] All ${N} identities created`);
-    const connectBtn10 = owner.page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtn10.isVisible().catch(() => false)) await connectBtn10.click();
-    const _deadline = Date.now() + 35_000; while (Date.now() < _deadline) { const _a = await owner.page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => ''); if (_a && _a.includes('/p2p-circuit')) break; await new Promise(r => setTimeout(r, 500)); }
     const memberNicknames10 = members.map((_, i) => `Member${i + 1}`);
     await createGroupUILocal(owner.page, groupName, memberNicknames10);
     console.log(`[${N}-member] Group created: ${groupName}`);
@@ -208,9 +183,6 @@ test('group key delivery: 50 members under nominal conditions', {
   try {
     const [owner, ...members] = group.members;
     console.log(`[${N}-member] All ${N} identities created`);
-    const connectBtn50 = owner.page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtn50.isVisible().catch(() => false)) await connectBtn50.click();
-    const _deadline = Date.now() + 35_000; while (Date.now() < _deadline) { const _a = await owner.page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => ''); if (_a && _a.includes('/p2p-circuit')) break; await new Promise(r => setTimeout(r, 500)); }
     const memberNicknames50 = members.map((_, i) => `Member${i + 1}`);
     await createGroupUILocal(owner.page, groupName, memberNicknames50);
     console.log(`[${N}-member] Group created: ${groupName}`);
@@ -221,9 +193,9 @@ test('group key delivery: 50 members under nominal conditions', {
     );
     console.log(`[${N}-member] All ${N} members see the group`);
 
-    // Open group on all members for message reception
+    // Open the group everywhere: the owner to send, members to see it arrive
     await Promise.all(
-      members.map(m => openGroup(m.page, groupName))
+      group.members.map(m => openGroup(m.page, groupName))
     );
 
     // Send first group message
@@ -256,9 +228,6 @@ test('group key delivery: 10 members under relay restart churn', { timeout: 240_
   try {
     const [owner, ...members] = group.members;
     console.log(`[${N}-member-churn] All ${N} identities created`);
-    const connectBtnChurn = owner.page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtnChurn.isVisible().catch(() => false)) await connectBtnChurn.click();
-    const _deadline = Date.now() + 35_000; while (Date.now() < _deadline) { const _a = await owner.page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => ''); if (_a && _a.includes('/p2p-circuit')) break; await new Promise(r => setTimeout(r, 500)); }
     const memberNicknamesChurn = members.map((_, i) => `Member${i + 1}`);
     await createGroupUILocal(owner.page, groupName, memberNicknamesChurn);
     console.log(`[${N}-member-churn] Group created: ${groupName}`);
@@ -269,9 +238,9 @@ test('group key delivery: 10 members under relay restart churn', { timeout: 240_
     );
     console.log(`[${N}-member-churn] All ${N} members see the group`);
 
-    // Open group on all members for message reception
+    // Open the group everywhere: the owner to send, members to see it arrive
     await Promise.all(
-      members.map(m => openGroup(m.page, groupName))
+      group.members.map(m => openGroup(m.page, groupName))
     );
 
     // Restart relay during/after key distribution
@@ -297,7 +266,7 @@ test('group key delivery: 10 members under relay restart churn', { timeout: 240_
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TEST: 10 members with member churn (3 offline, then reconnect)
+// TEST: 10 members with member churn (3 go offline, the rest keep receiving)
 // ═══════════════════════════════════════════════════════════════════════════
 
 test('group key delivery: 10 members with member churn', { timeout: 240_000 }, async () => {
@@ -315,9 +284,6 @@ test('group key delivery: 10 members with member churn', { timeout: 240_000 }, a
   try {
     const [owner, ...members] = group.members;
     console.log(`[${N}-member-member-churn] All ${N} identities created`);
-    const connectBtnMC = owner.page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtnMC.isVisible().catch(() => false)) await connectBtnMC.click();
-    const _deadline = Date.now() + 35_000; while (Date.now() < _deadline) { const _a = await owner.page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => ''); if (_a && _a.includes('/p2p-circuit')) break; await new Promise(r => setTimeout(r, 500)); }
     const memberNicknamesMC = members.map((_, i) => `Member${i + 1}`);
     await createGroupUILocal(owner.page, groupName, memberNicknamesMC);
     console.log(`[${N}-member-member-churn] Group created: ${groupName}`);
@@ -328,9 +294,9 @@ test('group key delivery: 10 members with member churn', { timeout: 240_000 }, a
     );
     console.log(`[${N}-member-member-churn] All ${N} members see the group`);
 
-    // Open group on all members for message reception
+    // Open the group everywhere: the owner to send, members to see it arrive
     await Promise.all(
-      members.map(m => openGroup(m.page, groupName))
+      group.members.map(m => openGroup(m.page, groupName))
     );
 
     // Send initial message to all members (including offline ones)
@@ -351,76 +317,21 @@ test('group key delivery: 10 members with member churn', { timeout: 240_000 }, a
     await sendGroupMessage(owner.page, 'message-during-offline-2', onlineMembers, msgTimeout);
     console.log(`[${N}-member-member-churn] ${N - OFFLINE_COUNT} online members received messages`);
 
-    // Reconnect the offline members with fresh browser contexts
-    console.log(`[${N}-member-member-churn] Reconnecting ${OFFLINE_COUNT} members...`);
-    const browser = group.browser;
-    const reconnected = [];
-    for (let i = 0; i < OFFLINE_COUNT; i++) {
-      const newContext = await browser.newContext({ acceptDownloads: true });
-      const newPage = await newContext.newPage();
-      await newPage.goto(webUrl);
-      const password = `KantE2E-Member${i}-2026!`;
-      await newPage.getByPlaceholder('Enter password').fill(password);
-      await newPage.getByPlaceholder('Repeat password').fill(password);
-      await newPage.getByRole('button', { name: 'Create Identity' }).click();
-      await newPage.waitForFunction(() => {
-        return new Promise(async (resolve) => {
-          const db = indexedDB.open('kant');
-          db.onsuccess = () => {
-            const tx = db.result.transaction('identity', 'readonly');
-            const store = tx.objectStore('identity');
-            const getAll = store.getAll();
-            getAll.onsuccess = () => {
-              resolve(getAll.result && getAll.result.length > 0 && !!getAll.result[0].identityKey);
-            };
-          };
-        });
-      }, { timeout: 90_000 });
-
-      // Inject contacts for the reconnected member
-      const allKeys = await Promise.all([
-        getMemberKeyHex(owner.page),
-        ...members.slice(OFFLINE_COUNT).map(m => getMemberKeyHex(m.page)),
-        ...reconnected.map(m => getMemberKeyHex(m.page))
-      ]);
-      const contacts = allKeys.map((key, idx) => ({
-        publicKeyHex: key,
-        nickname: idx === 0 ? 'Owner' : `Member${OFFLINE_COUNT + idx}`,
-        trusted: true,
-      }));
-      await injectContacts(newPage, contacts);
-
-      reconnected.push({ page: newPage, context: newContext });
-      console.log(`[${N}-member-member-churn] Member ${i} reconnected`);
-    }
-
-    // Open group on reconnected members
-    await Promise.all(
-      reconnected.map(m => waitForGroup(m.page, groupName, keyTimeout).catch(() => {}))
-    );
-    await Promise.all(
-      reconnected.map(m => openGroup(m.page, groupName).catch(() => {}))
-    );
-
-    // Wait for reconnected members to receive missed messages
-    const allMembersNow = [...onlineMembers, ...reconnected];
-    console.log(`[${N}-member-member-churn] Waiting for ${allMembersNow.length} members to sync...`);
+    // The offline members' contexts are gone for good here. Whether a member
+    // who returns receives what they missed is covered with real persisted
+    // identities in e2e-groups-churn.test.mjs.
 
     // Verify online members got the offline messages
     for (const msg of ['message-during-offline-1', 'message-during-offline-2']) {
       await Promise.all(
-        onlineMembers.map(m => m.page.getByText(msg, { exact: true }).waitFor({ timeout: msgTimeout }))
+        onlineMembers.map(m => incoming(m.page, msg).waitFor({ timeout: msgTimeout }))
       );
     }
 
-    // Send a message to verify full connectivity after reconnect
+    // The group keeps working for the members who stayed
     await sendGroupMessage(owner.page, 'message-after-reconnect', onlineMembers, msgTimeout);
     console.log(`[${N}-member-member-churn] Post-reconnect message delivered`);
 
-    // Clean up reconnected contexts
-    for (const m of reconnected) {
-      await m.context.close();
-    }
 
     const endMem = process.memoryUsage().heapUsed;
     console.log(`[${N}-member-member-churn] Final heap: ${Math.round(endMem / 1024 / 1024)} MB (+${Math.round((endMem - startMem) / 1024 / 1024)} MB)`);
@@ -448,9 +359,6 @@ test('group key delivery: 10 members - verify key generation counter', { timeout
   try {
     const [owner, ...members] = group.members;
     console.log(`[${N}-member-gen] All ${N} identities created`);
-    const connectBtnGen = owner.page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtnGen.isVisible().catch(() => false)) await connectBtnGen.click();
-    const _deadline = Date.now() + 35_000; while (Date.now() < _deadline) { const _a = await owner.page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => ''); if (_a && _a.includes('/p2p-circuit')) break; await new Promise(r => setTimeout(r, 500)); }
     const memberNicknamesGen = members.map((_, i) => `Member${i + 1}`);
     await createGroupUILocal(owner.page, groupName, memberNicknamesGen);
     console.log(`[${N}-member-gen] Group created: ${groupName}`);
@@ -461,9 +369,9 @@ test('group key delivery: 10 members - verify key generation counter', { timeout
     );
     console.log(`[${N}-member-gen] All ${N} members see the group`);
 
-    // Open group on all members for message reception
+    // Open the group everywhere: the owner to send, members to see it arrive
     await Promise.all(
-      members.map(m => openGroup(m.page, groupName))
+      group.members.map(m => openGroup(m.page, groupName))
     );
 
     // Verify initial key generation is 0 or 1
@@ -473,12 +381,13 @@ test('group key delivery: 10 members - verify key generation counter', { timeout
 
     // Send first message
     await sendGroupMessage(owner.page, `message-gen-1`, members, msgTimeout);
-    console.log(`[${N}-member-gen] First message delivered, generation should be 1`);
+    console.log(`[${N}-member-gen] First message delivered`);
 
-    // Verify all members have generation 1
+    // Sending does not rotate the key (only membership changes do, see core
+    // groups.ts), so every member must hold exactly the owner's generation.
     const memberGens1 = await Promise.all(members.map(m => getKeyGeneration(m.page)));
     console.log(`[${N}-member-gen] Member generations after first msg: ${memberGens1.join(', ')}`);
-    assert.ok(memberGens1.every(g => g === 1), `Expected all members to have generation 1, got ${memberGens1}`);
+    assert.ok(memberGens1.every(g => g === ownerGen0), `Expected every member at the owner's generation ${ownerGen0}, got ${memberGens1}`);
 
     // Rotate key (this would typically be done via UI or API)
     // For now, we create a new group to simulate key rotation
@@ -495,7 +404,7 @@ test('group key delivery: 10 members - verify key generation counter', { timeout
 
     // Send message in new group
     await Promise.all(
-      members.map(m => openGroup(m.page, groupName2))
+      group.members.map(m => openGroup(m.page, groupName2))
     );
     await sendGroupMessage(owner.page, `message-gen-2`, members, msgTimeout);
     console.log(`[${N}-member-gen] Second message delivered in new group`);
@@ -518,6 +427,7 @@ test('group key delivery: 10 members - verify key generation counter', { timeout
         return newGroup ? newGroup.keyGeneration : -1;
       })
     );
+    assert.ok(newGroupGens.every(g => g >= 0), `Every member should hold ${groupName2}, got generations ${newGroupGens}`);
     console.log(`[${N}-member-gen] New group generations: ${newGroupGens.join(', ')}`);
 
     const endMem = process.memoryUsage().heapUsed;
@@ -556,9 +466,6 @@ async function runParameterizedScaleTest(n, testType = 'nominal') {
     const [owner, ...members] = group.members;
     console.log(`[param-${n}] All ${n} identities created`);
 
-    const connectBtnParam = owner.page.getByRole('button', { name: 'Connect to Network' });
-    if (await connectBtnParam.isVisible().catch(() => false)) await connectBtnParam.click();
-    const _deadline = Date.now() + 35_000; while (Date.now() < _deadline) { const _a = await owner.page.evaluate(() => window.__kantCircuitAddr ?? '').catch(() => ''); if (_a && _a.includes('/p2p-circuit')) break; await new Promise(r => setTimeout(r, 500)); }
     const memberNicknamesParam = members.map((_, i) => `Member${i + 1}`);
     await createGroupUILocal(owner.page, groupName, memberNicknamesParam);
     console.log(`[param-${n}] Group created: ${groupName}`);
@@ -566,7 +473,7 @@ async function runParameterizedScaleTest(n, testType = 'nominal') {
     await Promise.all(members.map(m => waitForGroup(m.page, groupName, keyTimeout)));
     console.log(`[param-${n}] All ${n} members see the group`);
 
-    await Promise.all(members.map(m => openGroup(m.page, groupName)));
+    await Promise.all(group.members.map(m => openGroup(m.page, groupName)));
 
     await sendGroupMessage(owner.page, `hello from ${n}-member group`, members, msgTimeout);
     console.log(`[param-${n}] Message delivered to all ${n} members`);

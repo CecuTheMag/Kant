@@ -196,6 +196,14 @@ export function IconLinux({ size = 22, className }: IconProps) {
   );
 }
 
+export function IconWindows({ size = 22, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className={className}>
+      <path d="M3 5.5l7.4-1v7H3v-6zM11.4 4.3L21 3v8.5h-9.6V4.3zM3 12.5h7.4v7L3 18.5v-6zM11.4 12.5H21V21l-9.6-1.3v-7.2z" />
+    </svg>
+  );
+}
+
 export function IconDiscord({ size = 20, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className={className}>
