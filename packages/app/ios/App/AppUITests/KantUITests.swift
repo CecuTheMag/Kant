@@ -117,7 +117,9 @@ final class KantUITests: XCTestCase {
         app.launch()
         let agree = app.webViews.buttons["Agree and continue"]
         let unlock = app.webViews.buttons["Unlock"]
-        _ = agree.waitForExistence(timeout: 120) || unlock.waitForExistence(timeout: 5)
+        // Whichever screen comes first (an account may or may not exist yet).
+        let deadline = Date().addingTimeInterval(120)
+        while !agree.exists && !unlock.exists && Date() < deadline { usleep(200_000) }
         reportLaunch("launch → first screen", since: started)
         if agree.exists {
             onboard()
