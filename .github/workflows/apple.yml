@@ -75,6 +75,8 @@ jobs:
     name: iOS app
     runs-on: macos-15
     timeout-minutes: 60
+    env:
+      SIM: iPhone 16
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -96,15 +98,30 @@ jobs:
         run: pnpm --dir packages/app run build
       - run: pnpm --dir packages/app exec cap sync ios
       - run: ruby packages/app/ios/scripts/add-ui-tests.rb
+      - name: Simulator with Face ID enrolled
+        run: |
+          xcrun simctl list devices available | grep -E "iPhone" | head -5
+          xcrun simctl boot "$SIM" || true
+          xcrun simctl bootstatus "$SIM" -b
+          xcrun simctl spawn "$SIM" notifyutil -s com.apple.BiometricKit.enrollmentChanged 1
+          xcrun simctl spawn "$SIM" notifyutil -p com.apple.BiometricKit.enrollmentChanged
+      - name: Web client to talk to (same relay)
+        run: |
+          pnpm --dir tests/lab exec playwright install chromium
+          nohup node tests/lab/local/ios-peer.mjs http://127.0.0.1:3001 "$RUNNER_TEMP/peer-link.txt" > "$RUNNER_TEMP/peer.log" 2>&1 &
+          for i in $(seq 120); do [ -s "$RUNNER_TEMP/peer-link.txt" ] && break; sleep 1; done
+          cat "$RUNNER_TEMP/peer-link.txt"
+          echo "TEST_RUNNER_KANT_PEER_LINK=$(cat "$RUNNER_TEMP/peer-link.txt")" >> "$GITHUB_ENV"
       - name: UI tests in the iOS Simulator
         env:
           TEST_RUNNER_KANT_TEST_RELAY: http://127.0.0.1:3001
         run: |
-          xcrun simctl list devices available | grep -E "iPhone" | head -5
+          # Answer every Face ID prompt with a matching face while the tests run.
+          (while true; do xcrun simctl spawn "$SIM" notifyutil -p com.apple.BiometricKit_Sim.pearl.match; sleep 2; done) &
           set -o pipefail
           xcodebuild test \
             -workspace packages/app/ios/App/App.xcworkspace -scheme KantUITests \
-            -destination "platform=iOS Simulator,name=iPhone 16" \
+            -destination "platform=iOS Simulator,name=$SIM" \
             -resultBundlePath "$RUNNER_TEMP/ui.xcresult" \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tail -150
       - name: Export screenshots
@@ -112,7 +129,7 @@ jobs:
         run: |
           mkdir -p ios-shots
           xcrun xcresulttool export attachments --path "$RUNNER_TEMP/ui.xcresult" --output-path ios-shots || true
-          cp "$RUNNER_TEMP/relay.log" ios-shots/ || true
+          cp "$RUNNER_TEMP/relay.log" "$RUNNER_TEMP/peer.log" ios-shots/ || true
           ls -la ios-shots
       - uses: actions/upload-artifact@v4
         if: always()

@@ -24,6 +24,7 @@ end
 target.add_dependency(app)
 target.build_configurations.each do |config|
   s = config.build_settings
+  s['PRODUCT_NAME'] = '$(TARGET_NAME)'
   s['TEST_TARGET_NAME'] = 'App'
   s['PRODUCT_BUNDLE_IDENTIFIER'] = 'com.kant.messenger.uitests'
   s['GENERATE_INFOPLIST_FILE'] = 'YES'
