@@ -89,14 +89,11 @@ final class KantUITests: XCTestCase {
         XCTAssertTrue(toggle.waitForExistence(timeout: 20), "no Face ID setting")
         shot("8-security")
         toggle.tap()
-        answerSystemPrompt()  // "Do you want to allow Kant to use Face ID?"
-        // The app answers with a toast either way; catch it to see which.
-        let outcome = app.webViews.staticTexts.matching(NSPredicate(
-            format: "label CONTAINS 'unlock is on' OR label BEGINSWITH 'Couldn' OR label CONTAINS 'isn’t available'")).firstMatch
-        XCTAssertTrue(outcome.waitForExistence(timeout: 60), "turning on Face ID gave no answer")
-        shot("9-face-id-result")
-        // The toast fades; the switch staying on is the lasting answer.
-        XCTAssertEqual(toggle.value as? String, "1", "Face ID unlock didn't turn on (see screenshot 9)")
+        answerSystemPrompt()  // "Do you want to allow Kant to use Face ID?" (first time only)
+        // The switch turning on is the lasting result (the toast fades quickly).
+        expectation(for: NSPredicate(format: "value == '1'"), evaluatedWith: toggle)
+        waitForExpectations(timeout: 60)
+        shot("9-face-id-on")
 
         app.terminate()
         app.launch()
