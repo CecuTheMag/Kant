@@ -1,0 +1,69 @@
+name: Apple
+
+# Builds and tests the macOS and iOS apps on GitHub's macOS runners (real Apple
+# hardware with Xcode). Run it by hand (Actions → Apple → Run workflow) or by
+# pushing to a branch named apple*. The release workflow runs the same macOS
+# build for tagged releases.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['apple*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apple-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Baked into the builds as the default network; tests don't depend on it.
+  VITE_RELAY_URL: https://majesticrelay.duckdns.org
+
+jobs:
+  macos:
+    name: macOS app
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir packages/desktop run build:mac
+      - name: Signatures are valid (ad-hoc; no Developer ID)
+        run: |
+          ls -la packages/desktop/release
+          for app in packages/desktop/release/mac/Kant.app packages/desktop/release/mac-arm64/Kant.app; do
+            codesign --verify --deep --strict --verbose=2 "$app"
+            codesign -dv "$app" 2>&1 | grep -E "Signature|Identifier|Format"
+            lipo -archs "$app/Contents/MacOS/Kant"
+          done
+      - name: Smoke test, Apple Silicon (app starts, bundled relay healthy, UI renders)
+        run: node packages/desktop/scripts/smoke.mjs packages/desktop/release/mac-arm64/Kant.app/Contents/MacOS/Kant
+      - name: Smoke test, Intel under Rosetta
+        run: |
+          /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+          node packages/desktop/scripts/smoke.mjs packages/desktop/release/mac/Kant.app/Contents/MacOS/Kant
+      - name: A downloaded copy opens past Gatekeeper's prompt, not "damaged"
+        run: |
+          dmg=$(ls packages/desktop/release/Kant-*-mac-arm64.dmg)
+          mnt=$(mktemp -d)
+          hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg"
+          cp -R "$mnt/Kant.app" "$RUNNER_TEMP/"
+          hdiutil detach "$mnt"
+          xattr -w com.apple.quarantine "0081;$(printf %x "$(date +%s)");Safari;" "$RUNNER_TEMP/Kant.app"
+          # A broken seal is what makes macOS say "damaged"; a valid ad-hoc
+          # signature gets the "could not verify" prompt with Open Anyway.
+          codesign --verify --deep --strict "$RUNNER_TEMP/Kant.app"
+          spctl --assess --type execute -vv "$RUNNER_TEMP/Kant.app" 2>&1 | tee "$RUNNER_TEMP/spctl.txt" || true
+          ! grep -qi "damaged\|invalid signature\|a sealed resource is missing" "$RUNNER_TEMP/spctl.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: packages/desktop/release/Kant-*-mac-*.dmg
+          if-no-files-found: error

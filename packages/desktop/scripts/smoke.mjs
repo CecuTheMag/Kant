@@ -3,10 +3,10 @@
  * wait for the bundled private relay to report healthy, and check that the
  * renderer actually rendered the app (not a blank window or an error page).
  *
- *   node scripts/smoke.mjs <path to Kant executable or AppImage>
+ *   node scripts/smoke.mjs <path to Kant executable, AppImage, or Kant.app/Contents/MacOS/Kant>
  *
- * Exits non-zero on any failure. Used by the release workflow on Linux and
- * Windows, and for checking local release builds before they are published.
+ * Exits non-zero on any failure. Used by the release workflow on Linux,
+ * Windows and macOS, and for checking local release builds before they are published.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -31,6 +31,8 @@ const env = {
   ...process.env,
   XDG_CONFIG_HOME: profile,
   APPDATA: profile,
+  // Read by the app itself (main.ts); the only override that works on macOS.
+  KANT_USER_DATA_DIR: join(profile, 'kant'),
   // AppImages need FUSE; CI runners often lack it, so extract-and-run instead,
   // into the throwaway folder so the copy is removed with it.
   APPIMAGE_EXTRACT_AND_RUN: '1',
