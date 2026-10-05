@@ -22,7 +22,8 @@ if (!exe) {
 
 const DEBUG_PORT = Number(process.env.KANT_SMOKE_DEBUG_PORT ?? 9333);
 const RELAY_INFO = 'http://127.0.0.1:3001';
-const TIMEOUT_MS = 90_000;
+// Per wait. Raise it for slow first launches (Rosetta translates the whole app first).
+const TIMEOUT_MS = Number(process.env.KANT_SMOKE_TIMEOUT_MS ?? 90_000);
 
 // A fresh profile so the smoke test never touches (or is affected by) a real
 // Kant install on the same machine. Electron derives userData from these.

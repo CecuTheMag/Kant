@@ -46,6 +46,9 @@ jobs:
       - name: Smoke test, Apple Silicon (app starts, bundled relay healthy, UI renders)
         run: node packages/desktop/scripts/smoke.mjs packages/desktop/release/mac-arm64/Kant.app/Contents/MacOS/Kant
       - name: Smoke test, Intel under Rosetta
+        env:
+          # Rosetta translates the whole app on first launch (over a minute).
+          KANT_SMOKE_TIMEOUT_MS: '300000'
         run: |
           /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
           node packages/desktop/scripts/smoke.mjs packages/desktop/release/mac/Kant.app/Contents/MacOS/Kant
@@ -66,4 +69,71 @@ jobs:
         with:
           name: macos
           path: packages/desktop/release/Kant-*-mac-*.dmg
+          if-no-files-found: error
+
+  ios:
+    name: iOS app
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Local relay for the tests
+        run: |
+          pnpm --dir packages/relay build
+          mkdir -p "$RUNNER_TEMP/relay"
+          RELAY_PORT=3000 RELAY_INFO_PORT=3001 RELAY_PUBLIC_HOST=127.0.0.1 RELAY_HTTP_BIND=127.0.0.1 \
+            RELAY_DATA_DIR="$RUNNER_TEMP/relay" nohup node packages/relay/dist/index.js > "$RUNNER_TEMP/relay.log" 2>&1 &
+          for i in $(seq 30); do curl -sf http://127.0.0.1:3001/healthz && break; sleep 1; done
+      - name: Web app without a default relay (the test connects to the local one)
+        env:
+          VITE_RELAY_URL: ''
+        run: pnpm --dir packages/app run build
+      - run: pnpm --dir packages/app exec cap sync ios
+      - run: ruby packages/app/ios/scripts/add-ui-tests.rb
+      - name: UI tests in the iOS Simulator
+        env:
+          TEST_RUNNER_KANT_TEST_RELAY: http://127.0.0.1:3001
+        run: |
+          xcrun simctl list devices available | grep -E "iPhone" | head -5
+          set -o pipefail
+          xcodebuild test \
+            -workspace packages/app/ios/App/App.xcworkspace -scheme KantUITests \
+            -destination "platform=iOS Simulator,name=iPhone 16" \
+            -resultBundlePath "$RUNNER_TEMP/ui.xcresult" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -150
+      - name: Export screenshots
+        if: always()
+        run: |
+          mkdir -p ios-shots
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/ui.xcresult" --output-path ios-shots || true
+          cp "$RUNNER_TEMP/relay.log" ios-shots/ || true
+          ls -la ios-shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-screenshots
+          path: ios-shots
+      - name: Release build with the default relay (unsigned .ipa, for sideloading)
+        run: |
+          pnpm --dir packages/app run build
+          pnpm --dir packages/app exec cap sync ios
+          version=$(node -p "require('./packages/app/package.json').version")
+          xcodebuild archive \
+            -workspace packages/app/ios/App/App.xcworkspace -scheme App -configuration Release \
+            -destination generic/platform=iOS -archivePath "$RUNNER_TEMP/Kant.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" 2>&1 | tail -30
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$RUNNER_TEMP/Kant.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/Kant-$version.ipa" Payload)
+          ls -la Kant-*.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: Kant-*.ipa
           if-no-files-found: error
