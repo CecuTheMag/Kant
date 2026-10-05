@@ -95,7 +95,8 @@ final class KantUITests: XCTestCase {
             format: "label CONTAINS 'unlock is on' OR label BEGINSWITH 'Couldn' OR label CONTAINS 'isn’t available'")).firstMatch
         XCTAssertTrue(outcome.waitForExistence(timeout: 60), "turning on Face ID gave no answer")
         shot("9-face-id-result")
-        XCTAssertEqual(outcome.label, "Face ID unlock is on")
+        // The toast fades; the switch staying on is the lasting answer.
+        XCTAssertEqual(toggle.value as? String, "1", "Face ID unlock didn't turn on (see screenshot 9)")
 
         app.terminate()
         app.launch()
