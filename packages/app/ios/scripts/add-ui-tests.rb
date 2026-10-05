@@ -39,4 +39,11 @@ scheme.add_build_target(app)
 scheme.add_test_target(target)
 scheme.set_launch_target(app)
 scheme.save_as(project_path, 'KantUITests', true)
-puts 'Added AppUITests target and KantUITests scheme'
+
+# A shared scheme stops Xcode from generating the default "App" one, which the
+# release build (xcodebuild archive -scheme App) uses; save that too.
+app_scheme = Xcodeproj::XCScheme.new
+app_scheme.add_build_target(app)
+app_scheme.set_launch_target(app)
+app_scheme.save_as(project_path, 'App', true)
+puts 'Added the AppUITests target and the KantUITests and App schemes'
