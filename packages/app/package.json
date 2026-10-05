@@ -18,6 +18,7 @@
     "@capacitor/core": "^6.0.0",
     "@capacitor/filesystem": "^6.0.0",
     "@capacitor/ios": "6.2.1",
+    "@capacitor/keyboard": "^6.0.4",
     "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
     "@kant/core": "workspace:*",

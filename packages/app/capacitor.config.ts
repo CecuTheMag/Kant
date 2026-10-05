@@ -22,6 +22,12 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    // iOS: shrink the web view above the keyboard, as Android does on its own.
+    // Otherwise the keyboard covers the Continue/Create/Send buttons, which
+    // sit at the bottom of the screen.
+    Keyboard: {
+      resize: 'native',
+    },
   },
 };
 

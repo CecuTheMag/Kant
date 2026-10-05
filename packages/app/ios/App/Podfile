@@ -13,6 +13,7 @@ def capacitor_pods
   pod 'CapacitorCordova', :path => '../../../../node_modules/.pnpm/@capacitor+ios@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/ios'
   pod 'CapacitorApp', :path => '../../../../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app'
   pod 'CapacitorFilesystem', :path => '../../../../node_modules/.pnpm/@capacitor+filesystem@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/filesystem'
+  pod 'CapacitorKeyboard', :path => '../../../../node_modules/.pnpm/@capacitor+keyboard@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/keyboard'
   pod 'CapacitorPushNotifications', :path => '../../../../node_modules/.pnpm/@capacitor+push-notifications@6.0.5_@capacitor+core@6.2.1/node_modules/@capacitor/push-notifications'
   pod 'CapacitorSplashScreen', :path => '../../../../node_modules/.pnpm/@capacitor+splash-screen@6.0.4_@capacitor+core@6.2.1/node_modules/@capacitor/splash-screen'
 end
