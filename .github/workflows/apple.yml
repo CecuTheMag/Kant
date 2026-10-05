@@ -118,18 +118,20 @@ jobs:
         run: |
           # Answer every Face ID prompt with a matching face while the tests run.
           (while true; do xcrun simctl spawn "$SIM" notifyutil -p com.apple.BiometricKit_Sim.pearl.match; sleep 2; done) &
-          set -o pipefail
+          status=0
           xcodebuild test \
             -workspace packages/app/ios/App/App.xcworkspace -scheme KantUITests \
             -destination "platform=iOS Simulator,name=$SIM" \
             -resultBundlePath "$RUNNER_TEMP/ui.xcresult" \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -150
+            CODE_SIGNING_ALLOWED=NO > "$RUNNER_TEMP/xcodebuild.log" 2>&1 || status=$?
+          grep -E "error:|Test Case .*(passed|failed)|Executed [0-9]+ test" "$RUNNER_TEMP/xcodebuild.log" || tail -80 "$RUNNER_TEMP/xcodebuild.log"
+          exit $status
       - name: Export screenshots
         if: always()
         run: |
           mkdir -p ios-shots
           xcrun xcresulttool export attachments --path "$RUNNER_TEMP/ui.xcresult" --output-path ios-shots || true
-          cp "$RUNNER_TEMP/relay.log" "$RUNNER_TEMP/peer.log" ios-shots/ || true
+          cp "$RUNNER_TEMP/relay.log" "$RUNNER_TEMP/peer.log" "$RUNNER_TEMP/xcodebuild.log" ios-shots/ || true
           ls -la ios-shots
       - uses: actions/upload-artifact@v4
         if: always()
