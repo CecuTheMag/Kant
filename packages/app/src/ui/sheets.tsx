@@ -74,6 +74,8 @@ export function AddContactSheet({ onClose, onAdded, initial }: {
   const [text, setText] = useState(initial ? buildInvite(initial) : '');
   const [found, setFound] = useState<Invite | null>(initial ?? null);
   const [name, setName] = useState(initial?.name ?? '');
+  // The name follows the link (typed, pasted or scanned) until the person types their own.
+  const [nameEdited, setNameEdited] = useState(false);
   const [error, setError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -83,7 +85,7 @@ export function AddContactSheet({ onClose, onAdded, initial }: {
     if (inv.hex === store.state.meHex) { setError('That’s your own code.'); setFound(null); return; }
     setError('');
     setFound(inv);
-    setName((n) => n || inv.name || '');
+    if (!nameEdited) setName(inv.name ?? '');
     setMode('paste');
     setText(raw);
   };
@@ -132,7 +134,7 @@ export function AddContactSheet({ onClose, onAdded, initial }: {
             <label className="k-field-label" htmlFor="invite">Invite link or Kant key</label>
             <textarea id="invite" className={`k-field k-mono${error ? ' is-error' : ''}`} style={{ fontSize: 14 }}
               value={text} placeholder="https://kant.network/add#…" spellCheck={false} autoCapitalize="off"
-              onChange={(e) => { setText(e.target.value); const inv = parseInvite(e.target.value); setFound(inv && inv.hex !== store.state.meHex ? inv : null); if (inv?.name && !name) setName(inv.name); setError(''); }} />
+              onChange={(e) => { setText(e.target.value); const inv = parseInvite(e.target.value); setFound(inv && inv.hex !== store.state.meHex ? inv : null); if (!nameEdited) setName(inv?.name ?? ''); setError(''); }} />
             {navigator.clipboard?.readText && !text && (
               <button type="button" className="k-btn k-btn-plain" style={{ marginTop: 4 }} onClick={async () => {
                 try { accept(await navigator.clipboard.readText()); } catch { /* permission refused */ }
@@ -155,7 +157,7 @@ export function AddContactSheet({ onClose, onAdded, initial }: {
                 ) : (
                   <>
                     <input className="k-cell-input" style={{ width: '100%', fontSize: 17, fontWeight: 600, border: 0, background: 'transparent' }}
-                      value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a name" aria-label="Name" maxLength={40} />
+                      value={name} onChange={(e) => { setName(e.target.value); setNameEdited(true); }} placeholder="Add a name" aria-label="Name" maxLength={40} />
                     <div className="k-found-id">{shortId(found.hex)}</div>
                   </>
                 )}
