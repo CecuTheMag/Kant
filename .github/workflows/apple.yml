@@ -128,7 +128,7 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/ui.xcresult" \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
             > "$RUNNER_TEMP/xcodebuild.log" 2>&1 || status=$?
-          grep -E "error:|Test Case .*(passed|failed)|Executed [0-9]+ test" "$RUNNER_TEMP/xcodebuild.log" || tail -80 "$RUNNER_TEMP/xcodebuild.log"
+          grep -E "error:|Test Case .*(passed|failed)|Executed [0-9]+ test|KANT-LAUNCH" "$RUNNER_TEMP/xcodebuild.log" || tail -80 "$RUNNER_TEMP/xcodebuild.log"
           exit $status
       - name: Export screenshots
         if: always()

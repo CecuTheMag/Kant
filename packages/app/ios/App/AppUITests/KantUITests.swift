@@ -27,9 +27,12 @@ final class KantUITests: XCTestCase {
 
     /// Welcome (with the logo) → terms → network → name and password → chats → Settings.
     func test1_OnboardingReachesChats() throws {
+        let started = Date()
         app.launch()
         let heading = app.webViews.staticTexts["Welcome to Kant"]
-        XCTAssertTrue(heading.waitForExistence(timeout: 30), "welcome screen never appeared")
+        // The first launch on a fresh simulator also starts WebKit's processes.
+        XCTAssertTrue(heading.waitForExistence(timeout: 120), "welcome screen never appeared")
+        reportLaunch("first launch → welcome screen", since: started)
         shot("1-welcome")
         // The Kant logo must actually load (it was missing in the desktop app).
         XCTAssertTrue(logoVisible(above: heading), "the Kant logo isn't showing on the welcome screen")
@@ -110,10 +113,12 @@ final class KantUITests: XCTestCase {
     /// Opens the app at the chat list: signs up on first run, else unlocks.
     /// Each test can run on its own.
     private func launchReady() {
+        let started = Date()
         app.launch()
         let agree = app.webViews.buttons["Agree and continue"]
         let unlock = app.webViews.buttons["Unlock"]
-        _ = agree.waitForExistence(timeout: 30) || unlock.waitForExistence(timeout: 5)
+        _ = agree.waitForExistence(timeout: 120) || unlock.waitForExistence(timeout: 5)
+        reportLaunch("launch → first screen", since: started)
         if agree.exists {
             onboard()
         } else if unlock.exists {
@@ -145,6 +150,12 @@ final class KantUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Launch timing goes into the test log (CI prints it), to tell a slow
+    /// simulator apart from a slow app.
+    private func reportLaunch(_ what: String, since start: Date) {
+        print(String(format: "KANT-LAUNCH %@: %.1f s", what, Date().timeIntervalSince(start)))
+    }
 
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
