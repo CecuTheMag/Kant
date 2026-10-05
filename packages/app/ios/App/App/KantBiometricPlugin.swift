@@ -17,6 +17,15 @@ public class KantBiometricPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "disable", returnType: CAPPluginReturnPromise),
     ]
 
+    /// Only on a device with a passcode (every iPhone with Face ID or Touch ID
+    /// turned on has one). The Simulator can have a face enrolled but can't set
+    /// a passcode, so it uses the next strictest class; reading still needs Face ID.
+    #if targetEnvironment(simulator)
+    private static let accessibility = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+    #else
+    private static let accessibility = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+    #endif
+
     private let service = "com.kant.messenger.biometric"
     private let account = "identity-key"
     /// The enrollment the key was stored under. Keychain already refuses the key
@@ -58,7 +67,7 @@ public class KantBiometricPlugin: CAPPlugin, CAPBridgedPlugin {
             guard ok else { return call.reject("Not confirmed", Self.code(for: error)) }
             var acError: Unmanaged<CFError>?
             guard let access = SecAccessControlCreateWithFlags(
-                nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .biometryCurrentSet, &acError) else {
+                nil, Self.accessibility, .biometryCurrentSet, &acError) else {
                 return call.reject("Could not protect the key", "FAILED")
             }
             self.deleteKey()

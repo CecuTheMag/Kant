@@ -55,7 +55,8 @@ final class KantUITests: XCTestCase {
         launchReady()
         element("Add a contact").tap()
         // On a phone the sheet opens on the camera; paste the link instead.
-        let pasteTab = app.webViews.buttons["Paste link"]
+        // (a segmented control: WebKit reports its buttons as switches)
+        let pasteTab = app.webViews.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Paste link")).firstMatch
         if pasteTab.waitForExistence(timeout: 10) { pasteTab.tap() }
         let invite = app.webViews.textViews.firstMatch
         XCTAssertTrue(invite.waitForExistence(timeout: 10), "no field for the invite link")
@@ -89,8 +90,12 @@ final class KantUITests: XCTestCase {
         shot("8-security")
         toggle.tap()
         answerSystemPrompt()  // "Do you want to allow Kant to use Face ID?"
-        _ = element("Face ID unlock is on", timeout: 60)
-        shot("9-face-id-on")
+        // The app answers with a toast either way; catch it to see which.
+        let outcome = app.webViews.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS 'unlock is on' OR label BEGINSWITH 'Couldn' OR label CONTAINS 'isn’t available'")).firstMatch
+        XCTAssertTrue(outcome.waitForExistence(timeout: 60), "turning on Face ID gave no answer")
+        shot("9-face-id-result")
+        XCTAssertEqual(outcome.label, "Face ID unlock is on")
 
         app.terminate()
         app.launch()
