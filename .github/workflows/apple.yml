@@ -74,7 +74,8 @@ jobs:
   ios:
     name: iOS app
     runs-on: macos-15
-    timeout-minutes: 60
+    # Worst case: slow simulator boot + UI tests at their 40-minute cap + .ipa build.
+    timeout-minutes: 75
     env:
       SIM: iPhone 16
     steps:
@@ -107,6 +108,12 @@ jobs:
           xcrun simctl bootstatus "$SIM" -b
           xcrun simctl spawn "$SIM" notifyutil -s com.apple.BiometricKit.enrollmentChanged 1
           xcrun simctl spawn "$SIM" notifyutil -p com.apple.BiometricKit.enrollmentChanged
+          # Warm the fresh simulator up: start WebKit's processes once (through
+          # Safari) so the app's first launch isn't the one that pays for it.
+          # A cold first launch once took long enough for XCTest to give up.
+          xcrun simctl launch "$SIM" com.apple.mobilesafari || true
+          sleep 30
+          xcrun simctl terminate "$SIM" com.apple.mobilesafari || true
       - name: Web client to talk to (same relay)
         run: |
           pnpm --dir tests/lab exec playwright install chromium
@@ -115,6 +122,9 @@ jobs:
           cat "$RUNNER_TEMP/peer-link.txt"
           echo "TEST_RUNNER_KANT_PEER_LINK=$(cat "$RUNNER_TEMP/peer-link.txt")" >> "$GITHUB_ENV"
       - name: UI tests in the iOS Simulator
+        # Each test has its own limit and one retry (a launch on a busy runner
+        # can time out); this bounds a hung xcodebuild well below the job's.
+        timeout-minutes: 40
         env:
           TEST_RUNNER_KANT_TEST_RELAY: http://127.0.0.1:3001
         run: |
@@ -128,6 +138,8 @@ jobs:
             -workspace packages/app/ios/App/App.xcworkspace -scheme KantUITests \
             -destination "platform=iOS Simulator,name=$SIM" \
             -resultBundlePath "$RUNNER_TEMP/ui.xcresult" \
+            -test-timeouts-enabled YES -default-test-execution-time-allowance 600 -maximum-test-execution-time-allowance 900 \
+            -retry-tests-on-failure -test-iterations 2 \
             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
             > "$RUNNER_TEMP/xcodebuild.log" 2>&1 || status=$?
           grep -E "error:|Test Case .*(passed|failed)|Executed [0-9]+ test|KANT-LAUNCH" "$RUNNER_TEMP/xcodebuild.log" || tail -80 "$RUNNER_TEMP/xcodebuild.log"
