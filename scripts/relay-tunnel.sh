@@ -91,6 +91,15 @@ tailscale_name() {
   printf '%s' "$name"
 }
 
+# On Linux, tailscaled lets only root or its "operator" change Serve/Funnel.
+# Check before starting anything, not after the user has approved Funnel.
+check_tailscale_permission() {
+  [[ "$(uname -s)" == Linux && $EUID -ne 0 ]] || return 0
+  "$TS" debug prefs 2>/dev/null | grep -q "\"OperatorUser\": *\"$(id -un)\"" && return 0
+  die "Tailscale only lets root or its operator set up Serve/Funnel on Linux. Run this once, then run this script again:
+    sudo tailscale set --operator=\$USER"
+}
+
 # Refuse to replace someone else's handler on the port unless --force.
 check_serve_port_free() {
   local cfg
@@ -214,6 +223,7 @@ case "$CMD" in
     fi
     name=$(tailscale_name)
     url=$(public_url "$name" "$HTTPS_PORT")
+    check_tailscale_permission
     check_serve_port_free
     save_state "$CMD" "$url" "$HTTPS_PORT"
     if [[ $DOCKER == 0 ]]; then

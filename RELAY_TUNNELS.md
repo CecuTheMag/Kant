@@ -24,7 +24,8 @@ scripts/relay-tunnel.sh tailscale                    # private: your tailnet onl
 scripts/relay-tunnel.sh url https://relay.example.org   # Cloudflare Tunnel, ngrok, …
 ```
 
-The script starts the relay, sets up the tunnel, checks it from the outside
+On Linux, run `sudo tailscale set --operator=$USER` once first, so Tailscale
+lets you set up Serve/Funnel without sudo. The script starts the relay, sets up the tunnel, checks it from the outside
 and prints the relay address to share. The first time, Tailscale shows a link
 to enable Serve/Funnel for your tailnet; open it, approve, and the script
 carries on. `scripts/relay-tunnel.sh status` shows what's running and
@@ -89,15 +90,21 @@ public internet.
    them.
 2. In the admin console, under **DNS**, turn on **MagicDNS** and **HTTPS
    Certificates**.
-3. On the relay machine:
+3. On Linux, let your user configure Serve/Funnel (once; otherwise every
+   `tailscale serve`/`funnel` needs sudo):
+
+   ```bash
+   sudo tailscale set --operator=$USER
+   ```
+4. On the relay machine:
 
    ```bash
    tailscale serve --bg 3001
    ```
 
    It prints the address, e.g. `https://kant.tail1234.ts.net`.
-4. Start the relay (step 0) with `RELAY_PUBLIC_URL=https://kant.tail1234.ts.net`.
-5. In Kant, go to **Settings → Relay address** and enter `kant.tail1234.ts.net`.
+5. Start the relay (step 0) with `RELAY_PUBLIC_URL=https://kant.tail1234.ts.net`.
+6. In Kant, go to **Settings → Relay address** and enter `kant.tail1234.ts.net`.
 
 Use the `https://….ts.net` name, not the `100.x.y.z` IP. The phone apps
 require HTTPS, and the web app can't open `ws://` from an HTTPS page.
@@ -109,7 +116,7 @@ To turn it off: `tailscale serve reset`.
 Same as Serve, but anyone on the internet can reach the relay. Your contacts
 don't need Tailscale.
 
-1. Do steps 1–2 above (Tailscale only on the relay machine).
+1. Do steps 1–3 above (Tailscale only on the relay machine).
 2. Run:
 
    ```bash
