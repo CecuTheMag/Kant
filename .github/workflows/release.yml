@@ -51,8 +51,9 @@ jobs:
           app=$(node -p "require('./packages/app/package.json').version")
           desktop=$(node -p "require('./packages/desktop/package.json').version")
           android=$(sed -n 's/^ *versionName "\(.*\)"/\1/p' packages/app/android/app/build.gradle)
-          echo "app=$app desktop=$desktop android=$android"
-          [ "$app" = "$desktop" ] && [ "$app" = "$android" ] || { echo "::error::versions differ"; exit 1; }
+          ios=$(sed -n 's/^[[:space:]]*MARKETING_VERSION = \(.*\);/\1/p' packages/app/ios/App/App.xcodeproj/project.pbxproj | sort -u)
+          echo "app=$app desktop=$desktop android=$android ios=$ios"
+          [ "$app" = "$desktop" ] && [ "$app" = "$android" ] && [ "$app" = "$ios" ] || { echo "::error::versions differ"; exit 1; }
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             [ "${GITHUB_REF_NAME%%-*}" = "$app" ] || { echo "::error::tag $GITHUB_REF_NAME does not match version $app"; exit 1; }
           fi
