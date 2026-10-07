@@ -33,9 +33,17 @@ final class KantUITests: XCTestCase {
         // The first launch on a fresh simulator also starts WebKit's processes.
         XCTAssertTrue(heading.waitForExistence(timeout: 120), "welcome screen never appeared")
         reportLaunch("first launch → welcome screen", since: started)
-        shot("1-welcome")
         // The Kant logo must actually load (it was missing in the desktop app).
-        XCTAssertTrue(logoVisible(above: heading), "the Kant logo isn't showing on the welcome screen")
+        // On a cold simulator WebKit reports the page before it first paints it
+        // (the screenshot is plain white), so give the first paint a moment.
+        let paintDeadline = Date().addingTimeInterval(20)
+        var logo = logoVisible(above: heading)
+        while !logo && Date() < paintDeadline {
+            sleep(1)
+            logo = logoVisible(above: heading)
+        }
+        shot("1-welcome")
+        XCTAssertTrue(logo, "the Kant logo isn't showing on the welcome screen")
 
         onboard()
 
