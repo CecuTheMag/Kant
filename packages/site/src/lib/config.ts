@@ -11,28 +11,28 @@ export const SITE = {
   githubUrl: "https://github.com/CecuTheMag/Kant",
 };
 
-const releaseBase = `${SITE.githubUrl}/releases/download/0.5.0-beta`;
+const releaseBase = `${SITE.githubUrl}/releases/download/0.6.0-beta`;
 
 export type Download = { file: string; url: string; size: string; sha256: string };
 type WindowsDownloads = Record<"x64" | "arm64", { installer: Download; portable: Download }>;
 type MacDownloads = Record<"arm64" | "x64", Download>;
 
 export const RELEASE = {
-  version: "0.5.0",
+  version: "0.6.0",
   channel: "Beta",
-  date: "2026-10-03",
+  date: "2026-10-07",
   notesUrl: `${SITE.githubUrl}/releases/latest`,
   android: {
-    file: "Kant-0.5.0.apk",
-    url: `${releaseBase}/Kant-0.5.0.apk`,
+    file: "Kant-0.6.0.apk",
+    url: `${releaseBase}/Kant-0.6.0.apk`,
     size: "5.8 MB",
-    sha256: "1dcbbfbd5dd87a7313ae24f4013dc7a3831c6675236565d3fc399433e0ffb228",
+    sha256: "f6bf2b4649cc2e82dadc74bcb05c9688c664a692f3a8af95b7be7d2a32fd5e1a",
   },
   linux: {
-    file: "Kant-0.5.0.AppImage",
-    url: `${releaseBase}/Kant-0.5.0.AppImage`,
+    file: "Kant-0.6.0.AppImage",
+    url: `${releaseBase}/Kant-0.6.0.AppImage`,
     size: "119 MB",
-    sha256: "e8a92a43313909ab879a4fcfefd16a7b805115ab596a5a58ff011f21003a7fdb",
+    sha256: "f6ba10cedccb485204c405465f108bdaa123186c389ae91f599d1980dcf2212a",
   },
   // Windows builds come from the release workflow (0.5.0 on): an installer and
   // a portable exe for each architecture. Leave null for a release without
@@ -40,38 +40,56 @@ export const RELEASE = {
   windows: {
     x64: {
       installer: {
-        file: "Kant-Setup-0.5.0-x64.exe",
-        url: `${releaseBase}/Kant-Setup-0.5.0-x64.exe`,
+        file: "Kant-Setup-0.6.0-x64.exe",
+        url: `${releaseBase}/Kant-Setup-0.6.0-x64.exe`,
         size: "92 MB",
-        sha256: "27d4c397afc71c7e3e76af29f3506910546086839a1054f3050152caa7fec56d",
+        sha256: "59a2f2ef25b309f2cee3ec2519926b601a119816965bc2519936ee46eb3b92d2",
       },
       portable: {
-        file: "Kant-0.5.0-x64-portable.exe",
-        url: `${releaseBase}/Kant-0.5.0-x64-portable.exe`,
+        file: "Kant-0.6.0-x64-portable.exe",
+        url: `${releaseBase}/Kant-0.6.0-x64-portable.exe`,
         size: "91 MB",
-        sha256: "e75eb8e1dd210b2290cc283fce8a5c11675058dea0477f7b2f25f394024bc9e5",
+        sha256: "3a3898db2010d0d9938500afa9578c8290d857b52f057169fb6cb75db774f94a",
       },
     },
     arm64: {
       installer: {
-        file: "Kant-Setup-0.5.0-arm64.exe",
-        url: `${releaseBase}/Kant-Setup-0.5.0-arm64.exe`,
+        file: "Kant-Setup-0.6.0-arm64.exe",
+        url: `${releaseBase}/Kant-Setup-0.6.0-arm64.exe`,
         size: "98 MB",
-        sha256: "7695e1ca8c6790a6e46e172d8423767d6578ec8e60ef4c43cae4e89ff3faf3c8",
+        sha256: "303cb11f60a1de4aefa33be8f4c1a4143bcb7fdfc97024948de7a1a62bb7dcc9",
       },
       portable: {
-        file: "Kant-0.5.0-arm64-portable.exe",
-        url: `${releaseBase}/Kant-0.5.0-arm64-portable.exe`,
+        file: "Kant-0.6.0-arm64-portable.exe",
+        url: `${releaseBase}/Kant-0.6.0-arm64-portable.exe`,
         size: "98 MB",
-        sha256: "042f93686f05f1c968a90305c6fa131a6ffa1298f17d05da68790d3a63db4f78",
+        sha256: "8f181d0a07ce2f139dc463040082a3dac022209ddc0a804f2d00c4b1f542be4c",
       },
     },
   } as WindowsDownloads | null,
   // macOS DMGs (Apple Silicon and Intel) and the iPhone .ipa, from the release
   // workflow (0.6.0 on). Leave null for a release without them and the site
   // shows them as "coming later".
-  mac: null as MacDownloads | null,
-  ios: null as Download | null,
+  mac: {
+    arm64: {
+      file: "Kant-0.6.0-mac-arm64.dmg",
+      url: `${releaseBase}/Kant-0.6.0-mac-arm64.dmg`,
+      size: "111 MB",
+      sha256: "4c7e3d6688e2c453c4d022caa8307e790166c1d444d4b481bd9c2fd49d0a62e1",
+    },
+    x64: {
+      file: "Kant-0.6.0-mac-x64.dmg",
+      url: `${releaseBase}/Kant-0.6.0-mac-x64.dmg`,
+      size: "117 MB",
+      sha256: "c25a145853782077dd9622d5cd3d5999495c6599adf791b1a24079f3bf38318a",
+    },
+  } as MacDownloads | null,
+  ios: {
+    file: "Kant-0.6.0.ipa",
+    url: `${releaseBase}/Kant-0.6.0.ipa`,
+    size: "2.3 MB",
+    sha256: "e71c7fe501fa0b23ec701f9848f17f66fb6f535be6145d0310297b146cd29642",
+  } as Download | null,
 };
 
 /** Every Windows file in this release, for checksums and listings. */
