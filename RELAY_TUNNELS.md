@@ -219,6 +219,22 @@ node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs scripts/relay-loa
   --relay https://kant.tail1234.ts.net --clients 10 --rate 2 --fanout 2 --msgs 2
 ```
 
+## What you need (and what you don't)
+
+- **Needed:** a computer that stays on, Docker (or Node.js 20+ with
+  `--no-docker`), and one of the tunnels above.
+- **Not needed:** a domain, open ports, Firebase or any `google-services.json`
+  / service-account file, a push proxy.
+- **Made for you:** HTTPS (by the tunnel), Web Push keys for desktop
+  notifications and an operator token, kept in `.env.kant-relay` (owner-only,
+  gitignored) and reused on every run.
+- **Notifications:** desktop/browser via Web Push; Android stays connected
+  through its foreground service while Kant runs; iOS shows local
+  notifications while it runs. Waking a *closed* Android app needs Firebase
+  push, which only an app built with your own Firebase project can use: set
+  `PUSH_PROXY_URL` and `PUSH_PROXY_SECRET` in `.env.kant-relay` (see
+  `packages/push-proxy`). The released Kant app is built without it.
+
 ## Good to know
 
 - **Metrics.** With `RELAY_PUBLIC_URL` set, `/metrics` answers 404 unless the

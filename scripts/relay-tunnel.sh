@@ -15,6 +15,9 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 COMPOSE=(docker compose -f "$ROOT/docker-compose.tunnel.yml")
 STATE="$ROOT/.kant-tunnel"
+# Kept across runs (gitignored, owner-only): Web Push keys, operator token,
+# optional push proxy. Edit it to set PUSH_PROXY_URL/PUSH_PROXY_SECRET.
+SETTINGS="$ROOT/.env.kant-relay"
 LOCAL=http://127.0.0.1:3001
 
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }
@@ -146,12 +149,45 @@ url_host() { # https://[::1]:3001 → ::1, https://a.example:8443 → a.example
   printf '%s' "$h"
 }
 
+# Load $SETTINGS, creating what's missing. Desktop notifications (Web Push)
+# need a key pair per relay, made once and reused; "$@" prints a new pair.
+load_settings() {
+  local keys
+  if [[ -f "$SETTINGS" ]]; then set -a; source "$SETTINGS"; set +a; fi
+  if [[ -z "${VAPID_PUBLIC_KEY:-}" || -z "${VAPID_PRIVATE_KEY:-}" ]]; then
+    info "Generating Web Push keys for desktop notifications"
+    keys=$("$@") || die "Couldn't generate Web Push keys."
+    VAPID_PUBLIC_KEY=$(sed -n 's/^VAPID_PUBLIC_KEY=//p' <<<"$keys")
+    VAPID_PRIVATE_KEY=$(sed -n 's/^VAPID_PRIVATE_KEY=//p' <<<"$keys")
+    [[ -n "$VAPID_PUBLIC_KEY" && -n "$VAPID_PRIVATE_KEY" ]] || die "Couldn't generate Web Push keys."
+  fi
+  [[ -n "${RELAY_LAB_CONTROL_TOKEN:-}" ]] || RELAY_LAB_CONTROL_TOKEN=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@kant.local}
+  PUSH_PROXY_URL=${PUSH_PROXY_URL:-}
+  PUSH_PROXY_SECRET=${PUSH_PROXY_SECRET:-}
+  (
+    umask 077
+    printf '%s\n' \
+      "VAPID_PUBLIC_KEY=$VAPID_PUBLIC_KEY" \
+      "VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY" \
+      "VAPID_SUBJECT=$VAPID_SUBJECT" \
+      "RELAY_LAB_CONTROL_TOKEN=$RELAY_LAB_CONTROL_TOKEN" \
+      "# Android wake-ups: only for apps built with your own Firebase project." \
+      "PUSH_PROXY_URL=$PUSH_PROXY_URL" \
+      "PUSH_PROXY_SECRET=$PUSH_PROXY_SECRET" > "$SETTINGS"
+  )
+  export VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT RELAY_LAB_CONTROL_TOKEN PUSH_PROXY_URL PUSH_PROXY_SECRET
+}
+
 start_relay() { # $1 = public URL
   if [[ $DOCKER == 1 ]]; then
     command -v docker >/dev/null 2>&1 || die "Docker isn't installed. Install it (https://docs.docker.com/get-docker/) or use --no-docker."
     docker info >/dev/null 2>&1 || die "Can't talk to Docker. Start Docker, or add yourself to the docker group (or use --no-docker)."
-    info "Starting the relay in Docker (the first build takes a few minutes)"
-    RELAY_PUBLIC_URL="$1" "${COMPOSE[@]}" up -d --build
+    info "Building the relay in Docker (the first build takes a few minutes)"
+    RELAY_PUBLIC_URL="$1" "${COMPOSE[@]}" build
+    load_settings env RELAY_PUBLIC_URL="$1" "${COMPOSE[@]}" run --rm --no-deps -T --entrypoint node relay packages/relay/dist/vapid.js
+    info "Starting the relay"
+    RELAY_PUBLIC_URL="$1" "${COMPOSE[@]}" up -d
     wait_local
   fi
 }
@@ -196,6 +232,7 @@ share_box() { # $1 = url, $2 = who can use it
   echo "  Relay address:  $addr"
   echo "  Who can use it: $2"
   echo "  In Kant:        Settings → Relay address → $addr"
+  echo "  Desktop notifications: on (keys kept in .env.kant-relay)"
   echo
   echo "  Your computer has to stay on for the relay to work."
   echo "  Status: scripts/relay-tunnel.sh status    Stop: scripts/relay-tunnel.sh stop"
@@ -204,10 +241,11 @@ share_box() { # $1 = url, $2 = who can use it
 
 run_foreground() { # $1 = public URL (--no-docker)
   command -v node >/dev/null 2>&1 || die "Node.js 20+ is required for --no-docker."
-  if [[ ! -f "$ROOT/packages/relay/dist/index.js" ]]; then
+  if [[ ! -f "$ROOT/packages/relay/dist/index.js" || ! -f "$ROOT/packages/relay/dist/vapid.js" ]]; then
     info "Building the relay"
     (cd "$ROOT" && npx --yes pnpm@10 install --frozen-lockfile && npx --yes pnpm@10 --dir packages/relay build)
   fi
+  load_settings node "$ROOT/packages/relay/dist/vapid.js"
   mkdir -p "$ROOT/relay-data"
   info "Starting the relay here; press Ctrl-C to stop it"
   RELAY_PUBLIC_URL="$1" RELAY_HTTP_BIND=127.0.0.1 RELAY_WS_BIND=127.0.0.1 RELAY_DATA_DIR="$ROOT/relay-data" \

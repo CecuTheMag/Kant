@@ -38,6 +38,7 @@ import { log } from './logger.js';
 import { Federation } from './federationRuntime.js';
 import { REGISTRATION_FRESH_MS, pickRegistration, spliceTunnel } from './federation.js';
 import { publicAddrFromEnv } from './publicAddr.js';
+import { checkVapidKeys, importVapidPrivateKey } from './vapid.js';
 import { RELAY_DATA_LIMIT, RELAY_DURATION_LIMIT_MS, connectionLimits } from './limits.js';
 import { mayWriteRegistryKey } from './registry.js';
 import { PUSH_MAX_BODY, PUSH_MAX_TOKEN, isAllowedWebPushEndpoint, parseWebPushSubscription, pushSubscribeMessage, pushUnsubscribeMessage, readPushRequest, verifyPushSignature } from './pushAuth.js';
@@ -318,8 +319,22 @@ process.on('unhandledRejection', (reason: any) => {
 // The relay fires a wake signal when a lookup misses (peer is offline).
 // Neither path ever carries message content.
 
-const VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY  ?? '';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? '';
+let VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY  ?? '';
+let VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? '';
+// Bad keys would only fail later, silently, on every wake-up. Check them now and
+// turn desktop Web Push off (browsers then don't subscribe) with a clear log.
+if (VAPID_PUBLIC_KEY || VAPID_PRIVATE_KEY) {
+  const problem = VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY
+    ? await checkVapidKeys(VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY)
+    : 'set both VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY';
+  if (problem) {
+    log.error({ event: 'webpush.vapid_invalid', reason: problem }, 'desktop Web Push disabled: invalid VAPID keys');
+    VAPID_PUBLIC_KEY = '';
+    VAPID_PRIVATE_KEY = '';
+  } else {
+    log.info({ event: 'webpush.vapid_ok' }, 'desktop Web Push enabled');
+  }
+}
 const VAPID_SUBJECT     = process.env.VAPID_SUBJECT     ?? 'mailto:admin@kant.local';
 const PUSH_PROXY_URL    = process.env.PUSH_PROXY_URL    ?? '';
 const PUSH_PROXY_SECRET = process.env.PUSH_PROXY_SECRET ?? '';
@@ -429,7 +444,7 @@ async function sendWebPushNotification(sub: { endpoint: string; keys: { p256dh: 
       aud: `${url.protocol}//${url.host}`, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: VAPID_SUBJECT,
     })).toString('base64url');
     const sigInput = `${vapidHeader}.${vapidClaims}`;
-    const vapidPrivKey = await subtle.importKey('pkcs8', Buffer.from(VAPID_PRIVATE_KEY, 'base64url'), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+    const vapidPrivKey = await importVapidPrivateKey(VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY);
     const sig = Buffer.from(await subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, vapidPrivKey, Buffer.from(sigInput))).toString('base64url');
     const jwt = `${sigInput}.${sig}`;
 

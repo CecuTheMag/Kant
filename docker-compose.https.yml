@@ -24,7 +24,11 @@ x-logging: &logging
     max-file: "5"
 
 services:
+  # Android push gateway (holds Firebase credentials). Optional: only an app
+  # built with that Firebase project can be woken through it, so community
+  # relays leave it off. scripts/deploy-kant.sh turns it on (--profile push).
   push-proxy:
+    profiles: [push]
     build:
       context: packages/push-proxy
       dockerfile: Dockerfile
@@ -36,8 +40,10 @@ services:
     environment:
       PUSH_PROXY_BIND: "0.0.0.0"
       PUSH_PROXY_PORT: "4001"
-      PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:?Set PUSH_PROXY_SECRET}"
-      FIREBASE_PROJECT_ID: "${FIREBASE_PROJECT_ID:?Set FIREBASE_PROJECT_ID}"
+      # Not "${…:?}": Compose would demand them even with the profile off. The
+      # proxy itself refuses to start without them.
+      PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:-}"
+      FIREBASE_PROJECT_ID: "${FIREBASE_PROJECT_ID:-}"
       FIREBASE_SERVICE_ACCOUNT_FILE: "/run/secrets/firebase-service-account.json"
       PUSH_PROXY_DATA_FILE: "/data/tokens.json"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
@@ -69,7 +75,7 @@ services:
       RELAY_SECURE: "true"
       RELAY_DATA_DIR: "/data"
       # Web Push (optional — desktop PWA offline notifications).
-      # Generate keys: npx web-push generate-vapid-keys
+      # Generate keys: node packages/relay/dist/vapid.js (or npx web-push generate-vapid-keys)
       VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
       VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
       VAPID_SUBJECT: "${VAPID_SUBJECT:-mailto:admin@kant.local}"
@@ -100,8 +106,11 @@ services:
       CADDY_EMAIL: "${CADDY_EMAIL:-admin@example.com}"
       RELAY_DOMAIN: "${RELAY_DOMAIN:?Set RELAY_DOMAIN to your domain}"
     depends_on:
-      - relay
-      - push-proxy
+      relay:
+        condition: service_started
+      push-proxy:
+        condition: service_started
+        required: false
 
 volumes:
   relay-data:
