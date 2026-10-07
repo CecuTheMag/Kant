@@ -86,10 +86,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Local relay for the tests
+        # Single-port layout (RELAY_PUBLIC_URL), as behind a tunnel or Caddy:
+        # the app reaches libp2p through the API port; port 3000 is loopback-only.
         run: |
           pnpm --dir packages/relay build
           mkdir -p "$RUNNER_TEMP/relay"
-          RELAY_PORT=3000 RELAY_INFO_PORT=3001 RELAY_PUBLIC_HOST=127.0.0.1 RELAY_HTTP_BIND=127.0.0.1 \
+          RELAY_PORT=3000 RELAY_INFO_PORT=3001 RELAY_PUBLIC_URL=http://127.0.0.1:3001 RELAY_HTTP_BIND=127.0.0.1 RELAY_WS_BIND=127.0.0.1 \
             RELAY_DATA_DIR="$RUNNER_TEMP/relay" nohup node packages/relay/dist/index.js > "$RUNNER_TEMP/relay.log" 2>&1 &
           for i in $(seq 30); do curl -sf http://127.0.0.1:3001/healthz && break; sleep 1; done
       - name: Web app without a default relay (the test connects to the local one)

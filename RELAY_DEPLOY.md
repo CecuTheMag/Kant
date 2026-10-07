@@ -3,6 +3,10 @@
 The relay does not store message plaintext or message history. It carries encrypted transport traffic and keeps an in-memory signed address registry, so it can observe connection and registry metadata while running.
 A $4–6/mo VPS (Hetzner CAX11, Fly.io, DigitalOcean) is all you need.
 
+**No VPS, can't or don't want to open ports?** Run the relay at home behind
+Tailscale Serve/Funnel, Cloudflare Tunnel or ngrok, in one command:
+`scripts/relay-tunnel.sh funnel`. See [RELAY_TUNNELS.md](RELAY_TUNNELS.md).
+
 ---
 
 ## 1. VPS setup
@@ -86,6 +90,10 @@ Open two ports:
 sudo ufw allow 3000/tcp
 sudo ufw allow 3001/tcp
 ```
+
+Port 3001 alone is enough if you set `RELAY_PUBLIC_URL=http://<host>:3001`:
+the relay then announces its libp2p WebSocket on the API port and serves both
+there. That's what tunnels use ([RELAY_TUNNELS.md](RELAY_TUNNELS.md)).
 
 ## 5. TLS (strongly recommended)
 

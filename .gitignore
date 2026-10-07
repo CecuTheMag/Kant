@@ -48,3 +48,7 @@ graphify-out/
 # Playwright output from each test lab run (recorded evidence is committed by hand)
 tests/lab/artifacts/ui/
 tests/lab/artifacts/ui-results.xml
+
+# scripts/relay-tunnel.sh state and its --no-docker relay identity
+.kant-tunnel
+/relay-data/

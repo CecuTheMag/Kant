@@ -20,6 +20,9 @@ services:
       # Default to 127.0.0.1 so browsers in host-network runners can reach the relay.
       RELAY_PUBLIC_HOST: ${RELAY_PUBLIC_HOST:-127.0.0.1}
       RELAY_PUBLIC_PORT: "3000"
+      # Set to http://127.0.0.1:3001 to run every test through the single-port
+      # (tunnel) layout: clients then reach libp2p via the API port only.
+      RELAY_PUBLIC_URL: ${RELAY_PUBLIC_URL:-}
       RELAY_DATA_DIR: /data
       RELAY_LAB_CONTROL_TOKEN: ${KANT_RELAY_LAB_CONTROL_TOKEN:-kant-lab-restart-token}
       # scripts/load-test.sh registers keys without libp2p connections.

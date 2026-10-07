@@ -28,6 +28,8 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** First of the ports this run uses (relays at +0/+10/+20, app at +90). KANT_PORT_BASE moves them all. */
 export const PORT_BASE = Number(process.env.KANT_PORT_BASE ?? 39600);
+/** KANT_SINGLE_PORT=1: relays announce libp2p on their API port (RELAY_PUBLIC_URL), as behind a tunnel. */
+const SINGLE_PORT = process.env.KANT_SINGLE_PORT === '1';
 
 /** Fail loudly on a busy port — otherwise a second run would quietly talk to the first run's relays. */
 async function assertPortFree(port) {
@@ -69,6 +71,7 @@ export async function startRelay(r) {
       ...process.env,
       RELAY_PORT: String(r.wsPort), RELAY_INFO_PORT: String(r.httpPort),
       RELAY_PUBLIC_HOST: r.host, RELAY_HTTP_BIND: '127.0.0.1', RELAY_DATA_DIR: r.dir,
+      ...(SINGLE_PORT ? { RELAY_PUBLIC_URL: r.url } : {}),
       // Relay-to-relay calls run in Node, which can't resolve the .test names.
       RELAY_FEDERATION: r.peers.map((p) => `http://127.0.0.1:${p.httpPort}#${p.peerId}`).join(','),
       LOG_LEVEL: 'warn',

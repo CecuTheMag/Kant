@@ -48,6 +48,8 @@ No more need for VPS knowledge or terminal commands. Everything is in the app.
 5. Friends add that URL to their "Public Relay" settings
 
 **For friends to access you from outside your home:**
+- No router access, or don't want to open a port? Use Tailscale, Tailscale
+  Funnel, Cloudflare Tunnel or ngrok instead: [RELAY_TUNNELS.md](RELAY_TUNNELS.md)
 - Open port 3001 in your router (via port forwarding)
 - Guide included in Settings → expand "How to enable remote access"
 - Choose your router type for step-by-step instructions
@@ -240,6 +242,7 @@ The Settings UI will override these, but they still work as defaults.
 - If public relay: check your internet connection
 
 ### "Friends can't reach my relay"
+- Behind CGNAT or can't port forward? Use a tunnel: [RELAY_TUNNELS.md](RELAY_TUNNELS.md)
 - Desktop app only (browser can't host relay)
 - Port 3001 not forwarded? Check: Settings → Port Forwarding Guide
 - Firewall blocking? Check router firewall settings

@@ -1,0 +1,68 @@
+# Kant Relay — behind a tunnel (no port forwarding, no open ports)
+#
+# Use this with Tailscale Serve / Funnel, Cloudflare Tunnel, ngrok or any
+# other tunnel that gives you one public HTTPS URL. The relay serves its HTTP
+# API *and* the libp2p WebSocket on port 3001, so the tunnel needs exactly one
+# target: http://127.0.0.1:3001. Nothing is published beyond localhost.
+#
+# Usage:
+#   RELAY_PUBLIC_URL=https://kant.tail1234.ts.net docker compose -f docker-compose.tunnel.yml up -d
+#   tailscale funnel --bg 3001        # or: tailscale serve / cloudflared / ngrok
+#
+# RELAY_PUBLIC_URL must be exactly the URL people paste into the app.
+# Full walkthrough: RELAY_TUNNELS.md.
+
+# Its own project name, so it never replaces a relay started from another
+# compose file in this directory (and keeps its own identity volume).
+name: kant-relay-tunnel
+
+# Bounded container logs: Docker's default json-file driver never rotates.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  relay:
+    build:
+      context: .
+      dockerfile: packages/relay/Dockerfile
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    ports:
+      - "127.0.0.1:3001:3001"   # API + libp2p WebSocket; only the tunnel reaches it
+    volumes:
+      - relay-data:/data
+    environment:
+      # Capacity (see packages/relay/src/limits.ts). ~0.5 MB RAM per online user.
+      RELAY_MAX_CONNECTIONS: "${RELAY_MAX_CONNECTIONS:-4096}"
+      RELAY_INBOUND_CONNECTIONS_PER_SECOND: "${RELAY_INBOUND_CONNECTIONS_PER_SECOND:-500}"
+      RELAY_PORT: "3000"
+      RELAY_INFO_PORT: "3001"
+      RELAY_HTTP_BIND: "0.0.0.0"
+      # libp2p is reached only through the API port, from inside the container.
+      RELAY_WS_BIND: "127.0.0.1"
+      RELAY_PUBLIC_URL: "${RELAY_PUBLIC_URL:?Set RELAY_PUBLIC_URL to your tunnel URL, e.g. https://kant.tail1234.ts.net}"
+      RELAY_DATA_DIR: "/data"
+      # Operator token: unlocks /metrics and /admin/* (Authorization: Bearer …).
+      # Behind a tunnel /metrics is hidden without it. Leave empty to disable both.
+      RELAY_LAB_CONTROL_TOKEN: "${RELAY_LAB_CONTROL_TOKEN:-}"
+      # Web Push (optional — desktop PWA offline notifications).
+      VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
+      VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
+      VAPID_SUBJECT: "${VAPID_SUBJECT:-mailto:admin@kant.local}"
+      # FCM / Android push (optional) — the hosted push proxy.
+      PUSH_PROXY_URL: "${PUSH_PROXY_URL:-}"
+      PUSH_PROXY_SECRET: "${PUSH_PROXY_SECRET:-}"
+      # Relay federation (optional): `<url>#<peerId>`, comma-separated.
+      RELAY_FEDERATION: "${RELAY_FEDERATION:-}"
+
+volumes:
+  relay-data:

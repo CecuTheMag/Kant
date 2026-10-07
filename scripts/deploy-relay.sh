@@ -27,7 +27,8 @@ show_help() {
     echo "Usage: $0 [options]"
     echo ""
     echo "Options:"
-    echo "  -d, --domain DOMAIN    Public domain for the relay (required for HTTPS)"
+    echo "  -d, --domain DOMAIN    Public domain for the relay (required for HTTPS; for HTTP,"
+    echo "                         the IP or name clients use — defaults to this machine's LAN IP)"
     echo "  -m, --mode MODE        Deployment mode: 'https' (default) or 'http'"
     echo "  -p, --path PATH        Installation directory (default: /opt/kant)"
     echo "  -r, --repo URL         Git repository URL (default: $REPO_URL)"
@@ -38,6 +39,9 @@ show_help() {
     echo "  sudo $0 --domain relay.kant.io --mode https"
     echo "  sudo $0 --local --domain relay.kant.io --mode https"
     echo "  sudo $0 --mode http --path ./kant-relay"
+    echo ""
+    echo "No domain, or can't open ports? Use scripts/relay-tunnel.sh (Tailscale, Funnel,"
+    echo "Cloudflare Tunnel, ngrok) instead. See RELAY_TUNNELS.md."
 }
 
 # --- Parse Arguments ---
@@ -129,8 +133,15 @@ RELAY_LOG_LEVEL=info
 LOG_FORMAT=json
 EOF
 else
+    # The address clients dial. 0.0.0.0 is a bind address, never a dialable one.
+    if [[ -z "$DOMAIN" ]]; then
+        DOMAIN=$(ip route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')
+        [[ -n "$DOMAIN" ]] || DOMAIN=$(hostname -I 2>/dev/null | awk '{print $1}')
+        [[ -n "$DOMAIN" ]] || error "Couldn't detect this machine's IP. Pass it with --domain <ip-or-name>."
+        log "Clients will reach the relay at $DOMAIN (override with --domain)"
+    fi
     cat <<EOF | sudo tee .env > /dev/null
-RELAY_PUBLIC_HOST=0.0.0.0
+RELAY_PUBLIC_HOST=$DOMAIN
 RELAY_PUBLIC_PORT=3000
 RELAY_SECURE=false
 RELAY_LOG_LEVEL=info
@@ -161,8 +172,8 @@ if [[ "$MODE" == "https" ]]; then
     echo "Relay is now deploying at: https://$DOMAIN"
     echo "Check health: curl -fsS https://$DOMAIN/healthz"
 else
-    echo "Relay is now deploying in HTTP mode."
-    echo "Check health: curl -fsS http://localhost:3001/healthz"
+    echo "Relay is now deploying in HTTP mode at: http://$DOMAIN:3001"
+    echo "Check health: curl -fsS http://$DOMAIN:3001/relay-info"
 fi
 echo "Logs: sudo docker compose -f $COMPOSE_FILE logs -f"
 echo "--------------------------------------------------------------------------------"

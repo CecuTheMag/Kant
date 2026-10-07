@@ -61,12 +61,14 @@ All variables are read at startup. The relay will refuse to start if a required 
 
 | Variable | Default | Description |
 |---|---|---|
+| `RELAY_PUBLIC_URL` | — | The one URL clients use, e.g. a tunnel's `https://kant.tail1234.ts.net`. Overrides `RELAY_PUBLIC_HOST`/`RELAY_PUBLIC_PORT`/`RELAY_SECURE` and announces libp2p on the API port, so the whole relay works through that port. Also hides `/metrics` without the control token. See [RELAY_TUNNELS.md](../../RELAY_TUNNELS.md). |
 | `RELAY_PUBLIC_HOST` | the machine's LAN IP | Public hostname or IP advertised in `/relay-info`. Set it on any internet-facing relay. |
 | `RELAY_PORT` | `3000` | libp2p WebSocket listener port. |
 | `RELAY_PUBLIC_PORT` | `443` if `RELAY_SECURE=true`, else `RELAY_PORT` | Public port advertised to clients. |
 | `RELAY_INFO_PORT` | `3001` | HTTP registry, health and metrics port. |
 | `RELAY_INFO_PUBLIC_PORT` | `RELAY_INFO_PORT` | Public HTTP port, when a proxy maps it elsewhere. |
 | `RELAY_HTTP_BIND` | `0.0.0.0` | Bind address for the HTTP API. |
+| `RELAY_WS_BIND` | `0.0.0.0` | Bind address for the libp2p WebSocket. `127.0.0.1` when all clients come through the HTTP port (a tunnel). |
 | `RELAY_SECURE` | `false` | `true` when fronted by TLS; clients are told to use `wss://` / `https://`. |
 | `RELAY_DATA_DIR` | `packages/relay/data` | Directory holding the relay's identity seed. Back it up: it is the relay's PeerID. |
 | `RELAY_MAX_CONNECTIONS` | `4096` | Concurrent connections (≈ online users). About 0.5 MB RAM each. |

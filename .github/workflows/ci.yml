@@ -55,6 +55,31 @@ jobs:
       - run: pnpm --dir packages/relay build
       - run: pnpm --dir packages/relay test
 
+  relay-tunnel:
+    name: Relay — hosting without port forwarding (scripts/relay-tunnel.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The relay's own address stands in for a tunnel URL: the script starts
+      # docker-compose.tunnel.yml and checks /relay-info through that URL.
+      - run: scripts/relay-tunnel.sh url http://127.0.0.1:3001
+      - run: scripts/relay-tunnel.sh status
+      - name: Real clients through the single port
+        working-directory: packages/core
+        run: |
+          pnpm run build
+          node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs scripts/relay-load.mjs \
+            --relay http://127.0.0.1:3001 --clients 20 --rate 5 --fanout 3 --msgs 2
+      - name: Only the API port is published
+        run: "! curl -s --max-time 3 http://127.0.0.1:3000/"
+      - run: scripts/relay-tunnel.sh stop
+
   audit:
     name: Dependencies — known vulnerabilities
     runs-on: ubuntu-latest

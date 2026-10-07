@@ -36,7 +36,8 @@ import { fileURLToPath } from 'url';
 import { generateKeyPairFromSeed } from '@libp2p/crypto/keys';
 import { log } from './logger.js';
 import { Federation } from './federationRuntime.js';
-import { REGISTRATION_FRESH_MS, pickRegistration } from './federation.js';
+import { REGISTRATION_FRESH_MS, pickRegistration, spliceTunnel } from './federation.js';
+import { publicAddrFromEnv } from './publicAddr.js';
 import { RELAY_DATA_LIMIT, RELAY_DURATION_LIMIT_MS, connectionLimits } from './limits.js';
 import { mayWriteRegistryKey } from './registry.js';
 import { PUSH_MAX_BODY, PUSH_MAX_TOKEN, isAllowedWebPushEndpoint, parseWebPushSubscription, pushSubscribeMessage, pushUnsubscribeMessage, readPushRequest, verifyPushSignature } from './pushAuth.js';
@@ -54,9 +55,6 @@ const sodium: any = require('libsodium-wrappers-sumo');
 await sodium.ready;
 
 const RELAY_PORT = parseInt(process.env.RELAY_PORT ?? '3000');
-const RELAY_PUBLIC_PORT = process.env.RELAY_PUBLIC_PORT 
-  ? parseInt(process.env.RELAY_PUBLIC_PORT)
-  : (process.env.RELAY_SECURE === 'true' ? 443 : RELAY_PORT);
 const RELAY_INFO_PORT = parseInt(process.env.RELAY_INFO_PORT ?? '3001');
 // Deliberately opt-in, and used only by the disposable Docker lab.  It lets
 // the reconnect test terminate the relay process without mounting the Docker
@@ -101,7 +99,6 @@ const relayPrivateKey = await generateKeyPairFromSeed('Ed25519', seedBytes);
 // advertises the public IP — without this, Docker bridge (172.x) and
 // 127.0.0.1 leak into peer discovery and cause dial failures.
 import { networkInterfaces } from 'os';
-import net from 'net';
 
 function getLocalIp(): string {
   const ifaces = networkInterfaces();
@@ -113,23 +110,18 @@ function getLocalIp(): string {
   return '127.0.0.1';
 }
 
-const PUBLIC_HOST = process.env.RELAY_PUBLIC_HOST ?? getLocalIp();
-if (PUBLIC_HOST === '127.0.0.1' || PUBLIC_HOST === '::1' || PUBLIC_HOST === 'localhost') {
-  log.warn({ event: 'config.public_host_loopback', host: PUBLIC_HOST }, 'remote peers will not be able to connect');
+// The address clients dial: RELAY_PUBLIC_URL (one port, e.g. a tunnel) or
+// RELAY_PUBLIC_HOST/RELAY_PUBLIC_PORT/RELAY_SECURE. See publicAddr.ts.
+const publicAddr = publicAddrFromEnv(process.env, RELAY_PORT, getLocalIp);
+if (publicAddr.host === '127.0.0.1' || publicAddr.host === '::1' || publicAddr.host === 'localhost') {
+  log.warn({ event: 'config.public_host_loopback', host: publicAddr.host }, 'remote peers will not be able to connect');
 }
-
-let hostProto = 'dns4';
-if (net.isIPv4(PUBLIC_HOST)) hostProto = 'ip4';
-else if (net.isIPv6(PUBLIC_HOST)) hostProto = 'ip6';
-
-// libp2p uses /tls/ws for secure websockets, not /wss
-const wsProto = process.env.RELAY_SECURE === 'true' ? 'tls/ws' : 'ws';
 
 // PeerID is deterministic from the seed — we can compute it before libp2p starts.
 // libp2p uses the same Ed25519 keypair, so peerId.toString() will match.
 import { peerIdFromPrivateKey } from '@libp2p/peer-id';
 const _prePeerId = await peerIdFromPrivateKey(relayPrivateKey);
-const fullRelayAddr = `/${hostProto}/${PUBLIC_HOST}/tcp/${RELAY_PUBLIC_PORT}/${wsProto}/p2p/${_prePeerId.toString()}`;
+const fullRelayAddr = `${publicAddr.base}/p2p/${_prePeerId.toString()}`;
 
 const limits = connectionLimits();
 log.info({ event: 'relay.limits', ...limits }, 'connection limits');
@@ -137,7 +129,9 @@ log.info({ event: 'relay.limits', ...limits }, 'connection limits');
 const node = await createLibp2p({
   privateKey: relayPrivateKey,
   addresses: {
-    listen: [`/ip4/0.0.0.0/tcp/${RELAY_PORT}/ws`],
+    // RELAY_WS_BIND=127.0.0.1 when every client arrives through the HTTP port
+    // (a tunnel, see RELAY_PUBLIC_URL), so the libp2p port isn't on the LAN.
+    listen: [`/ip4/${process.env.RELAY_WS_BIND || '0.0.0.0'}/tcp/${RELAY_PORT}/ws`],
     // Only announce the public address — without this, libp2p advertises
     // all local interfaces (Docker bridge 172.x, 127.0.0.1) and peers waste
     // dial attempts on unreachable internal addresses.
@@ -193,12 +187,13 @@ const peerId = node.peerId.toString();
 // peers can tie a federated lookup's signature to this relay's PeerID.
 const relayEd = sodium.crypto_sign_seed_keypair(seedBytes);
 const RELAY_INFO_PUBLIC_PORT = parseInt(process.env.RELAY_INFO_PUBLIC_PORT ?? String(RELAY_INFO_PORT));
-// Where clients open tunnels. Behind TLS (Caddy) /fed/* shares the public
-// WSS origin; on a plain-HTTP relay it lives on the HTTP API port.
+// Where clients open tunnels. Behind TLS (Caddy) or a tunnel (RELAY_PUBLIC_URL)
+// /fed/* shares the public origin; on a plain two-port relay it lives on the
+// HTTP API port.
 const federationTunnelBase = process.env.RELAY_FEDERATION_TUNNEL_ADDR
-  ?? (process.env.RELAY_SECURE === 'true'
-    ? `/${hostProto}/${PUBLIC_HOST}/tcp/${RELAY_PUBLIC_PORT}/tls/ws`
-    : `/${hostProto}/${PUBLIC_HOST}/tcp/${RELAY_INFO_PUBLIC_PORT}/ws`);
+  ?? (publicAddr.secure || process.env.RELAY_PUBLIC_URL
+    ? publicAddr.base
+    : publicAddr.base.replace(/\/tcp\/\d+\//, `/tcp/${RELAY_INFO_PUBLIC_PORT}/`));
 const federation = new Federation({
   raw: process.env.RELAY_FEDERATION,
   selfPeerId: node.peerId.toString(),
@@ -719,6 +714,12 @@ const httpServer = createServer((req, res) => {
   }
 
   if (req.url === '/metrics') {
+    // Behind Caddy, /metrics is hidden from the internet by IP. Behind a tunnel
+    // every request arrives from localhost, so require the operator token
+    // instead and answer 404 without it, like Caddy does.
+    if (process.env.RELAY_PUBLIC_URL && !hasControlToken(req.headers.authorization)) {
+      res.writeHead(404); res.end(); return;
+    }
     registry.metrics().then((metrics: string) => {
       res.writeHead(200, { 'Content-Type': registry.contentType });
       res.end(metrics);
@@ -1212,9 +1213,18 @@ const httpServer = createServer((req, res) => {
 });
 
 const HTTP_BIND = process.env.RELAY_HTTP_BIND ?? '0.0.0.0';
-// WebSocket upgrades on the HTTP port are only ever federation tunnels.
+// WebSocket upgrades on the HTTP port: /fed/* are federation tunnels; one on
+// `/` (where libp2p dials) is a client's libp2p connection, handed to the
+// libp2p listener so the whole relay works through one port. Tunnels (Tailscale
+// Funnel, Cloudflare Tunnel, ngrok) expose exactly one, and this is it. libp2p
+// sees these connections from 127.0.0.1, as it does behind Caddy.
+const LIBP2P_LOCAL = new URL(`ws://127.0.0.1:${RELAY_PORT}/`);
 httpServer.on('upgrade', (req, socket, head) => {
   if (federation.handles(req)) { void federation.handleUpgrade(req, socket, head); return; }
+  if ((req.headers.upgrade ?? '').toLowerCase() === 'websocket' && (req.url ?? '').split('?')[0] === '/') {
+    spliceTunnel(req, socket, head, LIBP2P_LOCAL, { onBytes: () => {}, onClose: () => {} });
+    return;
+  }
   socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
   socket.destroy();
 });

@@ -28,7 +28,8 @@ test('/readyz returns 200 when relay is started', async () => {
 });
 
 test('/metrics returns Prometheus text format', async () => {
-  const response = await fetch(`${relayBaseUrl}/metrics`);
+  // A single-port (tunnel) relay serves /metrics only with the operator token.
+  const response = await fetch(`${relayBaseUrl}/metrics`, { headers: { Authorization: `Bearer ${token}` } });
   assert.equal(response.status, 200, `/metrics returned ${response.status}`);
   const text = await response.text();
   assert.ok(text.includes('kant_relay_'), `/metrics missing kant_relay_ metrics:\n${text.slice(0, 500)}`);
