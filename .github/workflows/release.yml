@@ -111,7 +111,10 @@ jobs:
           [ -f "$apk" ] || { echo "::error::no signed APK (unsigned builds are named app-release-unsigned.apk)"; ls -R packages/app/android/app/build/outputs/apk; exit 1; }
           apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
           "$apksigner" verify --verbose "$apk"
-          cert=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          # Older apksigner prints "Signer #1 certificate SHA-256 digest:", newer
+          # "V2 Signer: certificate SHA-256 digest:"; every signer must match.
+          certs=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^.*[Ss]igner.*certificate SHA-256 digest: \([0-9a-f]*\)$/\1/p' | sort -u)
+          cert=$certs
           [ "$cert" = "$ANDROID_CERT_SHA256" ] || { echo "::error::APK signed with $cert, expected $ANDROID_CERT_SHA256"; exit 1; }
           mkdir -p out && cp "$apk" "out/Kant-${{ needs.version.outputs.version }}.apk"
       - run: rm -rf packages/app/android/keystore packages/app/android/app/google-services.json
