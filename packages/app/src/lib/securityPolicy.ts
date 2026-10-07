@@ -43,11 +43,12 @@ export function biometricBlocked(
   return null;
 }
 
-export function blockMessage(block: BiometricBlock): string {
+/** `name`: what the biometric is called at the start of a sentence ("Fingerprint", "Face ID"). */
+export function blockMessage(block: BiometricBlock, name = 'Fingerprint'): string {
   switch (block) {
     case 'restarted': return 'Your phone restarted, so enter your password once.';
     case 'expired': return 'It’s been a while — enter your password once.';
-    case 'too-many-failures': return 'Fingerprint didn’t match too many times. Enter your password.';
+    case 'too-many-failures': return `${name} didn’t match too many times. Enter your password.`;
     default: return 'Enter your password.';
   }
 }

@@ -82,6 +82,10 @@ async function setupCapacitorPush(relayHttpUrl: string, identity: PushIdentity):
     console.warn('[push] no Firebase config in this build — push wake-ups disabled');
     return;
   }
+  // __KANT_FCM__ means the *Android* build has google-services.json. On iOS
+  // the plugin would register with APNs (no Apple push entitlement here) and
+  // send that token to the relay as an FCM token, which can never work.
+  if (Capacitor.getPlatform() !== 'android') return;
   try {
     // Dynamically import so the desktop build doesn't fail if the plugin
     // isn't installed (it's an optional native dependency).

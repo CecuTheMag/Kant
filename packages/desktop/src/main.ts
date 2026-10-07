@@ -16,6 +16,10 @@ import { defaultPermissions, type McpPermissions } from './mcp-server.js';
 // software compositor for a reliable desktop launch across Linux systems.
 app.disableHardwareAcceleration();
 
+// Tests (scripts/smoke.mjs) start the packaged app with a throwaway profile.
+// Set before anything reads userData, including the single-instance lock.
+if (process.env.KANT_USER_DATA_DIR) app.setPath('userData', process.env.KANT_USER_DATA_DIR);
+
 // Dev mode: if KANT_DEV=1, or if running from source (dist-electron exists and not packaged)
 const isDev = process.env.KANT_DEV === '1' || (!app.isPackaged && existsSync(join(__dirname, '../../app/dist')));
 
@@ -235,7 +239,9 @@ function createWindow() {
     minHeight: 560,
     title: 'Kant',
     backgroundColor: '#17212b',
-    titleBarStyle: 'hiddenInset',
+    // The standard title bar: 'hiddenInset' (macOS only) puts the window
+    // buttons over the page and leaves nothing to drag the window by, and the
+    // web UI has no drag region or inset for them.
     frame: true,
     webPreferences: {
       preload: join(__dirname, 'preload.js'),
@@ -526,8 +532,11 @@ if (!gotLock) {
     // ai:call handler; the call timeout guards against a never-ready window.
     await applyAiServer().catch((e) => console.error('[ai] failed to start server', e));
 
+    // macOS: clicking the Dock icon. Closing only hides the window (see
+    // createWindow), so bring that one back rather than waiting for none.
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
+      else createWindow();
     });
   });
 

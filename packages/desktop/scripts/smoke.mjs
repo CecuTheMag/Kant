@@ -3,10 +3,10 @@
  * wait for the bundled private relay to report healthy, and check that the
  * renderer actually rendered the app (not a blank window or an error page).
  *
- *   node scripts/smoke.mjs <path to Kant executable or AppImage>
+ *   node scripts/smoke.mjs <path to Kant executable, AppImage, or Kant.app/Contents/MacOS/Kant>
  *
- * Exits non-zero on any failure. Used by the release workflow on Linux and
- * Windows, and for checking local release builds before they are published.
+ * Exits non-zero on any failure. Used by the release workflow on Linux,
+ * Windows and macOS, and for checking local release builds before they are published.
  */
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -22,7 +22,8 @@ if (!exe) {
 
 const DEBUG_PORT = Number(process.env.KANT_SMOKE_DEBUG_PORT ?? 9333);
 const RELAY_INFO = 'http://127.0.0.1:3001';
-const TIMEOUT_MS = 90_000;
+// Per wait. Raise it for slow first launches (Rosetta translates the whole app first).
+const TIMEOUT_MS = Number(process.env.KANT_SMOKE_TIMEOUT_MS ?? 90_000);
 
 // A fresh profile so the smoke test never touches (or is affected by) a real
 // Kant install on the same machine. Electron derives userData from these.
@@ -31,6 +32,8 @@ const env = {
   ...process.env,
   XDG_CONFIG_HOME: profile,
   APPDATA: profile,
+  // Read by the app itself (main.ts); the only override that works on macOS.
+  KANT_USER_DATA_DIR: join(profile, 'kant'),
   // AppImages need FUSE; CI runners often lack it, so extract-and-run instead,
   // into the throwaway folder so the copy is removed with it.
   APPIMAGE_EXTRACT_AND_RUN: '1',

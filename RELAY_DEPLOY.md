@@ -3,49 +3,65 @@
 The relay does not store message plaintext or message history. It carries encrypted transport traffic and keeps an in-memory signed address registry, so it can observe connection and registry metadata while running.
 A $4–6/mo VPS (Hetzner CAX11, Fly.io, DigitalOcean) is all you need.
 
+## What you need (and what you don't)
+
+| | |
+|---|---|
+| **Needed** | A machine that stays on, with Docker. For HTTPS: a domain pointing at it and ports 80 + 443 open. |
+| **No domain / can't open ports?** | Use a tunnel instead: `scripts/relay-tunnel.sh funnel` ([RELAY_TUNNELS.md](RELAY_TUNNELS.md)). |
+| **Not needed** | Firebase, a `google-services.json` or service-account file, a push proxy, VAPID tools, Node.js. |
+| **Made for you** | The TLS certificate (Caddy, Let's Encrypt), the Web Push keys for desktop notifications, an operator token for `/metrics`. |
+
+Notifications, per platform:
+
+| Platform | What wakes it | Needs anything from you? |
+|---|---|---|
+| Desktop / browser (PWA) | Web Push | No; the scripts generate the keys. |
+| Android | The app's foreground service keeps it connected while Kant runs | No. Waking a *closed* app needs Firebase push, which only an app built with your own Firebase project can use (then set `PUSH_PROXY_URL`/`PUSH_PROXY_SECRET`, see `packages/push-proxy`). The released Kant app is built without it. |
+| iOS | Local notifications while the app runs | No (remote push would need an Apple developer account). |
+
 ---
 
-## 1. VPS setup
+## 1. Deploy (recommended: the script)
+
+On the server, with the repository cloned:
 
 ```bash
-# On the VPS (Ubuntu/Debian)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
-sudo apt install -y nodejs
-npm install -g pnpm
-```
-
-## 2. Deploy
-
-### Option A: Automated Deployment (Recommended)
-Use the provided deployment script to automate Docker installation, configuration, and startup.
-
-```bash
-# If you are running this on a server where the repo is already cloned:
 cd /path/to/Kant
-
-# For production (HTTPS):
-sudo ./scripts/deploy-relay.sh --local --domain relay.yourdomain.com --mode https
-
-# For internal/lab (HTTP):
-sudo ./scripts/deploy-relay.sh --local --mode http
+./scripts/deploy-relay.sh --local
 ```
 
-*Note: Use the `--local` flag if the repository is private or already present on the disk to avoid Git authentication issues.*
+It asks how people will reach the relay:
 
-### Option B: Remote Clone Deployment
-If you want the script to clone the repository for you:
+1. **HTTPS with a domain**: asks for the domain and an email (Let's Encrypt
+   sends certificate notices there; `@example.*` addresses are refused), checks
+   the domain's DNS points at this server, and gets the certificate.
+2. **HTTP on a LAN or VPN**: uses this machine's LAN IP (or one you give).
+3. **No domain or no open ports**: sends you to `scripts/relay-tunnel.sh`.
+
+It then builds and starts the relay, generates the Web Push keys, checks the
+relay answers at its address and prints the address to share. Everything it
+chose is in `.env` (owner-only) and reused when you run it again, e.g. to
+update. Non-interactive:
+
 ```bash
-# Run from any directory
-sudo ./scripts/deploy-relay.sh --domain relay.yourdomain.com --mode https
+./scripts/deploy-relay.sh --local --mode https --domain relay.example.org --email you@example.org --yes
+./scripts/deploy-relay.sh --local --mode http --yes
 ```
 
-### Option B: Manual Deployment
-If you prefer to manage the process manually:
+Without `--local` it clones the repository into `/opt/kant` (`--path` to change
+that). It uses `sudo` only where it has to (installing Docker, writing to
+`/opt`).
+
+## 2. Manual deployment (without Docker)
+
 ```bash
-git clone https://github.com/your-org/kant.git
-cd kant
+# Node.js 20+ and pnpm
+git clone https://github.com/CecuTheMag/Kant.git
+cd Kant
 pnpm install --frozen-lockfile
 cd packages/relay && pnpm build
+node dist/vapid.js        # Web Push keys for the environment below (optional)
 ```
 
 ## 3. Run (with systemd — recommended)
@@ -87,6 +103,10 @@ sudo ufw allow 3000/tcp
 sudo ufw allow 3001/tcp
 ```
 
+Port 3001 alone is enough if you set `RELAY_PUBLIC_URL=http://<host>:3001`:
+the relay then announces its libp2p WebSocket on the API port and serves both
+there. That's what tunnels use ([RELAY_TUNNELS.md](RELAY_TUNNELS.md)).
+
 ## 5. TLS (strongly recommended)
 
 Put Nginx or Caddy in front so the WebSocket runs on `wss://` and the HTTP API on `https://`. Browsers require TLS for production.
@@ -107,13 +127,16 @@ Update `RELAY_PUBLIC_HOST` to your domain and set `RELAY_PORT=443` if you want t
 
 ## 6. Point the app at the relay
 
-In `packages/app/.env` (copy from `.env.example`):
+People using the released apps enter the address in **Settings → Relay
+address** (or during onboarding), e.g. `relay.yourdomain.com`. Nothing needs
+rebuilding.
+
+If you build the app yourself, you can make your relay the default in
+`packages/app/.env` (copy from `.env.example`):
 
 ```
 VITE_RELAY_URL=https://relay.yourdomain.com
 ```
-
-Build and ship the app. Every client worldwide now connects to the same public relay.
 
 ---
 

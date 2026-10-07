@@ -103,13 +103,13 @@ export function takePendingInvite(): Invite | null {
   } catch { return null; }
 }
 
-/** Accepts "relay.example.com", "192.168.1.20:3001" or a full URL. Local and
- *  LAN addresses default to http (they rarely have certificates); everything
- *  else defaults to https. */
+/** Accepts "relay.example.com", "192.168.1.20:3001" or a full URL. Local, LAN
+ *  and Tailscale (100.64.0.0/10) addresses default to http (they rarely have
+ *  certificates); everything else, *.ts.net included, defaults to https. */
 export function normalizeRelayUrl(input: string): string {
   const v = input.trim().replace(/\/$/, '');
   if (/^https?:\/\//i.test(v)) return v;
-  const local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|[^.]+\.local\b|[^.:]+(:\d+)?$)/i.test(v);
+  const local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|[^.]+\.local\b|[^.:]+(:\d+)?$)/i.test(v);
   return `${local ? 'http' : 'https'}://${v}`;
 }
 

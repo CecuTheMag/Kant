@@ -1,6 +1,6 @@
 {
   "name": "@kant/app",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -13,10 +13,12 @@
     "cap:sync": "cap sync"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
+    "@capacitor/android": "^6.2.2",
     "@capacitor/app": "^6.0.0",
-    "@capacitor/core": "^6.0.0",
+    "@capacitor/core": "^6.2.2",
     "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/ios": "6.2.2",
+    "@capacitor/keyboard": "^6.0.4",
     "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
     "@kant/core": "workspace:*",
@@ -30,7 +32,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/cli": "^6.2.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

@@ -429,6 +429,7 @@ The key runtime environment variables are defined in [packages/relay/src/index.t
 - RELAY_PUBLIC_PORT
 - RELAY_INFO_PORT
 - RELAY_PUBLIC_HOST
+- RELAY_PUBLIC_URL (single-port mode for tunnels — see [RELAY_TUNNELS.md](RELAY_TUNNELS.md))
 - RELAY_HTTP_BIND
 - RELAY_DATA_DIR
 - RELAY_SECURE

@@ -11,7 +11,7 @@ import {
   IconShield,
   IconWindows,
 } from "@/components/icons";
-import { PLATFORMS, RELEASE, SITE, WINDOWS_FILES } from "@/lib/config";
+import { ALL_FILES, PLATFORMS, RELEASE, SITE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: `Download Kant for ${PLATFORMS}`,
@@ -110,7 +110,49 @@ export default function Download() {
               </div>
             )}
 
-            {RELEASE.windows ? (
+            {RELEASE.mac && (
+              <div className="platform">
+                <div className="platform-head">
+                  <span className="tile-icon ink"><IconApple size={28} /></span>
+                  <div>
+                    <h2>Mac</h2>
+                    <div className="meta">Apple Silicon · {RELEASE.mac.arm64.size}</div>
+                  </div>
+                </div>
+                <p className="body-text" style={{ margin: 0 }}>
+                  macOS 11 or later. The first time, macOS can’t verify the
+                  developer: see the steps below.
+                </p>
+                <a href={RELEASE.mac.arm64.url} className="btn btn-primary" download>
+                  <IconDownload /> Download for Mac
+                </a>
+                <p className="small-text" style={{ margin: 0 }}>
+                  Older Mac with an Intel chip?{" "}
+                  <a href={RELEASE.mac.x64.url} className="link inline" download>Intel version</a>
+                </p>
+              </div>
+            )}
+
+            {RELEASE.ios && (
+              <div className="platform">
+                <div className="platform-head">
+                  <span className="tile-icon"><IconApple size={28} /></span>
+                  <div>
+                    <h2>iPhone</h2>
+                    <div className="meta">For sideloading · {RELEASE.ios.size}</div>
+                  </div>
+                </div>
+                <p className="body-text" style={{ margin: 0 }}>
+                  iOS 15 or later. Not on the App Store yet: install it with
+                  AltStore, SideStore or Sideloadly (see below).
+                </p>
+                <a href={RELEASE.ios.url} className="btn btn-primary" download>
+                  <IconDownload /> Download for iPhone
+                </a>
+              </div>
+            )}
+
+            {RELEASE.mac && RELEASE.ios ? null : RELEASE.windows ? (
               <div className="platform platform-later">
                 <div className="platform-head">
                   <span className="tile-icon"><IconApple size={28} /></span>
@@ -172,6 +214,35 @@ export default function Download() {
               </p>
             </div>
           </div>
+
+          {(RELEASE.mac || RELEASE.ios) && (
+            <div className="grid-2" style={{ alignItems: "start", marginTop: 56 }}>
+              {RELEASE.mac && (
+                <div className="reveal">
+                  <span className="eyebrow">Mac</span>
+                  <h2 className="h-2" style={{ marginBottom: 28 }}>Open it the first time.</h2>
+                  <ol className="install-steps">
+                    <li><span><strong>Open the downloaded file</strong> and drag Kant into Applications.</span></li>
+                    <li><span><strong>Open Kant.</strong> macOS says it can’t verify the developer, because the app isn’t notarized by Apple yet. Choose <strong>Done</strong>.</span></li>
+                    <li><span>Open <strong>System Settings → Privacy &amp; Security</strong>, scroll down and choose <strong>Open Anyway</strong>.</span></li>
+                    <li><span><strong>Open Kant again</strong> and confirm. From then on it opens normally.</span></li>
+                  </ol>
+                </div>
+              )}
+              {RELEASE.ios && (
+                <div className="reveal">
+                  <span className="eyebrow">iPhone</span>
+                  <h2 className="h-2" style={{ marginBottom: 28 }}>Install it with a sideloading app.</h2>
+                  <ol className="install-steps">
+                    <li><span><strong>Install a sideloading app</strong> on your computer, such as AltStore, SideStore or Sideloadly, and sign in with your Apple ID.</span></li>
+                    <li><span><strong>Download the .ipa file</strong> above and open it with that app to install Kant on your iPhone.</span></li>
+                    <li><span>On the iPhone, <strong>trust your Apple ID</strong> in Settings → General → VPN &amp; Device Management. On iOS 16 or later, also turn on <strong>Settings → Privacy &amp; Security → Developer Mode</strong>.</span></li>
+                    <li><span>With a free Apple ID, <strong>refresh the app every 7 days</strong> (AltStore and SideStore can do it for you).</span></li>
+                  </ol>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
@@ -188,15 +259,7 @@ export default function Download() {
             </p>
           </div>
           <div className="grid-2 tight reveal-stagger">
-            <div className="card">
-              <div className="h-4" style={{ marginBottom: 12 }}>{RELEASE.android.file}</div>
-              <div className="hash">{RELEASE.android.sha256}</div>
-            </div>
-            <div className="card">
-              <div className="h-4" style={{ marginBottom: 12 }}>{RELEASE.linux.file}</div>
-              <div className="hash">{RELEASE.linux.sha256}</div>
-            </div>
-            {WINDOWS_FILES.map((d) => (
+            {ALL_FILES.map((d) => (
               <div className="card" key={d.file}>
                 <div className="h-4" style={{ marginBottom: 12 }}>{d.file}</div>
                 <div className="hash">{d.sha256}</div>

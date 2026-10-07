@@ -19,7 +19,7 @@ import { BlockedSheet } from './sheets';
 import { setChatPrefs, useChatPrefs } from './chat/prefs';
 import { BackupSheet, MoveOutSheet } from './TransferSheets';
 import { QUICK_REACTIONS } from './chat/chatLogic';
-import { readSecurityPrefs, writeSecurityPrefs } from '../lib/biometric';
+import { biometricText, readSecurityPrefs, writeSecurityPrefs } from '../lib/biometric';
 import { AUTO_LOCK_CHOICES, PASSWORD_EVERY_CHOICES } from '../lib/securityPolicy';
 import type { SecurityPrefs } from '../lib/securityPolicy';
 
@@ -261,6 +261,7 @@ function DiagnosticsSheet({ onClose }: { onClose: () => void }) {
 function DeliveryHealth() {
   const [health, setHealth] = useState<{ notifications: boolean; background: boolean; batteryRestricted: boolean } | null>(null);
   const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  const isIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 
   const refresh = useCallback(async () => {
     const [notifications, background, batteryRestricted] = await Promise.all([
@@ -277,6 +278,7 @@ function DeliveryHealth() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [isAndroid, refresh]);
 
+  if (isIos) return <IosDeliveryNote />;
   if (!isAndroid || !health) return null;
   const allGood = health.notifications && health.background && !health.batteryRestricted;
 
@@ -290,6 +292,23 @@ function DeliveryHealth() {
         okText="Running" badText="Starts when you connect" />
       <HealthRow ok={!health.batteryRestricted} icon={<Refresh size={17} />} tone="orange" label="Battery"
         okText="Unrestricted" badText="Restricted" action="Change" onAction={openBatterySettings} />
+    </Section>
+  );
+}
+
+/**
+ * iPhone: Kant is paused moments after you leave it, and push notifications
+ * need an Apple developer account, so say plainly when messages arrive.
+ */
+function IosDeliveryNote() {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const refresh = useCallback(() => { void getNotificationPermission().then(setAllowed); }, []);
+  useEffect(refresh, [refresh]);
+  if (allowed === null) return null;
+  return (
+    <Section title="Notifications" icons foot="iPhone pauses Kant a few seconds after you leave it. Messages sent to you meanwhile wait on the sender’s phone and arrive as soon as you open Kant again.">
+      <HealthRow ok={allowed} icon={<Bell size={18} />} tone="red" label="Notifications"
+        okText="Allowed" badText="Turned off" action="Allow" onAction={async () => { await ensureNotificationPermission(); refresh(); }} />
     </Section>
   );
 }
@@ -367,23 +386,24 @@ function SecuritySection() {
     try {
       const error = await store.security.setBiometric(on);
       if (error && error !== 'cancelled') toast(error, <Alert size={18} />);
-      else if (!error) toast(on ? 'Fingerprint unlock is on' : 'Fingerprint unlock is off', <Check size={18} />);
+      else if (!error) toast(`${biometricText().Name} unlock is ${on ? 'on' : 'off'}`, <Check size={18} />);
     } finally {
       setBioBusy(false);
       refresh();
     }
   };
 
+  const bioWords = biometricText();
   const bioRow = bio?.supported && (
     <div className="k-cell">
       <span className="k-cell-icon green"><Fingerprint size={18} /></span>
       <span className="k-cell-body">
-        <span className="k-cell-label">Unlock with fingerprint</span>
+        <span className="k-cell-label">Unlock with {bioWords.name}</span>
         <span className="k-cell-sub">{bio.available ? 'Your password is still asked for after a restart'
-          : bio.reason === 'not-enrolled' ? 'Add a fingerprint in your phone’s settings first' : 'Not available on this device'}</span>
+          : bio.reason === 'not-enrolled' ? bioWords.setupHint : 'Not available on this device'}</span>
       </span>
       {bioBusy ? <Spinner size={18} />
-        : <Switch label="Unlock with fingerprint" checked={bio.enrolled} disabled={!bio.available && !bio.enrolled} onChange={(on) => { void toggleBio(on); }} />}
+        : <Switch label={`Unlock with ${bioWords.name}`} checked={bio.enrolled} disabled={!bio.available && !bio.enrolled} onChange={(on) => { void toggleBio(on); }} />}
     </div>
   );
 
@@ -391,7 +411,7 @@ function SecuritySection() {
     <>
       <Section title="Security" icons foot={<>
         While Kant is locked it’s offline: messages wait on the sender’s device and arrive when you unlock.
-        {bio?.enrolled && <> Anyone who can use your finger can unlock Kant — turn fingerprint unlock off if that’s a risk for you.</>}
+        {bio?.enrolled && <> {bioWords.risk}</>}
       </>}>
         {bioRow}
         {bio?.enrolled && (

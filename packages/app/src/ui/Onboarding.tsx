@@ -10,6 +10,7 @@ import { Alert, Bubble, Check, ChevronLeft, Copy, Doc, Eye, EyeOff, Fingerprint,
 import { copyText } from './lib';
 import { normalizeRelayUrl, parseInvite, savePendingInvite } from './lib';
 import { Sheet } from './parts';
+import { biometricText } from '../lib/biometric';
 
 const TERMS_URL = 'https://kant.network/terms';
 // Relative to the build's base ('./' in the desktop app, which loads from
@@ -466,7 +467,7 @@ export function Unlock({ onUnlock, onErase, biometric }: {
           </button>
           {bio === 'ready' && (
             <button type="button" className="k-btn k-btn-secondary k-btn-block" disabled={bioBusy || busy} onClick={fingerprint}>
-              {bioBusy ? <Spinner size={18} /> : <Fingerprint size={20} />} Unlock with fingerprint
+              {bioBusy ? <Spinner size={18} /> : <Fingerprint size={20} />} Unlock with {biometricText().name}
             </button>
           )}
           <button type="button" className="k-btn k-btn-plain" onClick={() => setForgot(true)}>Forgot password?</button>

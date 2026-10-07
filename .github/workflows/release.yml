@@ -1,6 +1,6 @@
 name: Release
 
-# Builds every client from the tagged commit, checks each one actually starts,
+# Builds every client (Android, Linux, Windows, macOS, iOS) from the tagged commit, checks each one actually starts,
 # and attaches them to a DRAFT GitHub release with SHA-256 checksums. Nothing
 # is published until a maintainer reviews the draft and presses Publish.
 #
@@ -51,8 +51,9 @@ jobs:
           app=$(node -p "require('./packages/app/package.json').version")
           desktop=$(node -p "require('./packages/desktop/package.json').version")
           android=$(sed -n 's/^ *versionName "\(.*\)"/\1/p' packages/app/android/app/build.gradle)
-          echo "app=$app desktop=$desktop android=$android"
-          [ "$app" = "$desktop" ] && [ "$app" = "$android" ] || { echo "::error::versions differ"; exit 1; }
+          ios=$(sed -n 's/^[[:space:]]*MARKETING_VERSION = \(.*\);/\1/p' packages/app/ios/App/App.xcodeproj/project.pbxproj | sort -u)
+          echo "app=$app desktop=$desktop android=$android ios=$ios"
+          [ "$app" = "$desktop" ] && [ "$app" = "$android" ] && [ "$app" = "$ios" ] || { echo "::error::versions differ"; exit 1; }
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             [ "${GITHUB_REF_NAME%%-*}" = "$app" ] || { echo "::error::tag $GITHUB_REF_NAME does not match version $app"; exit 1; }
           fi
@@ -180,9 +181,76 @@ jobs:
             packages/desktop/release/Kant-${{ needs.version.outputs.version }}-*-portable.exe
           if-no-files-found: error
 
+  macos:
+    name: macOS app
+    needs: [checks, version]
+    runs-on: macos-15
+    env:
+      VITE_RELAY_URL: ${{ vars.KANT_DEFAULT_RELAY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # One DMG per architecture, ad-hoc signed (no Developer ID; see scripts/adhoc-sign.cjs).
+      - run: pnpm --dir packages/desktop run build:mac
+      - name: Signatures are valid
+        run: |
+          for app in packages/desktop/release/mac/Kant.app packages/desktop/release/mac-arm64/Kant.app; do
+            codesign --verify --deep --strict --verbose=2 "$app"
+          done
+      - name: Smoke test, Apple Silicon (app starts, bundled relay healthy, UI renders)
+        run: node packages/desktop/scripts/smoke.mjs packages/desktop/release/mac-arm64/Kant.app/Contents/MacOS/Kant
+      - name: Smoke test, Intel under Rosetta
+        env:
+          KANT_SMOKE_TIMEOUT_MS: '300000'
+        run: |
+          /usr/bin/pgrep -q oahd || softwareupdate --install-rosetta --agree-to-license
+          node packages/desktop/scripts/smoke.mjs packages/desktop/release/mac/Kant.app/Contents/MacOS/Kant
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: packages/desktop/release/Kant-${{ needs.version.outputs.version }}-mac-*.dmg
+          if-no-files-found: error
+
+  ios:
+    name: iOS app (unsigned, for sideloading)
+    needs: [checks, version]
+    runs-on: macos-15
+    env:
+      VITE_RELAY_URL: ${{ vars.KANT_DEFAULT_RELAY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir packages/app run build
+      - run: pnpm --dir packages/app exec cap sync ios
+      # The app's UI tests run in the Apple workflow (apple.yml) on every change.
+      - name: Archive without signing and package as .ipa
+        run: |
+          xcodebuild archive \
+            -workspace packages/app/ios/App/App.xcworkspace -scheme App -configuration Release \
+            -destination generic/platform=iOS -archivePath "$RUNNER_TEMP/Kant.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" 2>&1 | tail -30
+          mkdir -p "$RUNNER_TEMP/ipa/Payload" out
+          cp -R "$RUNNER_TEMP/Kant.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/out/Kant-${{ needs.version.outputs.version }}.ipa" Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: out/*.ipa
+          if-no-files-found: error
+
   release:
     name: Draft release
-    needs: [version, android, linux, windows]
+    needs: [version, android, linux, windows, macos, ios]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:

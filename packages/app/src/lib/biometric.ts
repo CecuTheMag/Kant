@@ -6,12 +6,14 @@
  *
  *   Native plugin "KantBiometric" (Android: KantBiometricPlugin.java)
  *   ─────────────────────────────────────────────────────────────────────────
- *   status() → { available, reason, enrolled, bootTime? }
+ *   status() → { available, reason, enrolled, bootTime?, kind? }
  *     available: a strong biometric (Android Class 3; iOS Face ID / Touch ID)
  *     is set up on the device. reason: '' | 'not-enrolled' | 'no-hardware' |
  *     'security-update' | 'unavailable'. enrolled: Kant has a wrapped key.
  *     bootTime: wall-clock ms of the last device boot (so a restart can
- *     require the password); omit if the platform can't tell.
+ *     require the password); omit if the platform can't tell. kind: which
+ *     biometric the device has — 'face-id' | 'touch-id' | 'optic-id' (iOS);
+ *     omitted on Android, which is always called "fingerprint".
  *   enable({ secret, title, subtitle, cancel })
  *     secret: base64 of the 32-byte key that unlocks the identity. Create a
  *     new hardware-backed key usable only after a biometric check for every
@@ -33,7 +35,7 @@ import { DEFAULT_SECURITY_PREFS, sanitizeSecurityPrefs } from './securityPolicy'
 import type { BiometricGate, SecurityPrefs } from './securityPolicy';
 
 interface KantBiometricPlugin {
-  status(): Promise<{ available: boolean; reason: string; enrolled: boolean; bootTime?: number }>;
+  status(): Promise<{ available: boolean; reason: string; enrolled: boolean; bootTime?: number; kind?: string }>;
   enable(options: { secret: string; title?: string; subtitle?: string; cancel?: string }): Promise<void>;
   unlock(options: { title?: string; subtitle?: string; cancel?: string }): Promise<{ secret: string }>;
   disable(): Promise<void>;
@@ -41,7 +43,42 @@ interface KantBiometricPlugin {
 
 const KantBiometric = registerPlugin<KantBiometricPlugin>('KantBiometric');
 
-export interface BiometricStatus { supported: boolean; available: boolean; reason: string; enrolled: boolean; bootTime?: number }
+export type BiometricKind = 'fingerprint' | 'face-id' | 'touch-id' | 'optic-id';
+
+export interface BiometricStatus { supported: boolean; available: boolean; reason: string; enrolled: boolean; bootTime?: number; kind: BiometricKind }
+
+/** What the device's biometric is called, from the last status() — Android is always "fingerprint". */
+let lastKind: BiometricKind = 'fingerprint';
+
+/** User-facing words for the device's biometric ("Face ID" on most iPhones). */
+export function biometricText(kind: BiometricKind = lastKind) {
+  switch (kind) {
+    case 'face-id': return {
+      name: 'Face ID', Name: 'Face ID', changed: 'Your Face ID changed', notRecognised: 'Face not recognised',
+      setupHint: 'Set up Face ID in your iPhone’s Settings first',
+      risk: 'Anyone Face ID recognises on this phone can unlock Kant — turn Face ID unlock off if that’s a risk for you.',
+    };
+    case 'touch-id': return {
+      name: 'Touch ID', Name: 'Touch ID', changed: 'Your Touch ID fingerprints changed', notRecognised: 'Fingerprint not recognised',
+      setupHint: 'Set up Touch ID in your iPhone’s Settings first',
+      risk: 'Anyone with a finger registered for Touch ID can unlock Kant — turn Touch ID unlock off if that’s a risk for you.',
+    };
+    case 'optic-id': return {
+      name: 'Optic ID', Name: 'Optic ID', changed: 'Your Optic ID changed', notRecognised: 'Optic ID didn’t recognise you',
+      setupHint: 'Set up Optic ID in Settings first',
+      risk: 'Anyone Optic ID recognises on this device can unlock Kant — turn Optic ID unlock off if that’s a risk for you.',
+    };
+    default: return {
+      name: 'fingerprint', Name: 'Fingerprint', changed: 'Your fingerprints changed', notRecognised: 'Fingerprint not recognised',
+      setupHint: 'Add a fingerprint in your phone’s settings first',
+      risk: 'Anyone who can use your finger can unlock Kant — turn fingerprint unlock off if that’s a risk for you.',
+    };
+  }
+}
+
+function toKind(raw: unknown): BiometricKind {
+  return raw === 'face-id' || raw === 'touch-id' || raw === 'optic-id' ? raw : 'fingerprint';
+}
 
 export type BiometricError =
   | 'CANCELLED' | 'TOO_MANY_ATTEMPTS' | 'LOCKOUT' | 'INVALIDATED' | 'NOT_ENROLLED' | 'UNAVAILABLE' | 'FAILED';
@@ -51,12 +88,13 @@ function supported(): boolean {
 }
 
 export async function biometricStatus(): Promise<BiometricStatus> {
-  if (!supported()) return { supported: false, available: false, reason: 'unsupported', enrolled: false };
+  if (!supported()) return { supported: false, available: false, reason: 'unsupported', enrolled: false, kind: lastKind };
   try {
     const s = await KantBiometric.status();
-    return { supported: true, available: !!s.available, reason: s.reason ?? '', enrolled: !!s.enrolled, bootTime: typeof s.bootTime === 'number' ? s.bootTime : undefined };
+    lastKind = toKind(s.kind);
+    return { supported: true, available: !!s.available, reason: s.reason ?? '', enrolled: !!s.enrolled, bootTime: typeof s.bootTime === 'number' ? s.bootTime : undefined, kind: lastKind };
   } catch {
-    return { supported: true, available: false, reason: 'unavailable', enrolled: false };
+    return { supported: true, available: false, reason: 'unavailable', enrolled: false, kind: lastKind };
   }
 }
 
@@ -84,7 +122,7 @@ export async function enableBiometric(derivedKey: Uint8Array): Promise<Biometric
   if (!supported()) return 'UNAVAILABLE';
   try {
     await KantBiometric.enable({
-      secret: toB64(derivedKey), title: 'Turn on fingerprint unlock', subtitle: 'Confirm it’s you', cancel: 'Cancel',
+      secret: toB64(derivedKey), title: `Turn on ${biometricText().name} unlock`, subtitle: 'Confirm it’s you', cancel: 'Cancel',
     });
     return null;
   } catch (e) {

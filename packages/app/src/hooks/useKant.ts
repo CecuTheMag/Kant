@@ -39,11 +39,13 @@ import {
 import { processImage, isProcessableImage } from '../lib/imageProcessor';
 import { eraseAllLocalData } from '../lib/eraseDevice';
 import {
-  biometricStatus, enableBiometric, unlockWithBiometric, disableBiometric,
+  biometricStatus, biometricText, enableBiometric, unlockWithBiometric, disableBiometric,
   readGate, writeGate, readSecurityPrefs,
 } from '../lib/biometric';
 import { biometricBlocked, blockMessage, shouldAutoLock } from '../lib/securityPolicy';
 import { exportAndroidFile, readFileBytes } from '../lib/fileExport';
+import { canOpenExternally, openExternally } from '../lib/fileActions';
+import { Capacitor } from '@capacitor/core';
 import { showLocalNotification, appIsHidden, ensureNotificationPermission } from '../lib/localNotify';
 import {
   startBackgroundService, updateBackgroundStatus, stopBackgroundService,
@@ -475,7 +477,7 @@ export function useKant() {
     const bio = await biometricStatus();
     if (!bio.supported || !bio.available || !bio.enrolled) return 'unavailable';
     const block = biometricBlocked(readGate(), Date.now(), bio.bootTime, readSecurityPrefs());
-    return block ? blockMessage(block) : null;
+    return block ? blockMessage(block, biometricText(bio.kind).Name) : null;
   }
 
   /** Unlock with the fingerprint. `ok: false` with a message means: use the password. */
@@ -483,6 +485,7 @@ export function useKant() {
     const blocked = await biometricUnlockBlock();
     if (blocked) return { ok: false, message: blocked === 'unavailable' ? undefined : blocked };
     const res = await unlockWithBiometric();
+    const t = biometricText();
     const fail = (message: string) => {
       const gate = readGate();
       if (gate) writeGate({ ...gate, failures: gate.failures + 1 });
@@ -491,13 +494,13 @@ export function useKant() {
     if ('error' in res) {
       switch (res.error) {
         case 'CANCELLED': return { ok: false };
-        case 'INVALIDATED': writeGate(null); return { ok: false, message: 'Your fingerprints changed, so fingerprint unlock was turned off. Enter your password.' };
+        case 'INVALIDATED': writeGate(null); return { ok: false, message: `${t.changed}, so ${t.name} unlock was turned off. Enter your password.` };
         case 'TOO_MANY_ATTEMPTS': case 'LOCKOUT': {
           const gate = readGate();
           if (gate) writeGate({ ...gate, failures: Math.max(gate.failures + 1, 3) });
-          return { ok: false, message: 'Fingerprint not recognised. Enter your password.' };
+          return { ok: false, message: `${t.notRecognised}. Enter your password.` };
         }
-        default: return fail('Fingerprint unlock didn’t work. Enter your password.');
+        default: return fail(`${t.Name} unlock didn’t work. Enter your password.`);
       }
     }
     const kp = await unlockIdentityWithKey(res.key);
@@ -505,7 +508,7 @@ export function useKant() {
     if (!kp) {
       // The stored key no longer fits (e.g. the identity changed): start over.
       await disableBiometric();
-      return { ok: false, message: 'Fingerprint unlock needs to be set up again. Enter your password.' };
+      return { ok: false, message: `${t.Name} unlock needs to be set up again. Enter your password.` };
     }
     const gate = readGate();
     if (gate && gate.failures) writeGate({ ...gate, failures: 0 });
@@ -526,9 +529,10 @@ export function useKant() {
       if (!gate) writeGate({ lastPasswordAt: Date.now(), bootTimeAtPassword: bio.bootTime, failures: 0 });
       return null;
     }
+    const t = biometricText();
     return error === 'CANCELLED' ? 'cancelled'
-      : error === 'UNAVAILABLE' ? 'Fingerprint unlock isn’t available on this device.'
-      : 'Couldn’t turn on fingerprint unlock.';
+      : error === 'UNAVAILABLE' ? `${t.Name} unlock isn’t available on this device.`
+      : `Couldn’t turn on ${t.name} unlock.`;
   }
 
   /** Set, change or (null) remove the duress password. Asks for the real password first. */
@@ -3076,6 +3080,11 @@ export function useKant() {
       if (nativeUri) {
         addLog(`📥 File saved: ${nativeUri}`);
         return true;
+      }
+      // iPhone has no downloads folder and its web view ignores <a download>:
+      // saving goes through the share sheet ("Save to Files", "Save Image"…).
+      if (Capacitor.getPlatform() === 'ios' && canOpenExternally()) {
+        return await openExternally(att.fileName, blob.mimeType, blob.data) === 'opened';
       }
 
       const url = URL.createObjectURL(new Blob([blob.data as BlobPart], { type: blob.mimeType }));

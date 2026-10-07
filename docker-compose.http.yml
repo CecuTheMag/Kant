@@ -51,7 +51,7 @@ services:
       RELAY_PUBLIC_PORT: "3000"
       RELAY_DATA_DIR: "/data"
       # Web Push (optional — desktop PWA offline notifications).
-      # Generate keys: npx web-push generate-vapid-keys
+      # Generate keys: node packages/relay/dist/vapid.js (or npx web-push generate-vapid-keys)
       VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
       VAPID_PRIVATE_KEY: "${VAPID_PRIVATE_KEY:-}"
       VAPID_SUBJECT: "${VAPID_SUBJECT:-mailto:admin@kant.local}"

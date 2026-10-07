@@ -1,6 +1,6 @@
 {
   "name": "kant-desktop",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Kant — desktop app for Linux",
   "license": "AGPL-3.0-only",
   "author": {
@@ -16,13 +16,13 @@
     "build:ci": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs",
     "build": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux --mac --win",
     "build:linux": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux",
-    "build:mac": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --mac",
+    "build:mac": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --mac --publish never",
     "build:win": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --win --x64 --publish never && electron-builder --win --arm64 --publish never",
     "build:appimage": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux AppImage",
     "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux deb"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "electron-updater": "6.8.3",
     "zod": "4.4.3"
   },
@@ -89,15 +89,22 @@
     },
     "mac": {
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "assets/icon.png",
       "category": "public.app-category.social-networking",
       "darkModeSupport": true,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "Kant uses the microphone to record voice messages. Recordings are end-to-end encrypted and never leave your device unencrypted."
-      }
+      },
+      "identity": null,
+      "artifactName": "Kant-${version}-mac-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -113,6 +120,7 @@
     },
     "portable": {
       "artifactName": "Kant-${version}-${arch}-portable.${ext}"
-    }
+    },
+    "afterSign": "scripts/adhoc-sign.cjs"
   }
 }

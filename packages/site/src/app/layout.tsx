@@ -5,7 +5,7 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { TermsBanner } from "@/components/TermsBanner";
-import { RELEASE, SITE } from "@/lib/config";
+import { PLATFORM_LIST, RELEASE, SITE } from "@/lib/config";
 import "./globals.css";
 
 // Apple devices render in the system SF font (listed first in the CSS stack),
@@ -98,7 +98,7 @@ const structuredData = [
     "@type": "SoftwareApplication",
     name: SITE.name,
     applicationCategory: "CommunicationApplication",
-    operatingSystem: RELEASE.windows ? "Android, Linux, Windows" : "Android, Linux",
+    operatingSystem: PLATFORM_LIST.join(", "),
     softwareVersion: RELEASE.version,
     description: SITE.description,
     url: SITE.url,

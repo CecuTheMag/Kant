@@ -161,6 +161,8 @@ chmod 600 "$ENV_FILE"
 
 proxy_compose=(docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/docker-compose.push-proxy.yml")
 relay_compose=(docker compose --env-file "$ENV_FILE" -f "$ROOT_DIR/docker-compose.$relay_mode.yml")
+# The HTTPS stack runs the push proxy beside the relay only with this profile.
+[[ "$relay_mode" == https ]] && relay_compose+=(--profile push)
 
 info 'Validating Docker Compose configuration'
 "${proxy_compose[@]}" config --quiet

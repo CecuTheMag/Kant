@@ -1,6 +1,6 @@
 // Plain-language FAQ. Rendered on the homepage and emitted as FAQPage
 // structured data, so keep answers as plain text.
-import { RELEASE } from "./config";
+import { PLATFORMS, RELEASE } from "./config";
 
 export const FAQ = [
   {
@@ -21,9 +21,11 @@ export const FAQ = [
   },
   {
     q: "Which devices does Kant work on?",
-    a: RELEASE.windows
-      ? "Kant is available today for Android, Linux and Windows. A macOS build can be made from the source code, and an iPhone version isn't available yet. You can follow progress on the Kant Discord."
-      : "Kant is available today for Android and Linux. Windows and macOS builds can be made from the source code, and an iPhone version isn't available yet. You can follow progress on the Kant Discord.",
+    a: `Kant is available today for ${PLATFORMS}.${
+      RELEASE.ios
+        ? " The iPhone app isn't on the App Store yet; you install it with a sideloading app such as AltStore."
+        : " An iPhone version isn't available yet."
+    }${RELEASE.mac ? "" : " A macOS build can be made from the source code."} You can follow progress on the Kant Discord.`,
   },
   {
     q: "Is Kant safe to use today?",
