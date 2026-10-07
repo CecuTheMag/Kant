@@ -22,7 +22,7 @@
     "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux deb"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "electron-updater": "6.8.3",
     "zod": "4.4.3"
   },
