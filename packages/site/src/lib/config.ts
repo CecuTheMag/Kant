@@ -15,6 +15,7 @@ const releaseBase = `${SITE.githubUrl}/releases/download/0.5.0-beta`;
 
 export type Download = { file: string; url: string; size: string; sha256: string };
 type WindowsDownloads = Record<"x64" | "arm64", { installer: Download; portable: Download }>;
+type MacDownloads = Record<"arm64" | "x64", Download>;
 
 export const RELEASE = {
   version: "0.5.0",
@@ -66,6 +67,11 @@ export const RELEASE = {
       },
     },
   } as WindowsDownloads | null,
+  // macOS DMGs (Apple Silicon and Intel) and the iPhone .ipa, from the release
+  // workflow (0.6.0 on). Leave null for a release without them and the site
+  // shows them as "coming later".
+  mac: null as MacDownloads | null,
+  ios: null as Download | null,
 };
 
 /** Every Windows file in this release, for checksums and listings. */
@@ -73,8 +79,28 @@ export const WINDOWS_FILES: Download[] = RELEASE.windows
   ? [RELEASE.windows.x64.installer, RELEASE.windows.x64.portable, RELEASE.windows.arm64.installer, RELEASE.windows.arm64.portable]
   : [];
 
+/** Every file in this release, in the order the download page lists fingerprints. */
+export const ALL_FILES: Download[] = [
+  RELEASE.android,
+  RELEASE.linux,
+  ...WINDOWS_FILES,
+  ...(RELEASE.mac ? [RELEASE.mac.arm64, RELEASE.mac.x64] : []),
+  ...(RELEASE.ios ? [RELEASE.ios] : []),
+];
+
+/** The platforms this release ships for, e.g. ["Android", "Linux", "Windows"]. */
+export const PLATFORM_LIST: string[] = [
+  "Android",
+  "Linux",
+  ...(RELEASE.windows ? ["Windows"] : []),
+  ...(RELEASE.mac ? ["macOS"] : []),
+  ...(RELEASE.ios ? ["iPhone"] : []),
+];
+
 /** "Android, Linux and Windows" — the platforms this release ships for. */
-export const PLATFORMS = RELEASE.windows ? "Android, Linux and Windows" : "Android and Linux";
+export const PLATFORMS = PLATFORM_LIST.length > 1
+  ? `${PLATFORM_LIST.slice(0, -1).join(", ")} and ${PLATFORM_LIST[PLATFORM_LIST.length - 1]}`
+  : PLATFORM_LIST[0];
 
 export const NAV_LINKS = [
   { href: "/how-it-works", label: "How it works" },
