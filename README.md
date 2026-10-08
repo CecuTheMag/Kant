@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assets/logowithtext.png" alt="Kant" width="360" />
 
-  <p><strong>Serverless. End-to-end encrypted. Peer-to-peer.</strong></p>
+  <p><strong>Private messaging, with no one in the middle.</strong></p>
 
   <p>
     <a href="https://kant.network"><img src="https://img.shields.io/badge/Website-kant.network-4f8ef7?style=flat-square" alt="Website"></a>
@@ -30,202 +30,82 @@
 
 ---
 
-Kant is a secure peer-to-peer messaging platform built around libp2p, libsodium, and a stateless circuit relay bootstrap node. The repository is organized as a monorepo with a web client, a relay runtime, and a shared core library.
+Kant is a free, open-source messenger that sends your messages straight to the people you're talking to. They're encrypted on your device and decrypted only on theirs. You don't need a phone number or an email address, and no company server keeps a copy.
 
-This project is the working product core for encrypted messaging and relay-assisted peer connectivity. The messenger, core library, relay, desktop and CLI clients are free and open source under the [GNU AGPL-3.0](LICENSE). The admin plane, governance tooling, and broader enterprise bundle (`packages/admin`) are a separately licensed corporate layer.
+When two devices can't reach each other directly (behind a home router, on mobile data, on a strict office network), a **relay** passes the encrypted message along. A relay can't read what it carries and doesn't store it. Anyone can run one: on a server, on a computer at home without opening a port, or inside the Kant desktop app itself.
 
-> 💬 **The project happens in the open.** Protocol decisions, relay operations, and the roadmap are discussed on [Discord](https://discord.gg/kdn2tAPtRX) — not in a support ticket queue. Come argue about the ratchet with us.
+> **Kant is in public beta** and hasn't had an independent security audit yet. The [threat model](docs/security/threat-model.md) and [kant.network/security](https://kant.network/security) say exactly what has been checked and what hasn't.
 
-<table>
-<tr>
-<td width="33%" valign="top">
+## What you get
 
-### 🔒 Control
-Run your own relay and connect clients to a network you operate. Nobody else's infrastructure sits between you and your peers.
-
-</td>
-<td width="33%" valign="top">
-
-### 🕶️ Privacy posture
-The relay is intentionally not the message store. It never processes plaintext content — it forwards ciphertext and nothing else.
-
-</td>
-<td width="33%" valign="top">
-
-### 📡 Reachability
-Built on libp2p and circuit-relay v2, designed for peers behind NAT, firewalls, and mobile network churn.
-
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-
-### 📊 Operational transparency
-Health, readiness, metrics, and registry endpoints are built into the runtime — you can watch exactly what it's doing.
-
-</td>
-<td width="33%" valign="top">
-
-### 🧩 Platform independence
-Client and relay are decoupled enough to support self-hosted or fully customized network designs.
-
-</td>
-<td width="33%" valign="top">
-
-### 🧅 Route awareness
-Optional multi-hop onion routing with cover traffic, for peers who want to hide routing metadata too.
-
-</td>
-</tr>
-</table>
-
----
+- **End-to-end encryption with a new key for every message.** X3DH key agreement and a Double Ratchet built on libsodium, so one exposed key doesn't unlock the rest of a conversation.
+- **No phone number, no email, no account.** Your identity is a key pair on your device, protected by your password. Add people by scanning their QR code or opening their invite link.
+- **Groups, photos, files, voice messages and reactions.** Large files resume where they left off if the connection drops.
+- **Works on difficult networks.** Built on libp2p with circuit relay v2, for devices behind NAT, firewalls and changing mobile connections.
+- **Optional onion routing** with cover traffic, which makes it harder to see *who* you're talking to, not just what you say.
+- **Fingerprint and Face ID unlock**, and moving your account to a new phone.
+- **Free, with no ads and no subscriptions.** The messenger, relay and libraries are AGPL-3.0.
 
 ## Download
 
-Prebuilt clients are attached to each [GitHub release](https://github.com/CecuTheMag/Kant/releases/latest):
+Every [release](https://github.com/CecuTheMag/Kant/releases/latest) is built from the tagged source by the [release workflow](.github/workflows/release.yml), and each file's SHA-256 is listed in the release's `SHA256SUMS.txt`. Check it before installing.
 
-| Platform | Artifact | Notes |
+| Platform | File | Notes |
 | --- | --- | --- |
-| Android | `Kant-<version>.apk` | Signed with the project's release key. Android will still show an "unknown developer" prompt on install — that's expected for any app installed outside the Play Store, not a sign of tampering. Verify the SHA-256 checksum from the release notes before installing. |
-| Linux | `Kant-<version>.AppImage` | Self-contained, no install required — `chmod +x` and run. |
-| Windows | `Kant-Setup-<version>-x64.exe` / `Kant-<version>-x64-portable.exe` (`-arm64` for ARM PCs) | Built by the [release workflow](.github/workflows/release.yml) from 0.5.0 on; the x64 build is smoke-tested there. The installer isn't code-signed yet, so SmartScreen shows an "unknown publisher" warning — verify the SHA-256 checksum from `SHA256SUMS.txt` first. |
+| Android | `Kant-<version>.apk` | Signed with the project's release key. Android asks about installing from an unknown source, as it does for any app outside the Play Store. Add this repository to [Obtainium](https://github.com/ImranR98/Obtainium) to get update notifications. |
+| iPhone | `Kant-<version>.ipa` | iOS 15 and later. Not on the App Store yet: install it with AltStore, SideStore or Sideloadly. With a free Apple ID, sideloaded apps have to be refreshed every 7 days. |
+| macOS | `Kant-<version>-mac-arm64.dmg` (Apple Silicon) / `-mac-x64.dmg` (Intel) | Not notarized yet: the first time, open **System Settings → Privacy & Security** and choose **Open Anyway**. |
+| Windows | `Kant-Setup-<version>-x64.exe` or the portable `Kant-<version>-x64-portable.exe` (`-arm64` for ARM PCs) | Not code-signed yet, so SmartScreen says the publisher is unknown: choose **More info → Run anyway**. |
+| Linux | `Kant-<version>.AppImage` | No install needed: `chmod +x` and run. |
 
-Every release asset is listed with its SHA-256 in the release's `SHA256SUMS.txt`. Android users can get update notifications by adding this repository to [Obtainium](https://github.com/ImranR98/Obtainium).
+The desktop apps (macOS, Windows, Linux) include a built-in relay. You can also build any client from source; see [Development](#development).
 
-Alternatively, build any client from source — see [Local development](#local-development) below.
+## How it works
 
-### Getting a relay to connect to
+1. **You install Kant and pick a password.** Kant creates your identity keys on the device. Nothing is registered anywhere.
+2. **You share your invite link or QR code** (`https://kant.network/add#k=<key>&n=<name>&r=<relay>`). Everything after `#` stays in the browser; the website never receives it.
+3. **Your device registers its current address with a relay,** signed with your identity key so nobody else can claim to be you. Contacts look the address up and connect to you, directly or through the relay.
+4. **Messages travel encrypted end to end.** The relay forwards encrypted frames it can't decrypt. If the other person is offline, *your* device holds the message and delivers it when they're back; the relay doesn't store it.
+5. **Android phones are woken up for new messages** with a push signal that contains no message content. The phone then connects and fetches the encrypted message itself.
 
-Every client needs a relay to register with and discover peers through — the relay never sees plaintext, but clients still need a network path to reach it. Which setup you need depends on where the relay runs:
+What a relay operator *can* see is who connects and when. If that matters to you, turn on onion routing, or run your own relay. Messages from people you haven't added arrive as **message requests** that you accept or block.
 
-- **VPS / cloud server (public IP)** — no port forwarding needed. The server already has a public IP; just open the relay port in its firewall (and 443 if you're fronting it with TLS via the included Caddy config) and point clients at that IP or domain. This is [`docker-compose.https.yml`](docker-compose.https.yml).
-- **Home machine / behind a router (NAT)** — your router doesn't know to send inbound connections to your machine by default. You must configure **port forwarding** on the router: forward the external relay port to your machine's LAN IP on that same port. Without this, the relay works fine for devices on your own network but is unreachable from outside it, even though it looks "up" locally.
-- **Client on the same LAN as the relay** — if a device on the same network as the relay tries to reach it through the relay's public IP or domain name (rather than its LAN IP), many consumer routers fail silently here: they don't support **NAT hairpinning** (a.k.a. NAT loopback), so a packet that leaves the LAN addressed to the router's own WAN IP never routes back in. Fixes, in order of preference: enable NAT loopback/hairpinning in the router's settings if it's supported; otherwise point same-LAN clients at the relay's local IP/hostname directly instead of its public address.
+## Run your own relay
 
-See [Production deployment](#production-deployment) below for the full environment variable reference (`RELAY_PUBLIC_HOST`, `RELAY_HTTP_BIND`, etc.) and the local/LAN compose file.
+A relay keeps no messages. Pick whichever fits:
 
-### Shipping builds with a default network
+- **Inside the desktop app.** The macOS, Windows and Linux apps can run a relay for you and your contacts. See [RELAY_USER_GUIDE.md](RELAY_USER_GUIDE.md).
+- **From home, without port forwarding.** One command sets up a relay behind Tailscale, Tailscale Funnel, Cloudflare Tunnel or ngrok, checks it from the outside, and prints the address to share. It works behind a router you can't configure or on a mobile connection:
+  ```bash
+  scripts/relay-tunnel.sh funnel
+  ```
+  See [RELAY_TUNNELS.md](RELAY_TUNNELS.md).
+- **On a server.** `scripts/deploy-relay.sh` asks for what it needs (HTTPS with a domain, or HTTP on a local network), checks the domain points at the server, gets the certificate, and makes the keys for desktop notifications. See [RELAY_DEPLOY.md](RELAY_DEPLOY.md).
 
-A release built **without** a default relay opens on a "Connect to a network" step, which asks people for a relay address or a friend's invite link. For a public release, build the clients with your relay baked in so people go straight from install → password → chatting:
+Anyone can switch relays in **Settings → Network → Relay**, and invite links carry the sharer's relay, so a friend who opens one is set up automatically.
 
-```bash
-VITE_RELAY_URL=https://relay.your-domain.example pnpm --dir packages/app run build:android
-VITE_RELAY_URL=https://relay.your-domain.example pnpm --dir packages/desktop run build:linux
-```
+**Relay on your home network?** Many home routers can't reach their own public address from inside the network (no "NAT hairpinning"). If devices at home can't connect through the relay's public address, enable NAT loopback on the router, or point those devices at the relay's local address instead.
 
-Replace `relay.your-domain.example` with your relay's public address. Official releases are built by the [release workflow](.github/workflows/release.yml), which reads the address from the `KANT_DEFAULT_RELAY` repository variable — see [docs/runbooks/release-process.md](docs/runbooks/release-process.md).
+## Security
 
-Anyone can still switch relays later in **Settings → Network → Relay**. Invite links include the sharer's relay (unless it's a loopback address), so a friend without a default network is set up automatically when they paste one.
+- Messages are encrypted end to end on the device. The relay only forwards encrypted frames.
+- Address records are signed with the owner's identity key, so nobody can publish an address on someone else's behalf.
+- Every `/register` and `/lookup` request carries a one-time nonce; replays are rejected.
+- Address records expire on a timer and are removed on disconnect.
+- Relay admin endpoints don't exist unless a bearer token is configured.
+- Push notifications carry a wake signal only, never message content.
 
----
+Read the full [threat model](docs/security/threat-model.md) and [data policy](docs/security/privacy-data-policy.md). Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
-## Commercial model and corporate bundle
+## For teams
 
-Kant is open core:
-
-- the messenger, `@kant/core`, the relay, the desktop and CLI clients and the push proxy are open source under the AGPL-3.0 — anyone, including companies, can use, modify and self-host them for free
-- organisations that can't meet the AGPL's obligations (for example, shipping a modified Kant without publishing the changes) can buy a commercial licence instead
-- the paid corporate bundle is designed for organisational deployments and includes the admin-focused features and governance controls that are not part of the free community build
-
-This means the admin features are not a general consumer feature. They are part of the corporate bundle and are meant for enterprise deployment, internal control, auditability, and managed operational governance.
-
-At a product level, the repo reflects that split:
-
-- core messaging, relay connectivity, and app functionality are the product base
-- admin, policy, audit, and operational control features are positioned as a paid corporate layer
-- the free build remains the community baseline without the corporate governance toolkit
-
----
-
-## Product focus
-
-Kant is designed for real-world peer connectivity in environments where direct peer-to-peer reachability is limited by NAT, firewalls, and mobile network churn.
-
-The current implementation includes:
-
-- encrypted peer identity and session primitives in the core package
-- a browser client for relay-connected messaging
-- a dedicated relay service that exposes registry and health endpoints
-- deterministic relay identities and stable public multiaddrs across restarts
-- support for group messaging, file transfer, and relay-based discovery
-- operational endpoints for health, readiness, metrics, and reservation visibility
-
-The relay is intentionally stateless with respect to message plaintext and relies on signed registry records and replay-resistant nonce verification for integrity.
+Organisations can run Kant entirely on their own infrastructure. Kant is open core: everything except the corporate admin bundle (`packages/admin`) is AGPL-3.0, and a commercial licence is available for organisations that need one. See [docs/for-teams.md](docs/for-teams.md) for the licensing model, a comparison with Signal, Telegram, WhatsApp and Matrix, and what is and isn't built yet.
 
 ---
 
-## Why teams choose Kant
+## Development
 
-Kant is positioned for teams that want messaging infrastructure with less dependence on a centralized provider, better control over routing and relay topology, and a product architecture that is designed to work across NAT-heavy environments.
-
-### The value proposition
-
-- Control: run your own relay, connect clients to a network you operate
-- Privacy posture: the relay is intentionally not the message store and does not process plaintext content
-- Reachability: libp2p + circuit relay v2 is designed for peers behind NAT and firewall constraints
-- Operational transparency: health, readiness, metrics, and registry endpoints are built into the runtime
-- Platform independence: the client and relay are decoupled enough to support self-hosted or customized network designs
-
-### Best fit
-
-Kant is a strong fit for organizations evaluating a secure messaging layer that: 
-
-- want self-hosted network control
-- need peer connectivity in challenging network conditions
-- prefer a relay-first architecture over pure centralized cloud messaging
-- want a product surface that can evolve toward larger enterprise governance later
-
-This is a product that starts from infrastructure control and secure transport, rather than a prebuilt admin SaaS layer.
-
----
-
-## Competitive comparison
-
-The comparison below is intentionally framed around product strategy and architecture, not inflated claims about unimplemented admin tooling.
-
-| Category | Kant | Signal | Telegram | WhatsApp | Matrix |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Core model | Relay-assisted P2P messaging with libp2p and peer registry | Centralized messaging service | Centralized messaging service with optional secret chats | Centralized messaging service | Federated, server-based messaging network |
-| Infrastructure ownership | Self-hosted relay possible; app connects to operator-controlled relay | Provider-controlled infrastructure | Provider-controlled infrastructure; self-hosting is possible but not the default product model | Provider-controlled infrastructure | Strong self-hosting support via homeservers |
-| NAT / connectivity strategy | Built for NAT traversal via circuit relay v2 and relay-assisted peer discovery | Depends on provider infrastructure | Depends on provider infrastructure | Depends on provider infrastructure | Depends on server federation and homeserver connectivity |
-| Privacy posture | Relay does not hold plaintext; registry and routing metadata remain operational concerns | End-to-end encryption by default, with provider-managed infrastructure | E2EE exists in secret chats; cloud metadata still matters | E2EE exists, but provider ecosystem remains centralized | End-to-end encryption is available, but federation and server policies matter |
-| Operational visibility | Health, readiness, metrics, registry endpoints included in the codebase | Mostly provider-side control plane | Provider-side control plane | Provider-side control plane | Org-controlled server operations, but app experience is more federation-centric |
-| Admin model | Current repo includes reservation/admin debug endpoints, but not a full enterprise admin plane | Provider-managed admin tools | Provider-managed admin tools | Provider-managed admin tools | Homeserver admin tooling exists, but not a comparable end-user messaging product story |
-| Ideal customer | Teams that value infrastructure ownership, secure routing, and relay control | Users wanting simple secure messaging immediately | Users prioritizing scale and messaging convenience | Users already embedded in the Meta ecosystem | Organizations with a strong self-hosted federation strategy |
-| Current maturity | Core product stack exists; admin layer is intentionally not the main scope yet | Mature consumer platform | Mature consumer platform | Mature consumer platform | Mature open ecosystem |
-
-### Decision summary
-
-A buyer choosing Kant is choosing a different value equation than a mainstream consumer app:
-
-- the product is strongest where infrastructure control matters more than polished consumer convenience
-- the relay-first design is better aligned with teams operating behind NAT, inside internal networks, or across geographically distributed edge deployments
-- the product is not positioned as a full SaaS admin suite yet; it is positioned as a secure, self-hostable messaging substrate with a clear path to enterprise extension
-
-### Positioning against the strongest alternatives
-
-| Alternative | Why buyers pick it | Why Kant is the better fit |
-| :--- | :--- | :--- |
-| Signal | Simple, familiar, strong privacy reputation | Better for teams that need relay infrastructure control and self-hosted routing choices instead of provider dependence |
-| Telegram | Scale, convenience, broad user adoption | Better for organizations that want a privacy-first architecture with lower reliance on a centralized provider model |
-| WhatsApp | Ubiquity and mainstream adoption | Better for teams that need self-hosting options, peer connectivity behind NAT, and infrastructure ownership |
-| Matrix | Open federation and self-hosting strengths | Better when an organization wants a more relay-aware, encrypted peer-to-peer architecture with direct control over connectivity and public relay placement |
-
-### Who should choose Kant
-
-- security-conscious teams that want more control over network topology
-- organizations operating across mobile, remote, or NAT-heavy environments
-- teams that want a messaging stack with a self-hostable relay and measurable operational surfaces
-- buyers evaluating a secure communication layer instead of a generic consumer app
-
-### Who should not choose Kant yet
-
-- teams that need a polished consumer messaging feature set immediately and do not care about infrastructure ownership
-- organizations looking for a full enterprise admin SaaS bundle before the product matures further
-- buyers expecting a completed admin console, policy engine, or managed compliance suite as part of the current repo
-
----
+The rest of this page is for people building Kant or running it in production.
 
 ## Architecture
 
@@ -284,23 +164,6 @@ Key entry points:
 - [packages/app/src/hooks/useKant.ts](packages/app/src/hooks/useKant.ts) — identity, sessions, transport and message handling
 
 People add each other by scanning a QR code or sharing an invite link (`https://kant.network/add#k=<key>&n=<name>&r=<relay>`). The part after `#` never leaves the device — the website's `/add` page reads it in the browser. Messages from someone you haven't added arrive as **message requests** you can accept or block.
-
----
-
-## Security model
-
-Kant is designed around relay-assisted privacy rather than full central-server custody.
-
-The codebase explicitly models the following:
-
-- the relay does not store message plaintext
-- peers register signed circuit addresses through the registry endpoint
-- registry entries expire and are pruned on TTL and disconnect events
-- duplicate nonces are rejected to prevent replay of registration or lookup requests
-- admin reservation endpoints are not exposed unless a bearer token is configured
-- the public relay host and port are intentionally separated from the bind address for correct multiaddr publication
-
-This is a disciplined, operationally transparent messaging substrate rather than a blanket enterprise compliance claim.
 
 ---
 
@@ -413,6 +276,19 @@ pnpm run test:reconnect
 
 The browser tests go through the same screens a person does, via the shared driver in [`tests/lab/tests/e2e-browser-helpers.mjs`](tests/lab/tests/e2e-browser-helpers.mjs) — when the UI changes, update it there.
 
+### Building clients with a default relay
+
+A release built **without** a default relay opens on a "Connect to a network" step, which asks people for a relay address or a friend's invite link. For a public release, build the clients with your relay baked in so people go straight from install → password → chatting:
+
+```bash
+VITE_RELAY_URL=https://relay.your-domain.example pnpm --dir packages/app run build:android
+VITE_RELAY_URL=https://relay.your-domain.example pnpm --dir packages/desktop run build:linux
+```
+
+Replace `relay.your-domain.example` with your relay's public address. Official releases are built by the [release workflow](.github/workflows/release.yml), which reads the address from the `KANT_DEFAULT_RELAY` repository variable — see [docs/runbooks/release-process.md](docs/runbooks/release-process.md).
+
+Anyone can still switch relays later in **Settings → Network → Relay**. Invite links include the sharer's relay (unless it's a loopback address), so a friend without a default network is set up automatically when they paste one.
+
 ---
 
 ## Production deployment
@@ -476,22 +352,6 @@ VITE_RELAY_HTTP_PORT=3001
 The relay HTTP port is expected to serve the registry and health endpoints; the app then resolves the relay address from that host.
 
 ---
-
-## Current scope and constraints
-
-This repository currently represents the working product core for encrypted P2P communication, not the full enterprise admin control plane.
-
-The live code explicitly includes:
-
-- a relay and registry layer
-- encrypted communication and group workflows
-- operational health and metrics
-- admin debug endpoints behind bearer auth
-
-The code does not include a complete admin console, policy engine, or enterprise management plane. The admin package remains intentionally placeholder status, and the active product scope is the relay + app + core stack.
-
----
-
 ## Security and operations references
 
 The repo contains operational guidance for deployment, incident handling, monitoring, and readiness review:

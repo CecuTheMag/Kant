@@ -85,7 +85,7 @@ export default function Home() {
         <div className="wrap">
           <Link href="/download" className="announce anim-rise">
             <span className="announce-tag">{RELEASE.channel} {RELEASE.version}</span>
-            Reactions, fingerprint unlock and moving to a new phone
+            Now on Mac and iPhone, and host a relay from home
             <IconChevron size={12} />
           </Link>
           <h1 className="h-display anim-rise d1">
@@ -360,7 +360,7 @@ export default function Home() {
                 <span className="repo-name">{repoPath.split("/")[0]} / <strong>{repoPath.split("/")[1]}</strong></span>
                 <span className="repo-pill">Public</span>
               </div>
-              <p className="repo-desc">Serverless, end-to-end encrypted, peer-to-peer messenger.</p>
+              <p className="repo-desc">Private, end-to-end encrypted messenger. No phone number, no one in the middle.</p>
               <ul className="repo-files">
                 {repoFiles.map((f) => (
                   <li key={f.name}>

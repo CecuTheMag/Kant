@@ -72,7 +72,7 @@
       "icon": "assets/icon.png",
       "maintainer": "Kant <dev@kant.app>",
       "vendor": "Kant <dev@kant.app>",
-      "synopsis": "Private. Serverless. Encrypted.",
+      "synopsis": "Private, end-to-end encrypted messaging.",
       "description": "Kant is a peer-to-peer encrypted messenger with no central message storage or account requirement."
     },
     "deb": {
