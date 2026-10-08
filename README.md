@@ -30,9 +30,9 @@
 
 ---
 
-Kant is a free, open-source messenger that sends your messages straight to the people you're talking to. They're encrypted on your device and decrypted only on theirs. You don't need a phone number or an email address, and no company server keeps a copy.
+Kant is a free, open-source messenger with no phone number, no email address and no company server keeping a copy of your messages. They're encrypted on your device and decrypted only on the devices of the people you're talking to.
 
-When two devices can't reach each other directly (behind a home router, on mobile data, on a strict office network), a **relay** passes the encrypted message along. A relay can't read what it carries and doesn't store it. Anyone can run one: on a server, on a computer at home without opening a port, or inside the Kant desktop app itself.
+Devices behind home routers, mobile data and office firewalls can't usually reach each other directly, so a **relay** passes the encrypted messages between them. A relay can't read what it carries and doesn't store it. Anyone can run one: on a server, on a computer at home without opening a port, or inside the Kant desktop app itself.
 
 > **Kant is in public beta** and hasn't had an independent security audit yet. The [threat model](docs/security/threat-model.md) and [kant.network/security](https://kant.network/security) say exactly what has been checked and what hasn't.
 
@@ -64,7 +64,7 @@ The desktop apps (macOS, Windows, Linux) include a built-in relay. You can also 
 
 1. **You install Kant and pick a password.** Kant creates your identity keys on the device. Nothing is registered anywhere.
 2. **You share your invite link or QR code** (`https://kant.network/add#k=<key>&n=<name>&r=<relay>`). Everything after `#` stays in the browser; the website never receives it.
-3. **Your device registers its current address with a relay,** signed with your identity key so nobody else can claim to be you. Contacts look the address up and connect to you, directly or through the relay.
+3. **Your device registers its current address with a relay,** signed with your identity key so nobody else can claim to be you. Contacts look the address up and connect to you through the relay, or directly if your device is publicly reachable.
 4. **Messages travel encrypted end to end.** The relay forwards encrypted frames it can't decrypt. If the other person is offline, *your* device holds the message and delivers it when they're back; the relay doesn't store it.
 5. **Android phones are woken up for new messages** with a push signal that contains no message content. The phone then connects and fetches the encrypted message itself.
 
