@@ -2,7 +2,7 @@
   "name": "kant-monorepo",
   "version": "0.0.1",
   "private": true,
-  "description": "Kant: Serverless P2P encrypted messenger",
+  "description": "Kant: private, end-to-end encrypted messenger with no one in the middle",
   "license": "AGPL-3.0-only",
   "scripts": {
     "install:all": "pnpm install",
