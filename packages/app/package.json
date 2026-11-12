@@ -27,12 +27,12 @@
     "libsodium-wrappers-sumo": "0.8.2",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.2.2",
     "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "5.9.3",
     "vite": "5.4.21"
