@@ -269,10 +269,17 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: dist
+          # Only the app builds: a failed check (re-run) leaves its own debug
+          # artifacts in the run, which must never be attached to a release.
+          pattern: '{android,linux,windows,macos,ios}'
           merge-multiple: true
       - name: Checksums
         working-directory: dist
-        run: sha256sum * | tee SHA256SUMS.txt
+        run: |
+          shopt -s nullglob
+          files=(Kant*)
+          [ "${#files[@]}" -eq 9 ] || { ls -la; echo "::error::expected 9 app files, found ${#files[@]}"; exit 1; }
+          sha256sum "${files[@]}" | tee SHA256SUMS.txt
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -280,5 +287,5 @@ jobs:
         run: |
           notes=release-notes/$VERSION.md
           if [ -f "$notes" ]; then notes_arg=(--notes-file "$notes"); else notes_arg=(--generate-notes); fi
-          gh release create "$GITHUB_REF_NAME" dist/* --draft --latest \
+          gh release create "$GITHUB_REF_NAME" dist/Kant* dist/SHA256SUMS.txt --draft --latest \
             --title "Kant $VERSION (Beta)" "${notes_arg[@]}"
