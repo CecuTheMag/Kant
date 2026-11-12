@@ -10,7 +10,7 @@
   "devDependencies": {
     "@libp2p/crypto": "5.1.23",
     "@libp2p/peer-id": "6.0.15",
-    "fake-indexeddb": "6.2.5",
+    "fake-indexeddb": "6.2.8",
     "libsodium-wrappers-sumo": "0.8.2"
   }
 }

@@ -19,7 +19,7 @@
     "test:reconnect": "pnpm --dir packages/relay run build && pnpm --dir packages/app run build && node --test --test-concurrency=1 --test-timeout=3600000 tests/lab/local/reconnect.test.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.1",
+    "@playwright/test": "1.65.0",
     "@types/node": "22.7.4",
     "pnpm": "10.13.1",
     "typescript": "5.9.3"

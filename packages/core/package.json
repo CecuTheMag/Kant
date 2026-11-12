@@ -34,7 +34,7 @@
     "@types/node": "^22.7.4",
     "@types/qrcode": "^1.5.6",
     "@types/ws": "^8.18.1",
-    "fake-indexeddb": "6.2.5",
+    "fake-indexeddb": "6.2.8",
     "libsodium-wrappers": "0.7.16",
     "typescript": "5.9.3"
   }
