@@ -42,6 +42,8 @@
   --shadow-sheet: 0 -1px 0 rgba(0, 0, 0, 0.04), 0 20px 60px rgba(0, 0, 0, 0.22);
   --shadow-pop: 0 10px 40px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.05);
+  --hud-bg: rgba(29, 29, 31, 0.86);
+  --hud-text: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -75,11 +77,13 @@
   --shadow-sheet: 0 20px 60px rgba(0, 0, 0, 0.6);
   --shadow-pop: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
   --shadow-card: none;
+  --hud-bg: rgba(72, 72, 76, 0.92);
+  --hud-text: #ffffff;
 }
 
 :root {
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Variable", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace;
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -166,12 +170,13 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   font-size: 17px;
   font-weight: 600;
   white-space: nowrap;
-  transition: background-color 0.18s var(--ease), opacity 0.18s var(--ease), transform 0.15s var(--ease);
+  transition: background-color 0.18s var(--ease), color 0.18s var(--ease), filter 0.15s var(--ease), transform 0.15s var(--ease);
   user-select: none;
   -webkit-user-select: none;
 }
-.k-btn:active:not(:disabled) { transform: scale(0.98); opacity: 0.85; }
-.k-btn:disabled { opacity: 0.4; }
+.k-btn:active:not(:disabled) { transform: scale(0.97); filter: brightness(0.92); }
+.k-btn:disabled { color: var(--text-3); }
+.k-btn-primary:disabled, .k-btn-danger:disabled { background: var(--fill); color: var(--text-3); }
 .k-btn-primary { background: var(--accent); color: var(--on-accent); }
 @media (hover: hover) { .k-btn-primary:hover:not(:disabled) { background: var(--accent-press); } }
 .k-btn-secondary { background: var(--fill); color: var(--accent); }
@@ -1030,12 +1035,14 @@ button.k-cell:active, a.k-cell:active { background: var(--fill); }
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: var(--backdrop);
+  background: color-mix(in srgb, var(--backdrop) calc(var(--dim, 1) * 100%), transparent);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   animation: k-fade 0.25s var(--ease) both;
 }
+.k-backdrop.is-closing { animation: k-fade-out 0.28s var(--ease) both; pointer-events: none; }
+@keyframes k-fade-out { to { opacity: 0; } }
 @keyframes k-fade { from { opacity: 0; } to { opacity: 1; } }
 .k-sheet {
   position: relative;
@@ -1044,7 +1051,7 @@ button.k-cell:active, a.k-cell:active { background: var(--fill); }
   display: flex;
   flex-direction: column;
   background: var(--bg-grouped);
-  border-radius: 14px 14px 0 0;
+  border-radius: 16px 16px 0 0;
   box-shadow: var(--shadow-sheet);
   animation: k-sheet-up 0.45s var(--spring) both;
   overflow: hidden;
@@ -1054,12 +1061,25 @@ button.k-cell:active, a.k-cell:active { background: var(--fill); }
 :root[data-theme="dark"] .k-sheet .k-action-tile { background: #2c2c2e; }
 .k-sheet.is-tall { height: calc(100dvh - var(--safe-top) - 12px); }
 @keyframes k-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+.k-sheet.is-closing { animation: k-sheet-down 0.28s var(--ease) both; }
+@keyframes k-sheet-down { from { transform: translateY(var(--drag, 0px)); } to { transform: translateY(100%); } }
+/* Phones: the screen behind a sheet steps back, like a stack of cards. */
+@media (max-width: 767px) {
+  .k-app { transform-origin: 50% 0; transition: transform 0.45s var(--spring), border-radius 0.45s var(--spring), filter 0.45s var(--ease); }
+  body.k-sheet-open { background: #000; }
+  body.k-sheet-open .k-app { transform: translateY(8px) scale(0.93); border-radius: 12px; overflow: hidden; filter: brightness(0.9); }
+  .k-sheet { max-height: calc(100dvh - var(--safe-top) - 20px); }
+  .k-sheet.is-tall { height: calc(100dvh - var(--safe-top) - 20px); }
+  .k-sheet-grabber, .k-sheet-head { touch-action: none; }
+}
 @media (min-width: 768px) {
   .k-backdrop { align-items: center; padding: 24px; }
   .k-sheet { width: min(540px, 100%); max-height: min(760px, calc(100dvh - 48px)); border-radius: 16px; animation: k-pop 0.35s var(--spring) both; }
+  .k-sheet.is-closing { animation: k-pop-out 0.2s var(--ease) both; }
   .k-sheet.is-tall { height: min(760px, calc(100dvh - 48px)); }
 }
 @keyframes k-pop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes k-pop-out { to { opacity: 0; transform: scale(0.96); } }
 .k-sheet-grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--fill-strong); margin: 6px auto 0; flex-shrink: 0; }
 @media (min-width: 768px) { .k-sheet-grabber { display: none; } }
 .k-sheet-head {
@@ -1078,6 +1098,9 @@ button.k-cell:active, a.k-cell:active { background: var(--fill); }
 .k-sheet-hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 8px 24px 22px; }
 .k-sheet-hero p { color: var(--text-2); font-size: 15px; line-height: 1.4; max-width: 38ch; }
 .k-sheet-foot { flex-shrink: 0; padding: 12px 20px calc(16px + var(--safe-bottom)); display: flex; flex-direction: column; gap: 10px; }
+/* Destructive choices in a sheet: a neutral button with red text, as in an action sheet. */
+.k-sheet-foot .k-btn-danger { background: var(--surface); color: var(--danger); }
+:root[data-theme="dark"] .k-sheet-foot .k-btn-danger { background: #2c2c2e; }
 
 /* Inputs outside cells */
 .k-field {
@@ -1141,29 +1164,33 @@ textarea.k-field { padding: 14px 16px; min-height: 96px; resize: none; line-heig
 .k-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(96px + var(--safe-bottom));
+  top: calc(var(--safe-top) + 64px);
   z-index: 80;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 18px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px 10px 14px;
   border-radius: 999px;
-  background: rgba(30, 30, 32, 0.9);
-  color: #fff;
+  background: var(--hud-bg);
+  color: var(--hud-text);
   font-size: 15px;
-  font-weight: 500;
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 10px 30px rgba(0, 0, 0, 0.3);
   animation: k-toast 2s var(--ease) both;
   pointer-events: none;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.k-toast svg { width: 18px; height: 18px; flex-shrink: 0; }
 @keyframes k-toast {
-  0% { opacity: 0; transform: translate(-50%, 12px) scale(0.96); }
+  0% { opacity: 0; transform: translate(-50%, -8px) scale(0.96); }
   10%, 85% { opacity: 1; transform: translate(-50%, 0); }
-  100% { opacity: 0; transform: translate(-50%, 4px); }
+  100% { opacity: 0; transform: translate(-50%, -4px); }
 }
 
 /* Lightbox */

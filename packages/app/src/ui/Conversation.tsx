@@ -20,7 +20,7 @@ import { applyFormat, formatForShortcut, plainText, toggledReaction } from './ch
 import type { FormatKind } from './chat/chatLogic';
 import { useChatPrefs } from './chat/prefs';
 import { copyText, displayName, isTouch, seenLabel, shortId, useLongPress } from './lib';
-import { Avatar, Confirm, Menu, useToast } from './parts';
+import { Avatar, Confirm, Menu, useBackHandler, useToast } from './parts';
 import type { MenuItem } from './parts';
 import { FilePreview } from './FilePreview';
 import { FileEditor } from './FileEditor';
@@ -528,6 +528,7 @@ function FileAttachment({ attachment, onOpen }: { attachment: MessageAttachment;
 }
 
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  useBackHandler(onClose);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);

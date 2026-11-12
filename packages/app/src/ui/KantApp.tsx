@@ -22,6 +22,8 @@ import { Check, LockFill } from './icons';
 import { displayName, parseInvite, takePendingInvite, useAppliedTheme, useIsCompact } from './lib';
 import type { Invite } from './lib';
 import { ToastProvider, useToast } from './parts';
+import { popBack } from './core/backStack';
+import { setBarsFor } from '../lib/systemBars';
 
 type SheetState =
   | { type: 'mycode' } | { type: 'add'; invite?: Invite | null } | { type: 'compose' } | { type: 'group' }
@@ -44,11 +46,12 @@ function Shell() {
   const { state } = store;
   const toast = useToast();
   const compact = useIsCompact();
-  useAppliedTheme(state.settings.theme);
+  const theme = useAppliedTheme(state.settings.theme);
 
   const [view, setView] = useState<'list' | 'chat' | 'settings'>('list');
   const [active, setActive] = useState<ChatRef | null>(null);
   const [sheet, setSheet] = useState<SheetState | null>(null);
+  useEffect(() => { setBarsFor(view === 'settings' ? '--bg-grouped' : '--bg'); }, [view, theme]);
   const pendingOpen = useRef<string | null>(null);
 
   const activeContact: Contact | undefined = active?.kind === 'dm' ? state.contacts.find((c) => c.id === active.id) : undefined;
@@ -121,6 +124,7 @@ function Shell() {
   /* Android back button: close a sheet, then step back through the stack. */
   const backRef = useRef<() => boolean>(() => false);
   backRef.current = () => {
+    if (popBack()) return true;
     if (sheet) { setSheet(null); return true; }
     if (compact && view !== 'list') { setView('list'); return true; }
     return false;

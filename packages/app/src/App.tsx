@@ -7,6 +7,7 @@ import { useTermsAcceptance } from './hooks/useTermsAcceptance';
 import { KantApp } from './ui/KantApp';
 import { Boot, CreateStep, MoveInScreen, NetworkStep, RestoreScreen, TermsUpdate, Unlock, Welcome } from './ui/Onboarding';
 import { readThemePref, useAppliedTheme } from './ui/lib';
+import { setBarsFor } from './lib/systemBars';
 import './ui/kant.css';
 
 const PROFILE_KEY = 'kant_profile_name';
@@ -34,7 +35,9 @@ export default function App() {
 
   // Screens before sign-in follow the saved theme too. Inside the app the store
   // owns the preference and writes the same localStorage key, so both agree.
-  useAppliedTheme(readThemePref());
+  const theme = useAppliedTheme(readThemePref());
+  // Inside the app the shell colours the system bars per screen.
+  useEffect(() => { if (kant.screen !== 'app') setBarsFor('--bg'); }, [theme, kant.screen]);
 
   useEffect(() => { kant.checkIdentity(); }, []);
 

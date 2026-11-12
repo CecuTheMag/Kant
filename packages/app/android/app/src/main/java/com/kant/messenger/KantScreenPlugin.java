@@ -2,7 +2,11 @@ package com.kant.messenger;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Color;
+import android.view.Window;
 import android.view.WindowManager;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -64,6 +68,37 @@ public class KantScreenPlugin extends Plugin {
             JSObject result = new JSObject();
             result.put("enabled", enabled);
             call.resolve(result);
+        });
+    }
+
+    /**
+     * Colour the status and navigation bars to match the screen under them.
+     * The web layer knows the theme and which screen is showing; the window
+     * doesn't, and would otherwise keep black bars above a light app.
+     */
+    @PluginMethod
+    public void setBars(PluginCall call) {
+        final String color = call.getString("color", "#000000");
+        final boolean dark = Boolean.TRUE.equals(call.getBoolean("dark", true));
+        final String navColor = call.getString("navColor", color);
+        final boolean navDark = Boolean.TRUE.equals(call.getBoolean("navDark", dark));
+        final Activity activity = getActivity();
+        if (activity == null) {
+            call.reject("no activity");
+            return;
+        }
+        activity.runOnUiThread(() -> {
+            try {
+                Window window = activity.getWindow();
+                window.setStatusBarColor(Color.parseColor(color));
+                window.setNavigationBarColor(Color.parseColor(navColor));
+                WindowInsetsControllerCompat insets = WindowCompat.getInsetsController(window, window.getDecorView());
+                insets.setAppearanceLightStatusBars(!dark);
+                insets.setAppearanceLightNavigationBars(!navDark);
+                call.resolve();
+            } catch (IllegalArgumentException e) {
+                call.reject("bad color");
+            }
         });
     }
 }
