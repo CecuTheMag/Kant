@@ -58,6 +58,14 @@ export interface DecodedContent {
   edit?: EditRef;
   react?: ReactRef;
   del?: DeleteRef;
+  /**
+   * When the sender sent it, by the sender's clock (ms). Messages can arrive
+   * out of order (the first one waits for the session, a re-send after a
+   * session change comes last), so the receiver uses this to place a message
+   * among the same sender's others. It orders one sender's messages; it is not
+   * compared with the receiver's own clock.
+   */
+  at?: number;
   /** True when `raw` was a well-formed envelope (proves the sender supports them). */
   enveloped: boolean;
 }
@@ -66,6 +74,13 @@ export interface ContentOptions {
   edit?: EditRef;
   react?: ReactRef;
   del?: DeleteRef;
+  /** The sender's send time (ms); see DecodedContent.at. */
+  at?: number;
+}
+
+/** A send time is attacker-controlled input: a positive whole number of ms, or nothing. */
+export function sanitizeSentAt(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
 export const REPLY_LIMITS = { id: 128, from: 128, text: 500 } as const;
@@ -124,11 +139,13 @@ export function encodeContent(text: string, replyTo?: ReplyRef, options: Content
   const edit = sanitizeEditRef(options.edit);
   const react = sanitizeReactRef(options.react);
   const del = sanitizeEditRef(options.del);
-  if (!reply && !edit && !react && !del) return text;
+  const at = sanitizeSentAt(options.at);
+  if (!reply && !edit && !react && !del && at === undefined) return text;
   return JSON.stringify({
     __kantReply: 1, text,
     ...(reply ? { replyTo: reply } : {}), ...(edit ? { edit } : {}),
     ...(react ? { react } : {}), ...(del ? { del } : {}),
+    ...(at !== undefined ? { at } : {}),
   });
 }
 
@@ -138,7 +155,7 @@ export function decodeContent(raw: string): DecodedContent {
     try {
       const parsed = JSON.parse(raw) as unknown;
       if (parsed && typeof parsed === 'object' && (parsed as Record<string, unknown>).__kantReply === 1) {
-        const { text, replyTo, edit, react, del } = parsed as Record<string, unknown>;
+        const { text, replyTo, edit, react, del, at } = parsed as Record<string, unknown>;
         if (typeof text === 'string') {
           const out: DecodedContent = { text, replyTo: sanitizeReplyRef(replyTo), enveloped: true };
           const editRef = sanitizeEditRef(edit);
@@ -147,6 +164,8 @@ export function decodeContent(raw: string): DecodedContent {
           if (reactRef) out.react = reactRef;
           const delRef = sanitizeEditRef(del);
           if (delRef) out.del = delRef;
+          const sentAt = sanitizeSentAt(at);
+          if (sentAt !== undefined) out.at = sentAt;
           return out;
         }
       }

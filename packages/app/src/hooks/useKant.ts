@@ -43,6 +43,7 @@ import {
   readGate, writeGate, readSecurityPrefs,
 } from '../lib/biometric';
 import { biometricBlocked, blockMessage, shouldAutoLock } from '../lib/securityPolicy';
+import { insertByTime } from '../lib/messageOrder';
 import { exportAndroidFile, readFileBytes } from '../lib/fileExport';
 import { canOpenExternally, openExternally } from '../lib/fileActions';
 import { Capacitor } from '@capacitor/core';
@@ -148,7 +149,7 @@ export function useKant() {
     setThreads(t => {
       const existing = t[hex] ?? [];
       if (existing.some(m => m.id === msg.id)) return t;
-      return { ...t, [hex]: [...existing, msg] };
+      return { ...t, [hex]: insertByTime(existing, msg) };
     });
   }, []);
   const patchThread = useCallback((hex: string, id: string, patch: Partial<PlainMessage> | ((m: PlainMessage) => Partial<PlainMessage>)) => {
@@ -367,10 +368,10 @@ export function useKant() {
     try { console.debug('[kant]', line); } catch { /* console unavailable */ }
   }, []);
 
-  const addMessage = useCallback((from: 'me' | 'them', text: string, status: MessageStatus = 'sent', id?: string, attachment?: MessageAttachment, hex?: string, replyTo?: { id: string; from: string; text: string }): string => {
+  const addMessage = useCallback((from: 'me' | 'them', text: string, status: MessageStatus = 'sent', id?: string, attachment?: MessageAttachment, hex?: string, replyTo?: { id: string; from: string; text: string }, ts?: number): string => {
     const msgId = id ?? generateId();
-    const msg = { id: msgId, from, text, ts: Date.now(), status, attachment, replyTo };
-    setMessages(p => p.some(m => m.id === msgId) ? p : [...p, msg]);
+    const msg = { id: msgId, from, text, ts: ts ?? Date.now(), status, attachment, replyTo };
+    setMessages(p => p.some(m => m.id === msgId) ? p : insertByTime(p, msg));
     if (hex) appendThread(hex, msg);
     return msgId;
   }, [appendThread]);
@@ -993,8 +994,8 @@ export function useKant() {
    * would otherwise show the raw envelope JSON. For those the message goes out
    * without the quote: degraded context, never a plaintext leak.
    */
-  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef, ctl?: ContentOptions): Promise<string | null> {
-    if (!replyTo && !ctl) return text;
+  async function outboundPlaintext(peerHex: string, text: string, replyTo?: ReplyRef, ctl?: ContentOptions, at?: number): Promise<string | null> {
+    if (!replyTo && !ctl && at === undefined) return text;
     let caps: string[] = [];
     try { caps = (await getContact(peerHex))?.caps ?? []; } catch { /* unknown → the safe no-quote path */ }
     // Reactions and deletions only mean something to a build that applies
@@ -1009,8 +1010,10 @@ export function useKant() {
       addLog(`✏️ ${peerHex.slice(0, 12)}… runs an older Kant — edit sent as a correction message`);
       return `${EDIT_FALLBACK_PREFIX}${text}`;
     }
-    if (caps.includes(CAP_CONTENT_ENVELOPE)) return encodeContent(text, replyTo);
-    addLog(`↩️ ${peerHex.slice(0, 12)}… runs an older Kant — reply sent without the quote`);
+    // The send time lets the receiver keep our messages in the order we sent
+    // them when they arrive out of order. Older builds ignore it.
+    if (caps.includes(CAP_CONTENT_ENVELOPE)) return encodeContent(text, replyTo, { at });
+    if (replyTo) addLog(`↩️ ${peerHex.slice(0, 12)}… runs an older Kant — reply sent without the quote`);
     return text;
   }
 
@@ -1080,7 +1083,7 @@ export function useKant() {
     for (const { id, text, replyTo, ctl, ts } of pending) {
       if (flushed.has(id)) continue;
       try {
-        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo, ctl);
+        const plaintext = await outboundPlaintext(contact.publicKeyHex, text, replyTo, ctl, ctl ? undefined : ts);
         if (plaintext === null) {
           // A change this peer's Kant can't apply: it stays local.
           flushed.add(id);
@@ -1418,19 +1421,21 @@ export function useKant() {
                       } else if (bufferedContent) {
                         const content = bufferedContent;
                         if (content.enveloped) void addContactCaps(senderHex, [CAP_CONTENT_ENVELOPE]);
+                        // Stored first so the bubble goes where storage placed it (see the live path).
+                        let shownAt = Date.now();
+                        if (identityRef.current) {
+                          shownAt = await saveMessage(senderHex, identityRef.current.derivedKey, {
+                            id: msgId, fromMe: false, text: content.text, timestamp: shownAt, status: 'delivered',
+                            replyTo: content.replyTo, sentAt: content.at,
+                          } as any);
+                        }
                         if (senderHex === selectedContactRef.current?.publicKeyHex) {
-                          addMessage('them', content.text, 'delivered', msgId, undefined, senderHex, content.replyTo);
+                          addMessage('them', content.text, 'delivered', msgId, undefined, senderHex, content.replyTo, shownAt);
                         } else {
-                          appendThread(senderHex, { id: msgId, from: 'them', text: content.text, ts: Date.now(), status: 'delivered', replyTo: content.replyTo });
+                          appendThread(senderHex, { id: msgId, from: 'them', text: content.text, ts: shownAt, status: 'delivered', replyTo: content.replyTo });
                           setUnreadCounts(prev => { const n = new Map(prev); n.set(senderHex, (n.get(senderHex) ?? 0) + 1); return n; });
                           void incrementUnread(senderHex);
                           await notifyIfAway(senderHex, content.text);
-                        }
-                        if (identityRef.current) {
-                          await saveMessage(senderHex, identityRef.current.derivedKey, {
-                            id: msgId, fromMe: false, text: content.text, timestamp: Date.now(), status: 'delivered',
-                            replyTo: content.replyTo,
-                          } as any);
                         }
                       }
                       if (originalId) receivedMessageIdsRef.current.set(originalId, Date.now());
@@ -1699,9 +1704,20 @@ export function useKant() {
               const isOpenConversation = !senderHex || senderHex === selectedContactRef.current?.publicKeyHex;
               const userIsLooking = isOpenConversation && !appIsHidden() && conversationVisibleRef.current;
 
+              // Stored before it is shown: a message that arrived after ones its
+              // sender sent later is placed before them, and the bubble goes
+              // where storage put it.
+              const shownId = messageId || generateId();
+              let shownAt = Date.now();
+              if (!hideFromUser && identityRef.current && senderHex) {
+                shownAt = await saveMessage(senderHex, identityRef.current.derivedKey, {
+                  id: shownId, fromMe: false, text: content.text,
+                  timestamp: shownAt, status: 'delivered', replyTo: content.replyTo, sentAt: content.at,
+                } as any);
+              }
+
               if (!hideFromUser && isOpenConversation) {
-                const fgId = messageId || generateId();
-                addMessage('them', content.text, 'delivered', fgId, undefined, senderHex, content.replyTo);
+                addMessage('them', content.text, 'delivered', shownId, undefined, senderHex, content.replyTo, shownAt);
                 // On screen and being read — nothing further to announce.
                 // Otherwise fall through to the same unread/notify treatment any
                 // other conversation would get.
@@ -1730,8 +1746,7 @@ export function useKant() {
                 }
 
                 // Background contact: persist + notify; threads mirror keeps the history live
-                const bgId = messageId || generateId();
-                appendThread(senderHex, { id: bgId, from: 'them', text: content.text, ts: Date.now(), status: 'delivered', replyTo: content.replyTo });
+                appendThread(senderHex, { id: shownId, from: 'them', text: content.text, ts: shownAt, status: 'delivered', replyTo: content.replyTo });
                 setUnreadCounts(prev => {
                   const next = new Map(prev);
                   next.set(senderHex, (next.get(senderHex) ?? 0) + 1);
@@ -1741,12 +1756,6 @@ export function useKant() {
                 await notifyIfAway(senderHex, content.text);
               }
               if (identityRef.current && senderHex) {
-                if (!hideFromUser) {
-                  await saveMessage(senderHex, identityRef.current.derivedKey, {
-                    id: messageId || generateId(), fromMe: false, text: content.text,
-                    timestamp: Date.now(), status: 'delivered', replyTo: content.replyTo,
-                  } as any);
-                }
                 if (messageId) {
                   receivedMessageIdsRef.current.set(messageId, Date.now());
                   // Keep the bounded in-memory duplicate/ACK cache from growing
@@ -2370,12 +2379,14 @@ export function useKant() {
       // window as a pending delivery, not a failure: this used to make the
       // first message disappear whenever two clients came online together.
       addLog('⏳ No session yet — holding message while the secure session starts');
-      const id = addMessage('me', text, 'sending', undefined, undefined, contact.publicKeyHex, replyTo);
+      const heldAt = Date.now();
+      const id = addMessage('me', text, 'sending', undefined, undefined, contact.publicKeyHex, replyTo, heldAt);
       const pending = pendingPlaintextRef.current.get(contact.publicKeyHex) ?? [];
-      pending.push({ id, text, replyTo });
+      // Its own time travels with it: sent later, it still keeps its place.
+      pending.push({ id, text, replyTo, ts: heldAt });
       pendingPlaintextRef.current.set(contact.publicKeyHex, pending);
       await saveMessage(contact.publicKeyHex, identityRef.current.derivedKey, {
-        id, fromMe: true, text, timestamp: Date.now(), status: 'sending', replyTo,
+        id, fromMe: true, text, timestamp: heldAt, status: 'sending', replyTo,
       } as any);
       let peerAddr = contactAddrRef.current.get(contact.publicKeyHex) ?? contact.lastCircuitAddr ?? '';
       try {
@@ -2390,8 +2401,9 @@ export function useKant() {
       return;
     }
 
-    const id       = addMessage('me', text, 'sending', undefined, undefined, contact.publicKeyHex, replyTo);
-    const plaintext = (await outboundPlaintext(contact.publicKeyHex, text, replyTo)) ?? text;
+    const sentAt   = Date.now();
+    const id       = addMessage('me', text, 'sending', undefined, undefined, contact.publicKeyHex, replyTo, sentAt);
+    const plaintext = (await outboundPlaintext(contact.publicKeyHex, text, replyTo, undefined, sentAt)) ?? text;
     // Resolve immediately before each delivery attempt.  A stored circuit
     // address may outlive the peer's reservation after sleep/reconnect.
     let peerAddr = contactAddrRef.current.get(contact.publicKeyHex) ?? contact.lastCircuitAddr ?? '';
@@ -2447,7 +2459,7 @@ export function useKant() {
       }
 
       await saveMessage(contact.publicKeyHex, identityRef.current.derivedKey, {
-        id, fromMe: true, text, timestamp: Date.now(),
+        id, fromMe: true, text, timestamp: sentAt,
         status: nodeRef.current && peerAddr ? 'sent' : 'failed', replyTo,
       } as any);
     } catch (e: any) {
@@ -2459,12 +2471,12 @@ export function useKant() {
         // arrives and the ratchet is ready.
         addLog(`⏳ Waiting for first message from contact to unlock sending…`);
         const pending = pendingPlaintextRef.current.get(contact.publicKeyHex) ?? [];
-        pending.push({ id, text, replyTo });
+        pending.push({ id, text, replyTo, ts: sentAt });
         pendingPlaintextRef.current.set(contact.publicKeyHex, pending);
         setMessages(p => p.map(m => m.id === id ? { ...m, status: 'sending' } : m));
         patchThread(contact.publicKeyHex, id, { status: 'sending' });
         await saveMessage(contact.publicKeyHex, identityRef.current.derivedKey, {
-          id, fromMe: true, text, timestamp: Date.now(), status: 'sending', replyTo,
+          id, fromMe: true, text, timestamp: sentAt, status: 'sending', replyTo,
         } as any);
       } else {
         addLog(`📥 Queued — send failed: ${e?.message ?? e}`);
@@ -2474,7 +2486,7 @@ export function useKant() {
         setMessages(p => p.map(m => m.id === id ? { ...m, status: 'failed' } : m));
         patchThread(contact.publicKeyHex, id, { status: 'failed' });
         await saveMessage(contact.publicKeyHex, identityRef.current.derivedKey, {
-          id, fromMe: true, text, timestamp: Date.now(), status: 'failed', replyTo,
+          id, fromMe: true, text, timestamp: sentAt, status: 'failed', replyTo,
         } as any);
       }
     }

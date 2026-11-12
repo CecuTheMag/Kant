@@ -32,7 +32,7 @@ export { addContact, getContacts, getContact, deleteContact, generateQR, parseQR
 export { peerIdForIdentity, identityForPeerId, addrReaches, contactRelayUrl } from './reach.js';
 export type { Contact } from './contacts.js';
 
-export { saveMessage, hasMessage, setMessageStatus, editStoredMessage, setStoredReaction, deleteStoredMessage, removeStoredMessage, markOpSynced, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
+export { saveMessage, placeReceived, hasMessage, setMessageStatus, editStoredMessage, setStoredReaction, deleteStoredMessage, removeStoredMessage, markOpSynced, getConversation, getAllConversationHeaders, getAllConversations, deleteConversation, incrementUnread, clearUnread, getAllUnread } from './messages.js';
 export type { StoredMessage, ConversationHeader, Conversation, MessageStatus, MessageAttachment, SyncKind } from './messages.js';
 
 export { startDiscovery, getKnownPeers } from './discovery.js';
@@ -40,7 +40,7 @@ export type { DiscoveredPeer, PeerDiscoveryHandler } from './discovery.js';
 
 export { enqueue, dequeue, getPendingForContact, startQueueRetry, stripLegacyWireFields, scrubQueuedLegacyWireFields } from './queue.js';
 
-export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeEditRef, sanitizeReaction, sanitizeCaps, CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, CAP_MESSAGE_REACT, CAP_MESSAGE_DELETE, SUPPORTED_CAPS, REPLY_LIMITS, EDIT_LIMITS, REACTION_MAX_LENGTH } from './envelope.js';
+export { encodeContent, decodeContent, sanitizeReplyRef, sanitizeEditRef, sanitizeReaction, sanitizeSentAt, sanitizeCaps, CAP_CONTENT_ENVELOPE, CAP_MESSAGE_EDIT, CAP_MESSAGE_REACT, CAP_MESSAGE_DELETE, SUPPORTED_CAPS, REPLY_LIMITS, EDIT_LIMITS, REACTION_MAX_LENGTH } from './envelope.js';
 export type { ReplyRef, EditRef, ReactRef, DeleteRef, DecodedContent, ContentOptions } from './envelope.js';
 export { sanitizeVoiceMeta, sanitizeGroupRef, VOICE_LIMITS } from './voice.js';
 export type { VoiceMeta } from './voice.js';

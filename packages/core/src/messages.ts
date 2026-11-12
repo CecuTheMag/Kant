@@ -58,6 +58,34 @@ export interface StoredMessage {
    * the message's current state until the peer's receipt clears it.
    */
   unsynced?: Partial<Record<SyncKind, string>>;
+  /** Received messages: when the sender sent it, by the sender's clock (envelope `at`). */
+  sentAt?: number;
+}
+
+/**
+ * Where a received message goes among those already stored. Messages arrive
+ * out of order (the first waits for the session; a re-send after a session
+ * change comes after later ones), so one carrying the sender's send time goes
+ * before the first already-stored message from the same sender that was sent
+ * after it. Sender times are compared only with each other, never with our
+ * own clock. Returns null when it belongs at the end.
+ */
+export function placeReceived(
+  messages: readonly Pick<StoredMessage, 'fromMe' | 'sentAt' | 'sequenceNumber' | 'timestamp'>[],
+  sentAt: number | undefined,
+  timestamp: number,
+): { sequenceNumber: number; timestamp: number } | null {
+  if (sentAt === undefined) return null;
+  const ordered = [...messages].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+  const index = ordered.findIndex(m => !m.fromMe && m.sentAt !== undefined && m.sentAt > sentAt);
+  if (index < 0) return null;
+  const next = ordered[index];
+  const prev = index > 0 ? ordered[index - 1] : undefined;
+  const nextSeq = next.sequenceNumber ?? 0;
+  const prevSeq = prev ? (prev.sequenceNumber ?? 0) : nextSeq - 1;
+  // Just before `next` in time too, so lists sorted by time agree.
+  const before = Math.max(prev?.timestamp ?? -Infinity, next.timestamp - 1);
+  return { sequenceNumber: (prevSeq + nextSeq) / 2, timestamp: Math.min(timestamp, before) };
 }
 
 export type SyncKind = 'edit' | 'react' | 'del';
@@ -106,7 +134,11 @@ async function decryptText(derivedKey: Uint8Array, ciphertextWithNonce: Uint8Arr
   return new TextDecoder().decode(plain);
 }
 
-/** Save a message to a conversation (encrypts text at rest). */
+/**
+ * Save a message to a conversation (encrypts text at rest). Returns the time
+ * it was stored under: for a new received message with `sentAt` that arrived
+ * after messages its sender sent later, that is just before them (placeReceived).
+ */
 export async function saveMessage(
   contactPubkeyHex: string,
   derivedKey: Uint8Array,
@@ -115,7 +147,7 @@ export async function saveMessage(
     sequenceNumber?: number;
     replyTo?: { id: string; from: string; text: string };
   }
-): Promise<void> {
+): Promise<number> {
   const ciphertext = await encryptText(derivedKey, msg.text);
   const replyTo = msg.replyTo
     ? { id: msg.replyTo.id, from: msg.replyTo.from, ciphertext: await encryptText(derivedKey, msg.replyTo.text) }
@@ -125,11 +157,18 @@ export async function saveMessage(
     ?? { contactPubkeyHex, messages: [] };
   const id = msg.id ?? generateId();
   const existing = conv.messages.findIndex(value => value.id === id);
+  const placed = existing < 0 && msg.sequenceNumber === undefined && !msg.fromMe
+    ? placeReceived(conv.messages, msg.sentAt, msg.timestamp)
+    : null;
   const sequenceNumber = existing >= 0
     ? conv.messages[existing].sequenceNumber
-    : msg.sequenceNumber ?? conv.messages.reduce((highest, value) => Math.max(highest, value.sequenceNumber ?? 0), 0) + 1;
+    : placed?.sequenceNumber ?? msg.sequenceNumber ?? conv.messages.reduce((highest, value) => Math.max(highest, value.sequenceNumber ?? 0), 0) + 1;
   const { text: _text, replyTo: _replyTo, ...rest } = msg;
-  const fullMsg: StoredMessage = { ...rest, ciphertext, id, sequenceNumber, ...(replyTo ? { replyTo } : {}) };
+  const fullMsg: StoredMessage = {
+    ...rest, ciphertext, id, sequenceNumber,
+    ...(placed ? { timestamp: placed.timestamp } : {}),
+    ...(replyTo ? { replyTo } : {}),
+  };
   if (existing >= 0) {
     const prior = conv.messages[existing];
     if (prior.deletedAt) {
@@ -140,11 +179,15 @@ export async function saveMessage(
       if (prior.reactions && !fullMsg.reactions) fullMsg.reactions = prior.reactions;
       if (prior.unsynced && !fullMsg.unsynced) fullMsg.unsynced = prior.unsynced;
       if (prior.editedAt && !fullMsg.editedAt) fullMsg.editedAt = prior.editedAt;
+      // A received message keeps the time it was placed under.
+      if (!prior.fromMe) fullMsg.timestamp = prior.timestamp;
+      if (prior.sentAt !== undefined && fullMsg.sentAt === undefined) fullMsg.sentAt = prior.sentAt;
       conv.messages[existing] = fullMsg;
     }
   } else conv.messages.push(fullMsg);
   await idbPut(db, STORE, conv);
   db.close();
+  return existing >= 0 ? conv.messages[existing].timestamp : fullMsg.timestamp;
 }
 
 /**

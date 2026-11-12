@@ -6,11 +6,14 @@ test('two real libp2p browser nodes establish X3DH and exchange ten ordered mess
   const pair = await createBrowserPair();
   try {
     const outgoing = Array.from({ length: 10 }, (_, i) => `a-to-b-${i}-${Date.now()}`);
+    // Every message, not just the last: the first one rides the session setup
+    // and can be re-sent under the new session after the rest have arrived.
+    // Delivery has to be complete; the order check below is the point.
     for (const text of outgoing) await sendText(pair.alice.page, text);
-    await incoming(pair.bob.page, outgoing.at(-1)).waitFor({ timeout: 90_000 });
+    for (const text of outgoing) await incoming(pair.bob.page, text).waitFor({ timeout: 90_000 });
     const replies = Array.from({ length: 10 }, (_, i) => `b-to-a-${i}-${Date.now()}`);
     for (const text of replies) await sendText(pair.bob.page, text);
-    await incoming(pair.alice.page, replies.at(-1)).waitFor({ timeout: 90_000 });
+    for (const text of replies) await incoming(pair.alice.page, text).waitFor({ timeout: 90_000 });
     // Someone you're actively talking to shows as online in the chat header.
     for (const page of [pair.alice.page, pair.bob.page]) {
       await page.locator('.k-conv-sub', { hasText: /^Online$/ }).waitFor({ timeout: 10_000 });
