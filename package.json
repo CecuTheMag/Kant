@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
-    "@types/node": "22.7.4",
+    "@types/node": "26.6.6",
     "pnpm": "10.13.1",
     "typescript": "5.9.3"
   },

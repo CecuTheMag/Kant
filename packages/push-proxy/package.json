@@ -14,7 +14,7 @@
     "pino": "9.14.0"
   },
   "devDependencies": {
-    "@types/node": "^22.7.4",
+    "@types/node": "^26.6.6",
     "ts-node": "^10.9.2",
     "typescript": "5.9.3"
   }

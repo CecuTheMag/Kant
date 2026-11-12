@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@types/blessed": "^0.1.25",
-    "@types/node": "^22.7.4",
+    "@types/node": "^26.6.6",
     "typescript": "5.9.3"
   }
 }
