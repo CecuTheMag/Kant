@@ -1,4 +1,4 @@
-FROM node:20-bookworm AS build
+FROM node:22-bookworm AS build
 WORKDIR /workspace
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.json ./
 COPY packages ./packages

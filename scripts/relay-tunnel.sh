@@ -161,7 +161,10 @@ load_settings() {
     VAPID_PRIVATE_KEY=$(sed -n 's/^VAPID_PRIVATE_KEY=//p' <<<"$keys")
     [[ -n "$VAPID_PUBLIC_KEY" && -n "$VAPID_PRIVATE_KEY" ]] || die "Couldn't generate Web Push keys."
   fi
-  [[ -n "${RELAY_LAB_CONTROL_TOKEN:-}" ]] || RELAY_LAB_CONTROL_TOKEN=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  # RELAY_LAB_CONTROL_TOKEN is the name older versions of this script saved.
+  RELAY_ADMIN_TOKEN=${RELAY_ADMIN_TOKEN:-${RELAY_LAB_CONTROL_TOKEN:-}}
+  unset RELAY_LAB_CONTROL_TOKEN
+  [[ -n "$RELAY_ADMIN_TOKEN" ]] || RELAY_ADMIN_TOKEN=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
   VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:admin@kant.local}
   PUSH_PROXY_URL=${PUSH_PROXY_URL:-}
   PUSH_PROXY_SECRET=${PUSH_PROXY_SECRET:-}
@@ -171,12 +174,12 @@ load_settings() {
       "VAPID_PUBLIC_KEY=$VAPID_PUBLIC_KEY" \
       "VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY" \
       "VAPID_SUBJECT=$VAPID_SUBJECT" \
-      "RELAY_LAB_CONTROL_TOKEN=$RELAY_LAB_CONTROL_TOKEN" \
+      "RELAY_ADMIN_TOKEN=$RELAY_ADMIN_TOKEN" \
       "# Android wake-ups: only for apps built with your own Firebase project." \
       "PUSH_PROXY_URL=$PUSH_PROXY_URL" \
       "PUSH_PROXY_SECRET=$PUSH_PROXY_SECRET" > "$SETTINGS"
   )
-  export VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT RELAY_LAB_CONTROL_TOKEN PUSH_PROXY_URL PUSH_PROXY_SECRET
+  export VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT RELAY_ADMIN_TOKEN PUSH_PROXY_URL PUSH_PROXY_SECRET
 }
 
 start_relay() { # $1 = public URL
