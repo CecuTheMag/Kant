@@ -36,6 +36,6 @@
     "@types/ws": "^8.18.1",
     "fake-indexeddb": "6.2.5",
     "libsodium-wrappers": "0.7.16",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }
