@@ -238,7 +238,7 @@ node --loader ./sodium-loader.mjs --import ./sodium-loader.mjs scripts/relay-loa
 ## Good to know
 
 - **Metrics.** With `RELAY_PUBLIC_URL` set, `/metrics` answers 404 unless the
-  request carries `Authorization: Bearer $RELAY_LAB_CONTROL_TOKEN`. Every
+  request carries `Authorization: Bearer $RELAY_ADMIN_TOKEN`. Every
   tunnelled request comes from localhost, so the relay can't hide it by IP the
   way Caddy does.
 - **Rate limiting.** All connections reach the relay from `127.0.0.1`, as they

@@ -62,12 +62,30 @@ const RELAY_INFO_PORT = parseInt(process.env.RELAY_INFO_PORT ?? '3001');
 // socket into the test runner. Docker's restart policy then starts a fresh
 // process with the persisted seed, which is the failure mode users see.
 const LAB_CONTROL_TOKEN = process.env.RELAY_LAB_CONTROL_TOKEN ?? '';
+// The operator's token for /admin/* and (behind a tunnel) /metrics. Separate
+// from the lab token so that giving an operator access to metrics never also
+// switches on the endpoint that kills the process. The lab token still works
+// as an operator token, for relays configured before RELAY_ADMIN_TOKEN existed.
+const ADMIN_TOKEN = process.env.RELAY_ADMIN_TOKEN ?? '';
+const OPERATOR_TOKENS = [ADMIN_TOKEN, LAB_CONTROL_TOKEN].filter(Boolean);
 
-/** `Authorization: Bearer <LAB_CONTROL_TOKEN>`, compared in constant time. */
-function hasControlToken(header: string | undefined): boolean {
-  if (!LAB_CONTROL_TOKEN || typeof header !== 'string') return false;
+function bearerMatches(header: string | undefined, token: string): boolean {
+  if (!token || typeof header !== 'string') return false;
   const digest = (value: string) => createHash('sha256').update(value).digest();
-  return timingSafeEqual(digest(header), digest(`Bearer ${LAB_CONTROL_TOKEN}`));
+  return timingSafeEqual(digest(header), digest(`Bearer ${token}`));
+}
+
+/** `Authorization: Bearer <RELAY_ADMIN_TOKEN>` (or the lab token), compared in constant time. */
+function hasControlToken(header: string | undefined): boolean {
+  // Check every token so the time taken doesn't say which one was close.
+  let ok = false;
+  for (const token of OPERATOR_TOKENS) if (bearerMatches(header, token)) ok = true;
+  return ok;
+}
+
+/** The test lab's own token: the only one that may restart the process. */
+function hasLabToken(header: string | undefined): boolean {
+  return bearerMatches(header, LAB_CONTROL_TOKEN);
 }
 
 // ── Deterministic PeerID ──────────────────────────────────────────────────────
@@ -180,6 +198,10 @@ await node.start();
 const addrs = node.getMultiaddrs().map((a: any) => a.toString());
 log.info({ event: 'relay.started', peerId: node.peerId.toString(), multiaddrs: addrs }, 'Kant relay running');
 log.info({ event: 'relay.address', addr: fullRelayAddr }, 'Full relay addr');
+if (LAB_CONTROL_TOKEN) {
+  log.warn({ event: 'config.lab_endpoints' },
+    'RELAY_LAB_CONTROL_TOKEN is set: the test-lab restart endpoint is enabled. On a real relay, use RELAY_ADMIN_TOKEN instead.');
+}
 
 const peerId = node.peerId.toString();
 
@@ -745,7 +767,7 @@ const httpServer = createServer((req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/__lab/restart' && LAB_CONTROL_TOKEN) {
-    if (!hasControlToken(req.headers.authorization)) {
+    if (!hasLabToken(req.headers.authorization)) {
       res.writeHead(403); res.end(); return;
     }
     res.writeHead(202, { 'Content-Type': 'application/json' });
@@ -756,14 +778,14 @@ const httpServer = createServer((req, res) => {
   }
 
   // ── Admin endpoints ────────────────────────────────────────────────────────
-  // Bearer token auth using the same RELAY_LAB_CONTROL_TOKEN env var.
+  // Bearer token auth with RELAY_ADMIN_TOKEN (see hasControlToken).
   // These endpoints expose reservation state for ops/debugging and allow
   // soft-eviction of misbehaving peers.
 
   if (req.url?.startsWith('/admin/')) {
-    if (!LAB_CONTROL_TOKEN) {
+    if (!OPERATOR_TOKENS.length) {
       res.writeHead(503, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'admin endpoints disabled (no control token configured)' }));
+      res.end(JSON.stringify({ error: 'admin endpoints disabled (set RELAY_ADMIN_TOKEN)' }));
       return;
     }
     const auth = req.headers.authorization;

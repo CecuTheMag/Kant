@@ -146,6 +146,13 @@ export default function Security() {
               Likewise, this privacy summary is a practical baseline — not a
               legal opinion or a compliance certification.
             </p>
+            <p className="body-text" style={{ marginBottom: 28 }}>
+              This website is separate from the app. It counts page views with
+              Vercel Web Analytics, which sets no cookies and doesn’t identify
+              you across visits; the host also keeps ordinary access logs. The
+              Kant app itself contains no analytics, and invite links keep your
+              key in the part of the address that never reaches this site.
+            </p>
             <div className="cta-row">
               <a href={`${SITE.githubUrl}/blob/main/docs/security/threat-model.md`} className="link" target="_blank" rel="noreferrer">
                 Read the full threat model <IconChevron />

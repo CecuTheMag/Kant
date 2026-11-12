@@ -4,6 +4,7 @@
 
 import type { Libp2p } from 'libp2p';
 import { openDB, idbPut, idbDelete, idbGetAll } from './db.js';
+import { dlog } from './index.js';
 
 export interface QueuedMessage {
   id: string;
@@ -92,7 +93,7 @@ export function startQueueRetry(
             // exact ciphertext until the recipient ACK removes it so a lost
             // relay write remains recoverable across reconnects/restarts.
             backoffUntil.set(contact.publicKeyHex, Date.now() + BACKOFF_MS);
-            console.log('[queue] resent queued msg', msg.id.replace(/[^\w-]/g, '').slice(0, 16));
+            dlog('[queue] resent queued msg', msg.id.replace(/[^\w-]/g, '').slice(0, 16));
           } catch (e: any) {
             anyFailed = true;
             console.warn('[queue] retry failed for', msg.id.replace(/[^\w-]/g, '').slice(0, 16), String(e).slice(0, 120));

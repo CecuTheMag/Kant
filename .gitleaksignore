@@ -1,0 +1,26 @@
+# Findings from scripts/secret-scan.sh that were checked by hand and are not
+# secrets: TypeScript field declarations that name a key type, made-up
+# keys in the old UI mock data, and the sample Web Push subscription from the
+# Web Push documentation used in a relay test. One fingerprint per line.
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:14
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:26
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:37
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:42
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:49
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:59
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/app/src/design/core/mock.ts:generic-api-key:68
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/core/src/ratchet.ts:generic-api-key:22
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/core/src/ratchet.ts:generic-api-key:23
+3a6b6f44d16123c63d3c23109311b80671fa465f:packages/core/src/ratchet.ts:generic-api-key:30
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:14
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:26
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:37
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:42
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:49
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:59
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/app/src/design/core/mock.ts:generic-api-key:68
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/core/src/ratchet.ts:generic-api-key:22
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/core/src/ratchet.ts:generic-api-key:23
+8927a28e44545e0b1e4fc76a9d4f1cf700858bbf:packages/core/src/ratchet.ts:generic-api-key:30
+d0da6393efb73b97a89ec762935a9798cc4ee01a:packages/relay/src/pushAuth.test.ts:generic-api-key:84
+23f689984b0f865838ea15e18aa4736ef0e1dddc:.gitleaksignore:generic-api-key:2

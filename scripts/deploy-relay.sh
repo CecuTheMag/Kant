@@ -155,7 +155,9 @@ compose() { "${DOCKER[@]}" compose -f "$COMPOSE_FILE" "$@"; }
 env_get() { [[ -f .env ]] && sed -n "s/^$1=//p" .env | tail -1 || true; }
 VAPID_PUBLIC_KEY=$(env_get VAPID_PUBLIC_KEY); VAPID_PRIVATE_KEY=$(env_get VAPID_PRIVATE_KEY)
 PUSH_PROXY_URL=$(env_get PUSH_PROXY_URL); PUSH_PROXY_SECRET=$(env_get PUSH_PROXY_SECRET)
-RELAY_LAB_CONTROL_TOKEN=$(env_get RELAY_LAB_CONTROL_TOKEN)
+# RELAY_LAB_CONTROL_TOKEN is the name older versions of this script wrote.
+RELAY_ADMIN_TOKEN=$(env_get RELAY_ADMIN_TOKEN)
+[[ -n "$RELAY_ADMIN_TOKEN" ]] || RELAY_ADMIN_TOKEN=$(env_get RELAY_LAB_CONTROL_TOKEN)
 
 log "Building the relay (the first build takes a few minutes)"
 RELAY_DOMAIN="$DOMAIN" RELAY_PUBLIC_HOST="$DOMAIN" compose build
@@ -169,7 +171,7 @@ if [[ -z "$VAPID_PUBLIC_KEY" || -z "$VAPID_PRIVATE_KEY" ]]; then
     [[ -n "$VAPID_PUBLIC_KEY" && -n "$VAPID_PRIVATE_KEY" ]] || error "Couldn't generate Web Push keys."
 fi
 # Operator token for /metrics and /admin (keep it private).
-[[ -n "$RELAY_LAB_CONTROL_TOKEN" ]] || RELAY_LAB_CONTROL_TOKEN=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
+[[ -n "$RELAY_ADMIN_TOKEN" ]] || RELAY_ADMIN_TOKEN=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n')
 
 log "Writing $INSTALL_PATH/.env"
 tmp=$(mktemp)
@@ -183,7 +185,7 @@ tmp=$(mktemp)
     echo "VAPID_PUBLIC_KEY=$VAPID_PUBLIC_KEY"
     echo "VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY"
     echo "VAPID_SUBJECT=mailto:${EMAIL:-admin@kant.local}"
-    echo "RELAY_LAB_CONTROL_TOKEN=$RELAY_LAB_CONTROL_TOKEN"
+    echo "RELAY_ADMIN_TOKEN=$RELAY_ADMIN_TOKEN"
     # Android wake-ups: only for apps built with your own Firebase project.
     echo "PUSH_PROXY_URL=$PUSH_PROXY_URL"
     echo "PUSH_PROXY_SECRET=$PUSH_PROXY_SECRET"

@@ -1,5 +1,17 @@
 /**
- * Kant Groups — Sender Keys group chat (Phase 2a)
+ * Kant Groups — shared-key group chat
+ *
+ * This is NOT the Signal "Sender Keys" scheme: there is one symmetric key per
+ * group, no per-sender chain and no per-message signature. What that means:
+ *   - No forward secrecy inside a key generation: someone who obtains the
+ *     group key can read every message sent under it. The key changes only
+ *     when the creator rotates it (a member is removed or leaves).
+ *   - The key proves a message came from *a* member, not which one. Who sent
+ *     it is established by the transport instead: frames travel directly from
+ *     the sender over a Noise connection, and the receiver only accepts a
+ *     frame whose `fromPubKeyHex` is the identity behind that connection's
+ *     PeerID (see the app's useGroups and reach.ts). Group frames must
+ *     therefore never be forwarded through a third party (no onion hops).
  *
  * Crypto model:
  *   - Each group has a shared symmetric key (32 bytes) — the "group key"
@@ -36,6 +48,8 @@ import { decodeContent, encodeContent } from './envelope.js';
 import type { ContentOptions, DeleteRef, EditRef, ReactRef } from './envelope.js';
 import type { MessageAttachment } from './messages.js';
 import type { ReplyRef } from './envelope.js';
+import { addrReaches } from './reach.js';
+import { dlog } from './index.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -52,7 +66,12 @@ export interface DeliveryTask {
   groupId: string;
   keyGeneration: number;
   memberPublicKey: string;
-  payload: WrappedGroupKey;
+  /**
+   * The exact wrapped envelope to (re)send. Null when the member could not be
+   * reached for a pre-key bundle yet (offline at the time): the key is wrapped
+   * the first time a bundle for them is supplied.
+   */
+  payload: WrappedGroupKey | null;
   attempts: number;
   lastAttempt: number;
   nextAttempt: number;
@@ -90,6 +109,42 @@ export interface Group {
   keyGeneration: number;
   /** Last successfully processed group-key envelope (idempotent retry guard). */
   lastKeyDeliveryId?: string;
+  /**
+   * Keys this device held before a rotation, newest first. Stored history was
+   * encrypted with them, and a member who had not yet received the new key
+   * may still send with the previous one (see OLD_KEY_GRACE_MS).
+   */
+  previousKeys?: RetiredGroupKey[];
+}
+
+export interface RetiredGroupKey {
+  keyGeneration: number;
+  /** Encrypted at rest exactly like Group.encryptedKey. */
+  encryptedKey: Uint8Array;
+  keyNonce: Uint8Array;
+  retiredAt: number;
+}
+
+/** Past keys kept per group, enough to read any realistic history. */
+export const MAX_PREVIOUS_GROUP_KEYS = 64;
+/**
+ * How long after a rotation a live message under the previous key is still
+ * accepted: covers messages a member sent before the new key reached them.
+ * Only current members get this far (handleIncomingGroupMsg / the app check
+ * membership and bind the sender to its connection first).
+ */
+export const OLD_KEY_GRACE_MS = 10 * 60_000;
+
+/** The previous-keys list after `group`'s current key is retired. */
+export function retireCurrentKey(group: Group, now = Date.now()): RetiredGroupKey[] {
+  const current: RetiredGroupKey = {
+    keyGeneration: group.keyGeneration,
+    encryptedKey: group.encryptedKey,
+    keyNonce: group.keyNonce,
+    retiredAt: now,
+  };
+  const older = (group.previousKeys ?? []).filter(k => k.keyGeneration !== group.keyGeneration);
+  return [current, ...older].slice(0, MAX_PREVIOUS_GROUP_KEYS);
 }
 
 interface GroupKeyAck {
@@ -426,6 +481,10 @@ export async function distributeGroupKey(
     if (member.publicKeyHex === identity.publicKeyHex) continue;
     const bundle = memberBundles.get(member.publicKeyHex);
     if (!bundle) {
+      // Offline, or unreachable for a bundle. Without a queued task this
+      // member would never get the key (and after a rotation, would be cut
+      // off for good); processDeliveryQueue wraps it once they can be reached.
+      await queueGroupKeyDelivery(group, member.publicKeyHex, null);
       failed.push(member.publicKeyHex);
       continue;
     }
@@ -446,34 +505,55 @@ export async function distributeGroupKey(
       sent.push(member.publicKeyHex);
     } catch (error) {
       console.warn('[groups] failed to send key to', member.publicKeyHex.slice(0, 12), 'queueing exact envelope', error);
-      const now = Date.now();
-      try {
-        const db = await openDB();
-        const tasks = await idbGetAll<DeliveryTask>(db, 'delivery_queue');
-        const existing = tasks.find(task =>
-          task.groupId === group.id && task.memberPublicKey === member.publicKeyHex
-        );
-        const task: DeliveryTask = {
-          ...(existing?.id === undefined ? {} : { id: existing.id }),
-          groupId: group.id,
-          keyGeneration: group.keyGeneration,
-          memberPublicKey: member.publicKeyHex,
-          payload: wrapped,
-          attempts: 0,
-          lastAttempt: now,
-          nextAttempt: now,
-          status: 'pending',
-        };
-        await idbPut(db, 'delivery_queue', task);
-        db.close();
-      } catch (queueError) {
-        console.error('[groups] critical failure queueing delivery task', queueError);
-      }
+      await queueGroupKeyDelivery(group, member.publicKeyHex, wrapped);
       failed.push(member.publicKeyHex);
     }
   }
 
   return { sent, failed };
+}
+
+/**
+ * Persist a group-key delivery so it is retried until the member has the key.
+ * One task per group and member: a newer one replaces the older.
+ */
+async function queueGroupKeyDelivery(group: Group, memberPublicKey: string, payload: WrappedGroupKey | null): Promise<void> {
+  const now = Date.now();
+  try {
+    const db = await openDB();
+    try {
+      const tasks = await idbGetAll<DeliveryTask>(db, 'delivery_queue');
+      const existing = tasks.find(task => task.groupId === group.id && task.memberPublicKey === memberPublicKey);
+      const task: DeliveryTask = {
+        ...(existing?.id === undefined ? {} : { id: existing.id }),
+        groupId: group.id,
+        keyGeneration: group.keyGeneration,
+        memberPublicKey,
+        payload,
+        attempts: 0,
+        lastAttempt: now,
+        nextAttempt: now,
+        status: 'pending',
+      };
+      await idbPut(db, 'delivery_queue', task);
+    } finally {
+      db.close();
+    }
+  } catch (queueError) {
+    console.error('[groups] critical failure queueing delivery task', queueError);
+  }
+}
+
+/**
+ * Queue the group key for every other member without sending anything now —
+ * for a group created (or changed) while offline. The queue delivers it once
+ * the node is up and each member can be reached.
+ */
+export async function queueGroupKeyForMembers(group: Group, identity: UnlockedIdentity): Promise<void> {
+  for (const member of group.members) {
+    if (member.publicKeyHex === identity.publicKeyHex) continue;
+    await queueGroupKeyDelivery(group, member.publicKeyHex, null);
+  }
 }
 
 // ── Delivery Queue Processing ──────────────────────────────────────────────────
@@ -487,15 +567,22 @@ export async function processDeliveryQueue(
   node: Libp2p,
   identity: UnlockedIdentity,
   memberBundles: Map<string, X3DHPublicBundle>
-): Promise<{ sent: string[]; failed: string[]; opkUnavailable: string[] }> {
+): Promise<{ sent: string[]; failed: string[]; opkUnavailable: string[]; needsBundle: string[] }> {
   const db = await openDB();
   const tasks = await idbGetAll<DeliveryTask>(db, 'delivery_queue');
   const now = Date.now();
   const myX25519 = await ed25519ToX25519(identity.publicKey, identity.privateKey);
-  const result = { sent: [] as string[], failed: [] as string[], opkUnavailable: [] as string[] };
+  const result = { sent: [] as string[], failed: [] as string[], opkUnavailable: [] as string[], needsBundle: [] as string[] };
 
   for (const task of tasks) {
-    const hasExplicitReplacement = task.failureReason === 'opk_unavailable' && memberBundles.has(task.memberPublicKey);
+    // Never wrapped (the member was unreachable): nothing to send until the
+    // caller supplies a bundle. Not a failed attempt, so no backoff.
+    if (!task.payload && !memberBundles.has(task.memberPublicKey)) {
+      result.failed.push(task.memberPublicKey);
+      result.needsBundle.push(task.memberPublicKey);
+      continue;
+    }
+    const hasExplicitReplacement = (task.failureReason === 'opk_unavailable' || !task.payload) && memberBundles.has(task.memberPublicKey);
     if ((task.status === 'failed' || task.nextAttempt > now) && !hasExplicitReplacement) continue;
     if (task.id === undefined) {
       console.error('[groups] refusing delivery task without an IndexedDB key', task.groupId, task.memberPublicKey);
@@ -525,6 +612,7 @@ export async function processDeliveryQueue(
           await idbPut(db, 'delivery_queue', task);
         }
 
+        if (!task.payload) throw new Error('group key was never wrapped for this member');
         await sendWrappedGroupKeyToMember(
           node,
           group,
@@ -536,7 +624,7 @@ export async function processDeliveryQueue(
 
       await idbDelete(db, 'delivery_queue', task.id);
       result.sent.push(task.memberPublicKey);
-      console.log(`[groups] successfully delivered queued key to ${task.memberPublicKey.slice(0, 12)}`);
+      dlog(`[groups] successfully delivered queued key to ${task.memberPublicKey.slice(0, 12)}`);
     } catch (error) {
       const opkUnavailable = error instanceof GroupKeyDeliveryError && error.code === 'opk_unavailable';
       const attempts = (task.attempts || 0) + 1;
@@ -598,6 +686,7 @@ export async function rotateGroupKey(
     encryptedKey,
     keyNonce,
     keyGeneration: group.keyGeneration + 1,
+    previousKeys: retireCurrentKey(group),
   };
 
   await saveGroup(updated);
@@ -622,19 +711,62 @@ export async function encryptGroupMessage(
   return { ciphertext, nonce };
 }
 
-/** Decrypt a group message */
+export interface GroupDecryptOptions {
+  /** The generation the message claims; picks the key to use. */
+  keyGeneration?: number;
+  /**
+   * A message arriving now rather than one loaded from history: an older
+   * generation is only accepted within OLD_KEY_GRACE_MS of its retirement.
+   */
+  live?: boolean;
+  now?: number;
+}
+
+/**
+ * Decrypt a group message. Without a generation (older callers, older
+ * clients) the current key is tried first, then every retained past key.
+ */
 export async function decryptGroupMessage(
   ciphertext: Uint8Array,
   nonce: Uint8Array,
   group: Group,
-  identity: UnlockedIdentity
+  identity: UnlockedIdentity,
+  options: GroupDecryptOptions = {}
 ): Promise<string> {
-  const sodium   = await getSodium();
-  const groupKey = await decryptGroupKey(group.encryptedKey, group.keyNonce, identity.derivedKey);
-  const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-    null, ciphertext, null, nonce, groupKey
-  );
-  return new TextDecoder().decode(plaintext);
+  const sodium = await getSodium();
+  const now = options.now ?? Date.now();
+  const current = { keyGeneration: group.keyGeneration, encryptedKey: group.encryptedKey, keyNonce: group.keyNonce };
+  const past = group.previousKeys ?? [];
+  const gen = options.keyGeneration;
+
+  let candidates: Array<{ encryptedKey: Uint8Array; keyNonce: Uint8Array }>;
+  if (Number.isSafeInteger(gen) && gen !== group.keyGeneration) {
+    if ((gen as number) > group.keyGeneration) throw new Error('group message uses a key this device has not received yet');
+    const old = past.find(k => k.keyGeneration === gen);
+    if (!old) throw new Error('group message uses a key this device no longer holds');
+    if (options.live && now - old.retiredAt > OLD_KEY_GRACE_MS) {
+      throw new Error('group message uses a retired key');
+    }
+    candidates = [old];
+  } else if (Number.isSafeInteger(gen) || options.live) {
+    candidates = [current];
+  } else {
+    candidates = [current, ...past];
+  }
+
+  let lastError: unknown;
+  for (const key of candidates) {
+    try {
+      const groupKey = await decryptGroupKey(key.encryptedKey, key.keyNonce, identity.derivedKey);
+      const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
+        null, ciphertext, null, nonce, groupKey
+      );
+      return new TextDecoder().decode(plaintext);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError ?? new Error('group message could not be decrypted');
 }
 
 // ── Group message persistence ─────────────────────────────────────────────────
@@ -693,7 +825,7 @@ export async function purgeGroupMessage(
       if (row.deletedAt) { kept.push(row); continue; }
       let decoded: ReturnType<typeof decodeContent>;
       try {
-        decoded = decodeContent(await decryptGroupMessage(asBytes(row.ciphertext), asBytes(row.nonce), group, identity));
+        decoded = decodeContent(await decryptGroupMessage(asBytes(row.ciphertext), asBytes(row.nonce), group, identity, { keyGeneration: row.keyGeneration }));
       } catch {
         kept.push(row); // an older key generation — nothing we can read or rewrite
         continue;
@@ -785,16 +917,25 @@ export async function handleIncomingGroupKey(
   // Re-encrypt the group key with the Argon2id-derived key for at-rest storage
   const { encryptedKey, keyNonce: storedNonce } = await encryptGroupKey(groupKey, identity.derivedKey);
 
+  // A rotation of a group we already have: keep the key we held, so the
+  // history encrypted with it stays readable.
+  const existing = await getGroup(payload.groupId);
+  const previousKeys = existing && existing.createdBy === payload.createdBy
+    && existing.keyGeneration < payload.keyGeneration
+    ? retireCurrentKey(existing)
+    : existing?.previousKeys;
+
   const group: Group = {
     id:            payload.groupId,
     name:          payload.groupName,
     createdBy:     payload.createdBy,
     createdAt:     payload.createdAt,
-    members:       payload.members as GroupMember[],
+    members:       sanitizeMembers(payload.members),
     encryptedKey,
     keyNonce:      storedNonce,
     keyGeneration: payload.keyGeneration,
     lastKeyDeliveryId: payload.deliveryId,
+    ...(previousKeys?.length ? { previousKeys } : {}),
   };
 
   await saveGroup(group);
@@ -1024,6 +1165,71 @@ export async function saveGroupFileRecord(
   return msg;
 }
 
+/** Most members a group-key envelope may list (bounds storage and fan-out). */
+const MAX_GROUP_MEMBERS = 1024;
+
+/**
+ * The member list from a group-key envelope. It comes from the creator, but
+ * it is still input: keep well-formed entries only, and an address only when
+ * it can lead to that member (reach.ts), so a list can never point a member's
+ * traffic somewhere else.
+ */
+function sanitizeMembers(value: unknown): GroupMember[] {
+  if (!Array.isArray(value)) return [];
+  const out: GroupMember[] = [];
+  const seen = new Set<string>();
+  for (const raw of value.slice(0, MAX_GROUP_MEMBERS)) {
+    if (!raw || typeof raw !== 'object') continue;
+    const { publicKeyHex, nickname, circuitAddr, joinedAt } = raw as Record<string, unknown>;
+    if (typeof publicKeyHex !== 'string' || !/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) continue;
+    const key = publicKeyHex.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      publicKeyHex,
+      ...(typeof nickname === 'string' && nickname ? { nickname: nickname.slice(0, 64) } : {}),
+      circuitAddr: addrReaches(circuitAddr, publicKeyHex) ? circuitAddr : '',
+      joinedAt: typeof joinedAt === 'number' && Number.isFinite(joinedAt) ? joinedAt : Date.now(),
+    });
+  }
+  return out;
+}
+
+/** The member record for a public key (hex, any case), or undefined. */
+export function groupMember(group: Group, publicKeyHex: unknown): GroupMember | undefined {
+  if (typeof publicKeyHex !== 'string' || !/^[0-9a-fA-F]{64}$/.test(publicKeyHex)) return undefined;
+  const hex = publicKeyHex.toLowerCase();
+  return group.members.find(m => m.publicKeyHex.toLowerCase() === hex);
+}
+
+/**
+ * Tell every member we have left the group, so they stop sending to us and
+ * the creator can change the key. One attempt per member: the notice needs no
+ * group key (the receiver ties it to the connection it arrives on), so anyone
+ * who misses it is told again when their next message reaches us — see
+ * sendGroupLeaveTo.
+ */
+export async function sendGroupLeave(
+  node: Libp2p,
+  group: Group,
+  identity: UnlockedIdentity,
+  sendPingFn: (node: Libp2p, addr: string, msg: string) => Promise<any>,
+  liveAddrs?: Map<string, string>
+): Promise<void> {
+  const wire = groupLeaveWire(group.id, identity.publicKeyHex);
+  await Promise.allSettled(group.members
+    .filter(m => m.publicKeyHex !== identity.publicKeyHex)
+    .map(m => {
+      const addr = liveAddrs?.get(m.publicKeyHex) || m.circuitAddr;
+      return addr ? sendPingFn(node, addr, wire) : Promise.resolve();
+    }));
+}
+
+/** The leave notice for one group, as sent over the ping protocol. */
+export function groupLeaveWire(groupId: string, fromPubKeyHex: string): string {
+  return JSON.stringify({ type: 'group-leave', groupId, fromPubKeyHex, timestamp: Date.now() });
+}
+
 /**
  * Broadcast your current circuit address to all group members.
  * Call this after connecting to the network and after joining a group.
@@ -1077,11 +1283,29 @@ export async function handleIncomingGroupMsg(
     return null;
   }
 
+  // Everything outside the ciphertext is the sender's claim. The caller has
+  // already tied `fromPubKeyHex` to the connection it arrived on (the app does
+  // this with peerIdForIdentity); here, refuse anyone who is not a member and
+  // anything malformed, so a bad frame is never stored.
+  const sender = groupMember(group, payload.fromPubKeyHex);
+  if (!sender) {
+    console.warn('[groups] dropped msg from a non-member of', group.id.slice(0, 8));
+    return null;
+  }
+  if (typeof payload.msgId !== 'string' || !payload.msgId || payload.msgId.length > 128) return null;
+  if (!Number.isFinite(payload.timestamp)) return null;
+  payload = {
+    ...payload,
+    fromPubKeyHex: sender.publicKeyHex,
+    keyGeneration: Number.isSafeInteger(payload.keyGeneration) ? payload.keyGeneration : group.keyGeneration,
+    expiresAt: Number.isFinite(payload.expiresAt) && payload.expiresAt > 0 ? payload.expiresAt : 0,
+  };
+
   const ciphertext = new Uint8Array(Object.values(payload.ciphertext));
   const nonce      = new Uint8Array(Object.values(payload.nonce));
 
   // Decrypt to verify the key works — result stored as plaintext in GroupMessage via caller
-  await decryptGroupMessage(ciphertext, nonce, group, identity);
+  await decryptGroupMessage(ciphertext, nonce, group, identity, { keyGeneration: payload.keyGeneration, live: true });
 
   const msg: GroupMessage = {
     id:            payload.msgId,

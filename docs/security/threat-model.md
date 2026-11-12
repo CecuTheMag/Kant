@@ -196,6 +196,30 @@ Residual risks:
 - a backup file is only as strong as the account password; users are told that the file plus the password is the account
 - a six-digit comparison code gives roughly a one-in-a-million chance to a live attacker who saw the QR code and raced the real device; they would still need the user to confirm on the new device
 
+### J. Group chats
+Threat: a group member (or an outsider) posts as someone else, changes or deletes another member's messages, re-points a member's address, or keeps reading after leaving.
+
+Mitigations:
+- **who sent it is proved by the connection, not by the message.** A group frame's `fromPubKeyHex` is only a claim; the receiver accepts a frame only when it arrives from the libp2p PeerID of that identity (the Noise handshake proves the PeerID, and the PeerID is derived from the identity key) and the sender is in the group's member list (`packages/app/src/hooks/useGroups.ts`, `packages/core/src/groups.ts`). Edits and deletions are then checked against the stored author
+- addresses offered in group presence and group messages are kept only if they lead to the sender's own PeerID (`packages/core/src/reach.ts`), exactly as for direct-message presence, and the member list in a key envelope is sanitized the same way
+- files are attributed by the same rule: a transfer is refused unless it comes from the PeerID of the identity it names (`packages/app/src/hooks/useKant.ts`)
+- only the creator's key envelopes are accepted (they are wrapped with X3DH from the creator's identity), so a member cannot replace the group key
+- **leaving** sends every member a leave notice; they drop the member and the creator rotates the key. Members who were offline are told when their next message reaches the person who left. A rotated key for a member who is offline is queued and delivered when they return
+
+Residual risks:
+- **one shared key per group, not Signal's Sender Keys.** There is no forward secrecy within a key generation: whoever obtains the group key can read everything sent under it, and the key changes only when the creator rotates it. If the creator is offline when someone leaves, the old key stays in use until they return; if the creator leaves, nobody can rotate
+- group ciphertext is authenticated only as "from someone holding the group key"; the sender is authenticated by the transport. Group frames must therefore always travel directly from sender to receiver, never through onion hops or any other forwarder
+- group id, message id, timestamp and expiry travel next to the ciphertext, readable by the receiving member only (the stream itself is Noise-encrypted end to end), and are set by the authenticated sender
+- a removed member keeps everything they already received
+
+### K. Presence and address lookups
+Threat: someone who knows a public key learns whether its owner is online, or keeps waking their phone.
+
+Mitigations and limits:
+- a relay answers `/lookup` for any validly signed request, including one signed with a throwaway key: contacts on other relays have to be able to find each other, and the relay has no list of who knows whom. **So anyone who knows your public key and your relay can see whether you are connected, and your circuit address.** They cannot read or redirect anything with it: the address only ever leads to your own PeerID
+- a lookup for an offline identity triggers at most one wake-up push per cooldown window, and lookups are limited to 100 keys per request with replay protection
+- users who need to hide when they are online from people who hold their key should run their own relay and share its address only with contacts
+
 ---
 
 ## Security assumptions to document for operators

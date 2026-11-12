@@ -1,6 +1,6 @@
 {
   "name": "@kant/app",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -22,8 +22,6 @@
     "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
     "@kant/core": "workspace:*",
-    "@multiformats/multiaddr": "13.0.3",
-    "@types/qrcode.react": "^3.0.0",
     "jsqr": "^1.4.0",
     "libp2p": "3.3.11",
     "libsodium-wrappers-sumo": "0.8.2",

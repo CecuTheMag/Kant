@@ -9,6 +9,7 @@
 
 import type { Libp2p } from 'libp2p';
 import { peerIdFromString } from '@libp2p/peer-id';
+import { dlog } from './index.js';
 
 export interface DiscoveredPeer {
   peerId: string;
@@ -42,7 +43,7 @@ export function startDiscovery(node: Libp2p, onPeer: PeerDiscoveryHandler): () =
         const circuit = addrs.filter((a: string) => a.includes('/p2p-circuit'));
         if (circuit.length > 0) {
           // Sanitize peerId before logging (it's a libp2p PeerID, safe, but be explicit)
-          console.log('[discovery] peer found:', peerId.replace(/[^\w]/g, '').slice(0, 20), circuit[0].slice(0, 80));
+          dlog('[discovery] peer found:', peerId.replace(/[^\w]/g, '').slice(0, 20), circuit[0].slice(0, 80));
           onPeer({ peerId, multiaddrs: circuit });
         } else if (attempt < 3) {
           setTimeout(() => tryLookup(attempt + 1), 2000);
@@ -56,7 +57,7 @@ export function startDiscovery(node: Libp2p, onPeer: PeerDiscoveryHandler): () =
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (node as any).addEventListener('peer:connect', handleConnect);
-  console.log('[discovery] listening for peers');
+  dlog('[discovery] listening for peers');
 
   return () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

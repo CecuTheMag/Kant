@@ -1,6 +1,7 @@
 {
   "name": "@kant/cli",
-  "version": "0.0.1",
+  "version": "0.7.0",
+  "description": "Kant command-line client (text UI and scriptable commands)",
   "license": "AGPL-3.0-only",
   "type": "module",
   "bin": {

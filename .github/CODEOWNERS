@@ -1,0 +1,8 @@
+# Who is asked to review a change. Later lines win.
+*                           @CecuTheMag
+
+# Crypto, protocol and the relay: read docs/security/threat-model.md first.
+/packages/core/             @CecuTheMag
+/packages/relay/            @CecuTheMag
+/docs/security/             @CecuTheMag
+/.github/workflows/         @CecuTheMag

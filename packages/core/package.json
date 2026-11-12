@@ -1,6 +1,7 @@
 {
   "name": "@kant/core",
-  "version": "0.0.1",
+  "version": "0.7.0",
+  "description": "Kant core — identity, end-to-end encryption, groups, files and libp2p transport",
   "license": "AGPL-3.0-only",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,20 +24,18 @@
     "@libp2p/websockets": "10.1.21",
     "@libp2p/yamux": "8.0.3",
     "@multiformats/multiaddr": "13.0.3",
-    "@types/qrcode": "^1.5.6",
     "libp2p": "3.3.11",
-    "libsodium-wrappers": "0.7.16",
     "libsodium-wrappers-sumo": "0.8.2",
     "qrcode": "^1.5.4",
-    "socks": "^2.8.9",
     "socks-proxy-agent": "^8.0.4",
     "ws": "8.21.1"
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
+    "@types/qrcode": "^1.5.6",
     "@types/ws": "^8.18.1",
     "fake-indexeddb": "6.2.5",
-    "ts-node": "^10.9.2",
+    "libsodium-wrappers": "0.7.16",
     "typescript": "5.9.3"
   }
 }

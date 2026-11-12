@@ -135,7 +135,7 @@ The relay is a libp2p circuit relay v2 bootstrap node. It exposes:
 - /register
 - /lookup
 - /report/opk-burn-failure
-- /admin/reservations with bearer-token auth when configured
+- /admin/reservations and /admin/federation, only when `RELAY_ADMIN_TOKEN` is set
 
 The relay keeps a signed registry of peer addresses, tracks nonces to reject replay attempts, and evicts stale entries based on TTL and disconnect events. It also exposes Prometheus metrics for operational visibility.
 
@@ -150,7 +150,7 @@ Kant uses a dedicated push proxy for Android delivery. This keeps Firebase crede
 - the relay sends a wake signal only, never message content
 - the device reconnects over libp2p and receives the real encrypted payload after waking
 
-The open-source implementation is in [packages/push-proxy/src/index.ts](packages/push-proxy/src/index.ts), and the self-hosted deployment bundle is available in [docker-compose.push-proxy.yml](docker-compose.push-proxy.yml) and [.env.push-proxy.example](.env.push-proxy.example).
+The open-source implementation is in [packages/push-proxy/src/index.ts](packages/push-proxy/src/index.ts), and the self-hosted deployment bundle is [docker-compose.push-proxy.yml](docker-compose.push-proxy.yml), configured from [.env.push-proxy.example](.env.push-proxy.example).
 
 ### Client application
 
@@ -215,7 +215,7 @@ People add each other by scanning a QR code or sharing an invite link (`https://
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+ (`.nvmrc` pins it)
 - pnpm
 - Docker for relay orchestration
 
@@ -309,7 +309,7 @@ The key runtime environment variables are defined in [packages/relay/src/index.t
 - RELAY_HTTP_BIND
 - RELAY_DATA_DIR
 - RELAY_SECURE
-- RELAY_LAB_CONTROL_TOKEN
+- RELAY_ADMIN_TOKEN (operator token for `/admin/*` and, behind a tunnel, `/metrics`)
 
 ### 2. Local or LAN relay
 

@@ -21,6 +21,7 @@ import { BackupSheet, MoveOutSheet } from './TransferSheets';
 import { QUICK_REACTIONS } from './chat/chatLogic';
 import { biometricText, readSecurityPrefs, writeSecurityPrefs } from '../lib/biometric';
 import { AUTO_LOCK_CHOICES, PASSWORD_EVERY_CHOICES } from '../lib/securityPolicy';
+import { getScreenSecurity, screenSecuritySupported, setScreenSecurity } from '../lib/screenSecurity';
 import type { SecurityPrefs } from '../lib/securityPolicy';
 
 declare const __KANT_VERSION__: string;
@@ -368,6 +369,12 @@ function SecuritySection() {
   const [bioBusy, setBioBusy] = useState(false);
   const [duressSet, setDuressSet] = useState<boolean | null>(null);
   const [duressSheet, setDuressSheet] = useState(false);
+  const [screenSecure, setScreenSecure] = useState(false);
+  useEffect(() => { void getScreenSecurity().then(setScreenSecure); }, []);
+  const toggleScreenSecure = (on: boolean) => {
+    setScreenSecure(on);
+    void setScreenSecurity(on).then(setScreenSecure).catch(() => setScreenSecure(!on));
+  };
 
   const refresh = useCallback(() => {
     void store.security.biometric().then(setBio).catch(() => setBio(null));
@@ -432,6 +439,16 @@ function SecuritySection() {
               options={AUTO_LOCK_CHOICES.map((ms) => ({ value: String(ms), label: AUTO_LOCK_LABELS[ms] }))} />
           </div>
         </div>
+        {screenSecuritySupported() && (
+          <div className="k-cell">
+            <span className="k-cell-icon gray"><Lock size={17} /></span>
+            <span className="k-cell-body">
+              <span className="k-cell-label">Screen security</span>
+              <span className="k-cell-sub">Hide Kant in the recent-apps list and block screenshots</span>
+            </span>
+            <Switch label="Screen security" checked={screenSecure} onChange={toggleScreenSecure} />
+          </div>
+        )}
         <Cell icon={<ShieldAlert size={18} />} iconTone="red" label="Duress password"
           value={duressSet === null ? '' : duressSet ? 'On' : 'Off'} chevron onClick={() => setDuressSheet(true)} />
         <Cell icon={<Lock size={18} />} iconTone="indigo" label="Lock now" tone="action" onClick={() => store.security.lockNow()} />

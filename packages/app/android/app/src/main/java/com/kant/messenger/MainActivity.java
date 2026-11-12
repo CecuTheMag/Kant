@@ -10,6 +10,10 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(KantConnectionPlugin.class);
         registerPlugin(KantFilesPlugin.class);
         registerPlugin(KantBiometricPlugin.class);
+        registerPlugin(KantScreenPlugin.class);
+        // Before the first frame, so the recent-apps thumbnail is never taken
+        // without it (see KantScreenPlugin).
+        KantScreenPlugin.apply(this, KantScreenPlugin.isEnabled(this));
         super.onCreate(savedInstanceState);
     }
 }

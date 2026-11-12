@@ -50,6 +50,7 @@ export {
   GROUP_PROTOCOL,
   createGroup, getGroups, getGroup, saveGroup, deleteGroup,
   sendGroupMessage, sendGroupPresence, handleIncomingGroupMsg,
+  sendGroupLeave, groupLeaveWire, groupMember, queueGroupKeyForMembers,
   distributeGroupKey, rotateGroupKey,
   sendGroupKeyToMember, registerGroupHandler,
   processDeliveryQueue, getDeliveryQueueStatus,
@@ -57,8 +58,9 @@ export {
   saveGroupMessage, getGroupMessages, purgeGroupMessage,
   handleIncomingGroupKey,
   encodeGroupText, decodeGroupText, saveGroupFileRecord,
+  retireCurrentKey, OLD_KEY_GRACE_MS, MAX_PREVIOUS_GROUP_KEYS,
 } from './groups.js';
-export type { Group, GroupMember, GroupMessage, GroupEvent, GroupEventHandler, StoredGroupConversation, GroupReplyRef } from './groups.js';
+export type { Group, GroupMember, GroupMessage, RetiredGroupKey, GroupDecryptOptions, GroupEvent, GroupEventHandler, StoredGroupConversation, GroupReplyRef } from './groups.js';
 
 export { sendOnion, registerOnionHandler, pickHops, unpadPayload, COVER_TYPE } from './onion.js';
 export type { OnionHop } from './onion.js';
@@ -170,7 +172,30 @@ let __coreLog: CoreLogFn | null = null;
 export function setCoreLogger(fn: CoreLogFn | null): void { __coreLog = fn; }
 export function clog(msg: string): void {
   try { __coreLog?.(msg); } catch { /* sink must never throw into core */ }
-  try { console.log('[kant]', msg); } catch { /* no console */ }
+  dlog('[kant]', msg);
+}
+
+/**
+ * Whether routine core events are also printed to the console. Off in release
+ * builds: they name peers and addresses, and on Android the WebView console
+ * ends up in the device log. On in dev builds, or when asked for with
+ * `localStorage.kant_debug = '1'`, `globalThis.KANT_DEBUG = true`, or
+ * `KANT_DEBUG=1` in the environment (CLI, tests). Warnings and errors always print.
+ */
+function consoleDebugEnabled(): boolean {
+  try {
+    if ((globalThis as any).KANT_DEBUG) return true;
+    if ((import.meta as any).env?.DEV) return true;
+    if (typeof process !== 'undefined' && process.env?.KANT_DEBUG === '1') return true;
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('kant_debug') === '1') return true;
+  } catch { /* no storage / no process */ }
+  return false;
+}
+
+/** console.log for routine events; silent unless debugging is on (see above). */
+export function dlog(...args: unknown[]): void {
+  if (!consoleDebugEnabled()) return;
+  try { console.log(...args); } catch { /* no console */ }
 }
 
 export interface Keypair {
@@ -190,7 +215,16 @@ export async function generateKeypair(_password: string): Promise<Keypair> {
 }
 
 export type PingHandler = (fromPeerId: string, message: string) => void;
-export type GroupMsgHandler = (payload: any) => void;
+/**
+ * Receives group frames (`group-msg`, `group-presence`, `group-read`,
+ * `group-leave`). `fromPeerId` is the PeerID the Noise handshake proved for the
+ * connection the frame arrived on. The frame's own `fromPubKeyHex` is only a
+ * claim until the handler has checked it against that PeerID (see reach.ts).
+ */
+export type GroupMsgHandler = (payload: any, fromPeerId: string) => void;
+
+/** Frame types the ping protocol hands to the group handler. */
+const GROUP_FRAME_TYPES = new Set(['group-msg', 'group-presence', 'group-read', 'group-leave']);
 
 /** Assemble chunks into a single Uint8Array */
 function assembleChunks(chunks: Uint8Array[]): Uint8Array {
@@ -280,7 +314,7 @@ import { addrReaches, contactRelayUrl } from './reach.js';
 export type ReceiptHandler = (fromPeerId: string, receipt: {msgId: string, status: 'sending' | 'sent' | 'delivered' | 'read', fromPubKeyHex: string}) => void;
 
 export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandler, relayAddr?: string, identity?: StoredKeypair, onGroupMsg?: GroupMsgHandler, torConfig?: TorConfig): Promise<Libp2p> {
-  console.log('[createNode] Starting, relay:', relayAddr, 'tor:', torConfig?.enabled ? `socks5://${torConfig.socksHost}:${torConfig.socksPort}` : 'off');
+  dlog('[createNode] Starting, relay:', relayAddr, 'tor:', torConfig?.enabled ? `socks5://${torConfig.socksHost}:${torConfig.socksPort}` : 'off');
 
   // Derive a deterministic libp2p PrivateKey from the identity keypair so the
   // circuit address is stable across restarts — same identity = same PeerID.
@@ -364,8 +398,8 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
     // Route group-msg payloads to the group handler, everything else to onPing
     try {
       const parsed = JSON.parse(message);
-      if ((parsed.type === 'group-msg' || parsed.type === 'group-presence') && onGroupMsg) {
-        onGroupMsg(parsed);
+      if (parsed && GROUP_FRAME_TYPES.has(parsed.type) && onGroupMsg) {
+        onGroupMsg(parsed, fromPeer);
         // Kant sends unidirectional frames.  The caller closes its write side
         // immediately and never consumes a reply; sending a pong here races
         // that close on circuit-relay/yamux and was corrupting later streams.
@@ -390,14 +424,14 @@ export async function createNode(onPing?: PingHandler, onReceipt?: ReceiptHandle
   }, { runOnLimitedConnection: true });
 
   await node.start();
-  console.log('[createNode] Started, peerId:', node.peerId.toString());
+  dlog('[createNode] Started, peerId:', node.peerId.toString());
 
   if (relayAddr) {
     let dialError: unknown;
     for (let attempt = 1; attempt <= 4; attempt++) {
       try {
         await node.dial(multiaddr(relayAddr));
-        console.log('[createNode] Relay dialled:', relayAddr.slice(0, 60));
+        dlog('[createNode] Relay dialled:', relayAddr.slice(0, 60));
         dialError = undefined;
         break;
       } catch (e: any) {
@@ -448,7 +482,7 @@ export async function getRelayInfo(httpPort?: number, explicitUrl?: string): Pro
       }
       const data = await res.json();
       const safeAddr = String(data.multiaddr ?? '').replace(/[\r\n]/g, '').slice(0, 200);
-      console.log('[getRelayInfo] relay:', safeAddr);
+      dlog('[getRelayInfo] relay:', safeAddr);
       return data;
     } catch (e: any) {
       errors.push(`${url}: ${e?.message || e}`);
@@ -463,7 +497,7 @@ export async function getRelayInfo(httpPort?: number, explicitUrl?: string): Pro
 }
 
 export async function connectToRelay(node: Libp2p, relayAddr: string): Promise<void> {
-  console.log('Connecting to relay:', relayAddr);
+  dlog('Connecting to relay:', relayAddr);
   await ensureRelayConnection(node, relayAddr);
   await new Promise(r => setTimeout(r, 1500)); // Wait for identify
 }

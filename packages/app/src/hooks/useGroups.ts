@@ -20,6 +20,8 @@ import {
   sendFile, saveFileBlob, ed25519PubToX25519, COMMUNITY_MAX_FILE_SIZE,
   saveGroupFileRecord, sanitizeVoiceMeta, ensureRelayConnection,
   purgeGroupMessage, sanitizeReaction, deleteFileBlob,
+  peerIdForIdentity, addrReaches, groupMember, sendGroupLeave, groupLeaveWire,
+  queueGroupKeyForMembers,
 } from '@kant/core';
 import type {
   Group, GroupMember, GroupEvent, GroupMessage, UnlockedIdentity, VoiceMeta, MessageAttachment, ContentOptions,
@@ -100,7 +102,7 @@ async function rowsToThread(
       const n = msg.nonce instanceof Uint8Array
         ? msg.nonce
         : new Uint8Array(Object.values(msg.nonce as any));
-      const decoded = decodeGroupText(await decryptGroupMessage(ct, n, group, identity));
+      const decoded = decodeGroupText(await decryptGroupMessage(ct, n, group, identity, { keyGeneration: msg.keyGeneration }));
       text = decoded.text;
       replyTo = decoded.replyTo;
       edit = decoded.edit;
@@ -149,6 +151,33 @@ async function rowsToThread(
   return plain;
 }
 
+// ── Groups we have left ─────────────────────────────────────────────────────
+// Leaving deletes the group here, but members who were offline at that moment
+// still list us and keep sending. Remembering the id lets us answer them with
+// a leave notice (it needs no group key) instead of silently dropping.
+const LEFT_GROUPS_KEY = 'kant_left_groups';
+const MAX_LEFT_GROUPS = 200;
+/** Don't answer the same member about the same group more often than this. */
+const LEAVE_REMINDER_COOLDOWN_MS = 10 * 60 * 1000;
+
+function readLeftGroups(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LEFT_GROUPS_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string').slice(-MAX_LEFT_GROUPS) : [];
+  } catch { return []; }
+}
+
+function rememberLeftGroup(groupId: string): void {
+  try {
+    const next = [...readLeftGroups().filter(id => id !== groupId), groupId].slice(-MAX_LEFT_GROUPS);
+    localStorage.setItem(LEFT_GROUPS_KEY, JSON.stringify(next));
+  } catch { /* storage unavailable: the leave notice already sent still stands */ }
+}
+
+function hasLeftGroup(groupId: string): boolean {
+  return readLeftGroups().includes(groupId);
+}
+
 export function useGroups(
   nodeRef: React.MutableRefObject<Libp2p | null>,
   identityRef: React.MutableRefObject<UnlockedIdentity | null>,
@@ -174,6 +203,8 @@ export function useGroups(
   const seenGroupMsgIdsRef = useRef<Set<string>>(new Set());
   // Internal live addr map — merged with liveAddrsRef
   const memberAddrRef = useRef<Map<string, string>>(new Map());
+  // `${groupId}:${memberHex}` → when we last reminded them we left.
+  const leaveRemindersRef = useRef<Map<string, number>>(new Map());
 
   // groupId → PlainGroupMessage[] cache (avoids re-decrypting on every render).
   // Only ever holds a group's FULL history: an entry is created by selectGroup's
@@ -247,6 +278,16 @@ export function useGroups(
 
     await registerGroupHandler(node, identity, async (event: GroupEvent) => {
       if (event.type === 'group-key-received') {
+        // A key for a group we left (a rotation queued before the creator
+        // heard about it) must not quietly put us back in.
+        if (hasLeftGroup(event.group.id)) {
+          await deleteGroup(event.group.id).catch(() => {});
+          setGroups(prev => prev.filter(g => g.id !== event.group.id));
+          const creatorAddr = [event.senderCircuitAddr].find(a => addrReaches(a, event.group.createdBy));
+          if (creatorAddr) void sendPing(node, creatorAddr, groupLeaveWire(event.group.id, identity.publicKeyHex)).catch(() => {});
+          addLog(`👥 Ignored a key for a group you left (${event.group.id.slice(0, 8)})`);
+          return;
+        }
         addLog(`👥 Joined group: ${event.group.name}`);
         setGroups(prev => {
           const exists = prev.find(g => g.id === event.group.id);
@@ -254,7 +295,7 @@ export function useGroups(
         });
 
         // Store the creator's current circuit address immediately
-        if (event.senderCircuitAddr) {
+        if (addrReaches(event.senderCircuitAddr, event.group.createdBy)) {
           memberAddrRef.current.set(event.group.createdBy, event.senderCircuitAddr);
           addLog(`👥 Creator addr stored: ${event.group.createdBy.slice(0, 12)}…`);
         }
@@ -368,9 +409,12 @@ export function useGroups(
     if (first.sent.length) {
       addLog(`✓ Delivered ${first.sent.length} queued group key(s)`);
     }
-    if (!first.opkUnavailable.length) return;
+    if (!first.opkUnavailable.length && !first.needsBundle.length) return;
 
-    const recipients = Array.from(new Set(first.opkUnavailable));
+    // `needsBundle`: the member was unreachable when the key was made (group
+    // created or rotated while they were offline), so it was never wrapped.
+    const neverWrapped = new Set(first.needsBundle);
+    const recipients = Array.from(new Set([...first.opkUnavailable, ...first.needsBundle]));
     const lookedUp = await lookupPeers(
       relayHttpPort ?? 3001,
       recipients,
@@ -386,22 +430,26 @@ export function useGroups(
       const storedMember = storedGroups
         .flatMap(group => group.members)
         .find(member => member.publicKeyHex === hex);
-      const addr = lookedUp[hex]
-        ?? memberAddrRef.current.get(hex)
-        ?? liveAddrsRef?.current.get(hex)
-        ?? storedMember?.circuitAddr;
+      // Someone who was never reachable is only tried once the relay says
+      // they are online; dialling an old address every 30 seconds is wasted.
+      const addr = neverWrapped.has(hex)
+        ? lookedUp[hex]
+        : lookedUp[hex]
+          ?? memberAddrRef.current.get(hex)
+          ?? liveAddrsRef?.current.get(hex)
+          ?? storedMember?.circuitAddr;
       if (!addr) continue;
       try {
         replacementBundles.set(hex, await fetchPreKeyBundle(node, normaliseAddr(addr), hex));
       } catch (error: any) {
-        addLog(`⚠️ Fresh OPK fetch failed for ${hex.slice(0, 12)}…: ${String(error?.message ?? error).slice(0, 200)}`);
+        if (!neverWrapped.has(hex)) addLog(`⚠️ Fresh OPK fetch failed for ${hex.slice(0, 12)}…: ${String(error?.message ?? error).slice(0, 200)}`);
       }
     }
 
     if (replacementBundles.size) {
       const replacement = await processDeliveryQueue(node, identity, replacementBundles);
       if (replacement.sent.length) {
-        addLog(`✓ Re-wrapped ${replacement.sent.length} group key(s) after OPK rejection`);
+        addLog(`✓ Delivered ${replacement.sent.length} group key(s) with a fresh pre-key`);
       }
     }
   }, [addLog, identityRef, liveAddrsRef, nodeRef, relayHttpPort, relayUrl]);
@@ -429,14 +477,65 @@ export function useGroups(
     };
   }, [addLog, retryQueuedGroupKeys]);
 
-  const handleIncomingMsg = useCallback(async (payload: any) => {
+  const handleIncomingMsg = useCallback(async (payload: any, fromPeer?: string) => {
     const identity = identityRef.current;
-    if (!identity) return;
+    if (!identity || !payload || typeof payload !== 'object') return;
+
+    // Group frames are plaintext JSON around the ciphertext, so `fromPubKeyHex`
+    // is only a claim. Bind it to the connection, exactly as direct-message
+    // presence is: the frame must arrive from the PeerID of the identity it
+    // names (the Noise handshake proved that PeerID). Otherwise any member
+    // could post, edit and delete as another member, and anyone at all could
+    // re-point a member's address.
+    const claimed: string = typeof payload.fromPubKeyHex === 'string' ? payload.fromPubKeyHex : '';
+    if (!fromPeer || !claimed || peerIdForIdentity(claimed) !== fromPeer) {
+      addLog(`⚠️ Ignored ${String(payload.type).slice(0, 20)} claiming ${claimed.slice(0, 12)}… from ${String(fromPeer ?? '?').slice(0, 12)}…`);
+      return;
+    }
+    // Any address the frame offers for its sender must lead back to them.
+    const offeredAddrs: unknown[] = [
+      ...(Array.isArray(payload.senderAddrs) ? payload.senderAddrs : []),
+      ...(Array.isArray(payload.circuitAddrs) ? payload.circuitAddrs : []),
+    ].slice(0, 16);
+    const senderAddr = offeredAddrs.find((a): a is string => addrReaches(a, claimed));
+
+    const groupId: string = typeof payload.groupId === 'string' ? payload.groupId : '';
+    const group = groupId ? (await getGroups()).find(g => g.id === groupId) : undefined;
+    if (!group) {
+      // We left this group and they haven't heard: tell them (rate-limited).
+      if (groupId && payload.type !== 'group-leave' && hasLeftGroup(groupId)) {
+        const key = `${groupId}:${claimed.toLowerCase()}`;
+        const last = leaveRemindersRef.current.get(key) ?? 0;
+        const addr = senderAddr ?? liveAddrsRef?.current.get(claimed);
+        const node = nodeRef.current;
+        if (node && addr && Date.now() - last > LEAVE_REMINDER_COOLDOWN_MS) {
+          if (leaveRemindersRef.current.size > 2048) leaveRemindersRef.current.clear();
+          leaveRemindersRef.current.set(key, Date.now());
+          void sendPing(node, addr, groupLeaveWire(groupId, identity.publicKeyHex)).catch(() => {});
+        }
+      } else if (payload.type === 'group-msg') {
+        addLog(`👥 msg for unknown group ${groupId.slice(0, 8)}`);
+      }
+      return;
+    }
+    // Only members of the group may speak in it.
+    const member = groupMember(group, claimed);
+    if (!member || member.publicKeyHex === identity.publicKeyHex) {
+      addLog(`⚠️ Ignored ${String(payload.type).slice(0, 20)} from a non-member of ${group.name}`);
+      return;
+    }
+    // From here on, use the stored spelling of the sender's key.
+    payload = { ...payload, fromPubKeyHex: member.publicKeyHex };
+
+    // A member left: drop them from the list; the creator changes the key.
+    if (payload.type === 'group-leave') {
+      await memberLeft(group, member.publicKeyHex);
+      return;
+    }
 
     // Handle presence announcements — update live address map AND stored circuitAddr in IDB
     if (payload.type === 'group-presence') {
-      const addrs: string[] = payload.circuitAddrs ?? [];
-      const best = addrs.find((a: string) => a.includes('/p2p-circuit')) ?? addrs[0];
+      const best = senderAddr;
       if (best && payload.fromPubKeyHex) {
         memberAddrRef.current.set(payload.fromPubKeyHex, best);
         setOnlineMembers(prev => new Map(prev).set(payload.fromPubKeyHex, Date.now()));
@@ -464,7 +563,7 @@ export function useGroups(
     // Handle read receipts
     if (payload.type === 'group-read') {
       const { msgId, fromPubKeyHex } = payload;
-      if (msgId && fromPubKeyHex) {
+      if (typeof msgId === 'string' && msgId.length <= 128 && fromPubKeyHex) {
         const set = readByRef.current.get(msgId) ?? new Set<string>();
         set.add(fromPubKeyHex);
         readByRef.current.set(msgId, set);
@@ -477,19 +576,14 @@ export function useGroups(
 
     if (payload.type !== 'group-msg') return;
 
-    // Update sender's address from the message itself
-    if (payload.fromPubKeyHex && payload.senderAddrs?.length) {
-      const best = (payload.senderAddrs as string[]).find(a => a.includes('/p2p-circuit'));
-      if (best) memberAddrRef.current.set(payload.fromPubKeyHex, best);
-    }
-
-    // Get the group first — needed for decryption
-    const allGroups = await getGroups();
-    const group = allGroups.find(g => g.id === payload.groupId);
-    if (!group) {
-      addLog(`👥 msg for unknown group ${String(payload.groupId).slice(0, 8)}`);
+    if (typeof payload.msgId !== 'string' || !payload.msgId || payload.msgId.length > 128 || !Number.isFinite(payload.timestamp)) {
+      addLog(`⚠️ Ignored a malformed group message in ${group.name}`);
       return;
     }
+    if (!payload.ciphertext || !payload.nonce || typeof payload.ciphertext !== 'object' || typeof payload.nonce !== 'object') return;
+
+    // Update sender's address from the message itself
+    if (senderAddr) memberAddrRef.current.set(payload.fromPubKeyHex, senderAddr);
 
     // Decrypt directly from the wire payload (before IDB round-trip corrupts Uint8Arrays)
     const ciphertext = new Uint8Array(Object.values(payload.ciphertext));
@@ -501,7 +595,7 @@ export function useGroups(
     let react: { id: string; emoji: string } | undefined;
     let del: { id: string } | undefined;
     try {
-      const decoded = decodeGroupText(await decryptGroupMessage(ciphertext, nonce, group, identity));
+      const decoded = decodeGroupText(await decryptGroupMessage(ciphertext, nonce, group, identity, { keyGeneration: Number.isSafeInteger(payload.keyGeneration) ? payload.keyGeneration : undefined, live: true }));
       text = decoded.text;
       replyTo = decoded.replyTo;
       edit = decoded.edit;
@@ -578,7 +672,6 @@ export function useGroups(
     if (isRead) {
       // Send read receipt back to sender
       const node = nodeRef.current;
-      const senderAddr = payload.senderAddrs?.find((a: string) => a.includes('/p2p-circuit'));
       if (node && senderAddr) {
         const receipt = JSON.stringify({
           type: 'group-read',
@@ -610,6 +703,49 @@ export function useGroups(
 
     addLog(`👥 ${String(payload.fromPubKeyHex).slice(0, 12)}… → ${group.name}`);
   }, [identityRef, addLog, nodeRef]);
+
+  /**
+   * A member told us they left. Everyone drops them from the member list; the
+   * creator also changes the key, so the person who left can no longer read
+   * the group. Uses refs and functional updates only: handleIncomingMsg, which
+   * calls this, keeps the first render's closure.
+   */
+  async function memberLeft(group: Group, memberHex: string): Promise<void> {
+    const identity = identityRef.current;
+    if (!identity || !group.members.some(m => m.publicKeyHex === memberHex)) return;
+    const updated: Group = { ...group, members: group.members.filter(m => m.publicKeyHex !== memberHex) };
+    await saveGroup(updated);
+    setGroups(prev => prev.map(g => g.id === updated.id ? updated : g));
+    setSelectedGroup(prev => (prev?.id === updated.id ? updated : prev));
+    if (selectedGroupRef.current?.id === updated.id) selectedGroupRef.current = updated;
+    addLog(`👋 ${memberHex.slice(0, 12)}… left ${group.name}`);
+    if (group.createdBy === identity.publicKeyHex) await rotateFor(updated);
+  }
+
+  /** Give the remaining members a new key. Members who are offline get it from the delivery queue. */
+  async function rotateFor(updated: Group): Promise<void> {
+    const node     = nodeRef.current;
+    const identity = identityRef.current;
+    if (!node || !identity) return;
+    const bundles = new Map<string, any>();
+    for (const m of updated.members) {
+      if (m.publicKeyHex === identity.publicKeyHex) continue;
+      const addr = getMemberAddr(m.publicKeyHex, m.circuitAddr);
+      if (!addr) continue;
+      try {
+        bundles.set(m.publicKeyHex, await fetchPreKeyBundle(node, normaliseAddr(addr), m.publicKeyHex));
+      } catch { /* offline: distributeGroupKey queues them */ }
+    }
+    try {
+      const rotated = await rotateGroupKey(node, updated, identity, bundles);
+      setGroups(prev => prev.map(g => g.id === rotated.id ? rotated : g));
+      setSelectedGroup(prev => (prev?.id === rotated.id ? rotated : prev));
+      if (selectedGroupRef.current?.id === rotated.id) selectedGroupRef.current = rotated;
+      addLog(`🔄 Group key rotated (gen ${rotated.keyGeneration})`);
+    } catch (e: any) {
+      addLog(`Key rotation fail: ${e?.message ?? e}`);
+    }
+  }
 
   // ── Create a group ────────────────────────────────────────────────────────
 
@@ -733,6 +869,10 @@ export function useGroups(
       // After all retries, check if any members still failed
       const stillFailed = failed.filter(hex => !delivered.has(hex));
       setKeyDistStatus(prev => new Map(prev).set(group.id, stillFailed.length ? 'failed' : 'distributed'));
+    } else {
+      // Created while offline: queue the key, or the members would never get it.
+      await queueGroupKeyForMembers(group, identity);
+      setKeyDistStatus(prev => new Map(prev).set(group.id, 'distributing'));
     }
 
     return group;
@@ -1079,6 +1219,12 @@ export function useGroups(
     const node     = nodeRef.current;
     const identity = identityRef.current;
     if (!node || !identity) return;
+    // Only the creator's key is accepted by the other members (core:
+    // handleIncomingGroupKey), so only the creator can lock someone out.
+    if (group.createdBy !== identity.publicKeyHex) {
+      addLog('Only the person who created the group can remove members');
+      return;
+    }
 
     const updated: Group = {
       ...group,
@@ -1087,30 +1233,16 @@ export function useGroups(
     await saveGroup(updated);
     setGroups(prev => prev.map(g => g.id === group.id ? updated : g));
     if (selectedGroup?.id === group.id) setSelectedGroup(updated);
-
-    // Fetch bundles for remaining members and rotate key
-    const bundles = new Map<string, any>();
-    for (const m of updated.members) {
-      if (!m.circuitAddr || m.publicKeyHex === identity.publicKeyHex) continue;
-      try {
-        const bundle = await fetchPreKeyBundle(node, normaliseAddr(m.circuitAddr), m.publicKeyHex);
-        bundles.set(m.publicKeyHex, bundle);
-      } catch {}
-    }
-
-    try {
-      const rotated = await rotateGroupKey(node, updated, identity, bundles);
-      setGroups(prev => prev.map(g => g.id === rotated.id ? rotated : g));
-      if (selectedGroup?.id === rotated.id) setSelectedGroup(rotated);
-      addLog(`🔄 Group key rotated (gen ${rotated.keyGeneration})`);
-    } catch (e: any) {
-      addLog(`Key rotation fail: ${e.message}`);
-    }
+    await rotateFor(updated);
   }
 
   // ── Leave / delete a group ────────────────────────────────────────────────
 
   async function leaveGroup(group: Group) {
+    const node     = nodeRef.current;
+    const identity = identityRef.current;
+    // Remembered first, so a message that arrives mid-leave is already answered.
+    rememberLeftGroup(group.id);
     await deleteGroup(group.id);
     setGroups(prev => prev.filter(g => g.id !== group.id));
     if (selectedGroup?.id === group.id) {
@@ -1119,6 +1251,21 @@ export function useGroups(
     }
     msgCacheRef.current.delete(group.id);
     addLog(`👋 Left group: ${group.name}`);
+
+    // Tell the others, so they stop sending here and the creator changes the
+    // key. Best effort and in the background: anyone who misses it is told
+    // when their next message arrives (handleIncomingMsg).
+    if (node && identity) {
+      const liveAddrs = new Map<string, string>();
+      for (const m of group.members) {
+        const addr = getMemberAddr(m.publicKeyHex, m.circuitAddr);
+        if (addr) liveAddrs.set(m.publicKeyHex, addr);
+      }
+      void sendGroupLeave(node, group, identity,
+        async (n, addr, wire) => { await dialRelayFor(n, addr); await sendPing(n, addr, wire); },
+        liveAddrs,
+      ).catch(() => {});
+    }
   }
 
   // ── App resume: the open group has now actually been seen ─────────────────

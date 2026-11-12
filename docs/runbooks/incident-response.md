@@ -419,7 +419,7 @@ node_cpu_seconds_total
 nodejs_eventloop_lag_seconds
 ```
 
-Or use the [Grafana dashboard export](../monitoring.md#grafana-dashboard) as PNG/PDF.
+Or use the [Grafana dashboard export](./monitoring.md#grafana-dashboard) as PNG/PDF.
 
 ### 4. Config snapshots
 

@@ -625,11 +625,15 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kant.identity, kant.nodeStatus, kant.relayUrl]);
 
-  /* Push notifications: re-register on every new circuit address so the relay's
-     in-memory pushSubscriptions map stays current after relay restarts. */
+  /* Push notifications: re-register every time the circuit comes (back) up.
+     The relay keeps push subscriptions in memory only, so a relay restart
+     forgets them — and our circuit address is the same afterwards (both
+     PeerIDs are stable), so "the address changed" would never fire again.
+     Losing the circuit clears the marker; regaining it registers anew. */
   const lastPushCircuitRef = useRef('');
   useEffect(() => {
-    if (!kant.circuitAddr || !kant.identity || !kant.activeRelayUrl) return;
+    if (!kant.circuitAddr) { lastPushCircuitRef.current = ''; return; }
+    if (!kant.identity || !kant.activeRelayUrl) return;
     if (kant.circuitAddr === lastPushCircuitRef.current) return;
     lastPushCircuitRef.current = kant.circuitAddr;
     void setupPushNotifications(kant.activeRelayUrl, kant.identity);
