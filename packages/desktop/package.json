@@ -29,7 +29,7 @@
     "concurrently": "9.2.1",
     "dmg-license": "^1.0.11",
     "electron": "45.3.0",
-    "electron-builder": "24.13.3",
+    "electron-builder": "26.18.0",
     "esbuild": "0.21.5",
     "typescript": "5.9.3",
     "wait-on": "8.0.5"
