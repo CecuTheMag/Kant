@@ -1,6 +1,10 @@
 # Dependency updates, opened as pull requests so CI checks each one.
 # Security updates arrive as soon as an advisory is published; the weekly
 # schedule below is for routine version bumps.
+#
+# Routine updates are minor and patch versions only, grouped so a week brings a
+# handful of PRs. Major versions (a new TypeScript, Capacitor, Node, Gradle...)
+# change behaviour and are upgraded deliberately, by hand, with a release.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -8,7 +12,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     groups:
       # libp2p packages must move together: their interfaces are versioned as a set.
       libp2p:
@@ -19,10 +23,13 @@ updates:
         patterns: ["electron", "electron-builder"]
       dev-tools:
         dependency-type: development
-        update-types: [minor, patch]
+      everything-else:
+        dependency-type: production
     ignore:
       # Crypto: upgrade deliberately, with the test vectors, never automatically.
       - dependency-name: "libsodium-wrappers*"
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -31,6 +38,9 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directories:
@@ -39,8 +49,15 @@ updates:
       - /
     schedule:
       interval: weekly
+    ignore:
+      # Node: stay on the LTS line the relays run (22); move to the next LTS by hand.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: gradle
     directory: /packages/app/android
     schedule:
       interval: monthly
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
