@@ -1,13 +1,13 @@
 {
   "name": "kant-desktop",
   "version": "0.6.0",
-  "description": "Kant — desktop app for Linux",
+  "description": "Kant — desktop app for macOS, Windows and Linux",
   "license": "AGPL-3.0-only",
   "author": {
     "name": "Kant",
-    "email": "dev@kant.app"
+    "email": "dev@kant.network"
   },
-  "homepage": "https://kant.app",
+  "homepage": "https://kant.network",
   "main": "dist-electron/main.js",
   "private": true,
   "scripts": {
@@ -22,14 +22,13 @@
     "build:deb": "pnpm run prepare:relay-runtime && pnpm --filter @kant/app build:electron && tsc -p tsconfig.json && node scripts/bundle-main.mjs && electron-builder --linux deb"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.1",
-    "electron-updater": "6.8.3",
-    "zod": "4.4.3"
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "concurrently": "9.2.1",
     "dmg-license": "^1.0.11",
-    "electron": "33.4.11",
+    "electron": "45.3.0",
     "electron-builder": "24.13.3",
     "esbuild": "0.21.5",
     "typescript": "5.9.3",
@@ -38,7 +37,7 @@
   "build": {
     "appId": "com.kant.messenger",
     "productName": "Kant",
-    "copyright": "Copyright © 2024 Kant",
+    "copyright": "Copyright © 2024–2026 Kant",
     "asar": true,
     "directories": {
       "output": "release",
@@ -70,8 +69,8 @@
       ],
       "category": "Network",
       "icon": "assets/icon.png",
-      "maintainer": "Kant <dev@kant.app>",
-      "vendor": "Kant <dev@kant.app>",
+      "maintainer": "Kant <dev@kant.network>",
+      "vendor": "Kant <dev@kant.network>",
       "synopsis": "Private, end-to-end encrypted messaging.",
       "description": "Kant is a peer-to-peer encrypted messenger with no central message storage or account requirement."
     },

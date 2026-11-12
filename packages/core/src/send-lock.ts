@@ -1,6 +1,7 @@
 import type { Libp2p } from 'libp2p';
 import { multiaddr } from '@multiformats/multiaddr';
 import { routeDialAddr } from './federation.js';
+import { dlog } from './index.js';
 
 const locks = new WeakMap<object, Map<string, Promise<void>>>();
 
@@ -53,9 +54,9 @@ export async function getOrDialPeer(node: Libp2p, peerMultiaddr: string): Promis
   // routeDialAddr opens that tunnel and returns the address to dial over it.
   const dialAddr = await routeDialAddr(node, peerMultiaddr);
   try {
-    console.debug(`[send-lock] dialing ${dialAddr}`);
+    dlog(`[send-lock] dialing ${dialAddr}`);
     const res = await node.dial(multiaddr(dialAddr));
-    console.debug(`[send-lock] dial success ${dialAddr}`);
+    dlog(`[send-lock] dial success ${dialAddr}`);
     return res;
   } catch (e: any) {
     console.warn(`[send-lock] dial failed ${dialAddr}: ${e?.message ?? e}`);

@@ -17,8 +17,8 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'cjs',
-  // Electron 33 ships Node 20.
-  target: 'node20',
+  // Electron 45 ships Node 24; node22 output runs on it unchanged.
+  target: 'node22',
   external: ['electron'],
   // Keep the bundled dependencies' licence notices next to the bundle.
   legalComments: 'external',

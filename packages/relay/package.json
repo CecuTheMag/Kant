@@ -1,7 +1,7 @@
 {
   "name": "@kant/relay",
-  "version": "0.0.1",
-  "description": "Kant bootstrap/relay node (stateless, Phase 0)",
+  "version": "0.6.0",
+  "description": "Kant relay — libp2p circuit relay v2 with a signed address registry; stores no messages",
   "license": "AGPL-3.0-only",
   "type": "module",
   "main": "dist/index.js",
