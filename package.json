@@ -1,6 +1,6 @@
 {
   "name": "kant-monorepo",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "description": "Kant: private, end-to-end encrypted messenger with no one in the middle",
   "license": "AGPL-3.0-only",

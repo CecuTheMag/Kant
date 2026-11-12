@@ -1,6 +1,6 @@
 {
   "name": "@kant/core",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Kant core — identity, end-to-end encryption, groups, files and libp2p transport",
   "license": "AGPL-3.0-only",
   "type": "module",

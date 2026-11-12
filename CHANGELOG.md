@@ -4,6 +4,7 @@ What changed in each release, written for people who use Kant, is in
 [`release-notes/`](release-notes/) and on the
 [releases page](https://github.com/CecuTheMag/Kant/releases):
 
+- [0.7.0](release-notes/0.7.0.md) — safer groups, history that survives a key change, screen security on Android
 - [0.6.0](release-notes/0.6.0.md) — Mac and iPhone; host a relay without port forwarding
 - [0.5.0](release-notes/0.5.0.md) — automated, checksummed releases; Windows
 

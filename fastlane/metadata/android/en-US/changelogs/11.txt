@@ -1,0 +1,5 @@
+Group messages can no longer be sent under another member's name.
+Group history stays readable after the group's key changes.
+Leaving a group now tells the other members.
+Members who were offline get the group key when they come back.
+New: Screen security in Settings hides Kant from recent apps and blocks screenshots.

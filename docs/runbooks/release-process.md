@@ -65,8 +65,8 @@ Never move or reuse a published tag. If something is wrong, fix it and tag the n
 ## Publish
 
 1. Download the draft's APK and AppImage and try them: install over the previous version, unlock, send a message both ways.
-2. Copy the sizes (decimal MB) and SHA-256s from `SHA256SUMS.txt` into the `RELEASE` block of `packages/site/src/lib/config.ts`, along with the version and date, and deploy the site.
-3. Publish the draft.
+2. Publish the draft.
+3. Point the website at it: `node scripts/site-release.mjs <tag>` fills the `RELEASE` block of `packages/site/src/lib/config.ts` (version, date, file names, sizes and SHA-256s) from the release and its `SHA256SUMS.txt`. Check the diff, commit it to `main` and push; the site deploys from `main`.
 
 ## Relay deployment
 
