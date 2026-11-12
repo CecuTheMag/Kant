@@ -38,7 +38,7 @@ Step-by-step procedure for deploying a new Kant relay, or redeploying/upgrading 
   Docker Compose version v2.x.x
   ```
 - A registered domain name pointing at the host (HTTPS only).
-- For non-Docker deployments: Node.js 20+ and pnpm 9+.
+- For non-Docker deployments: Node.js 22+ and pnpm 10+.
 
 ### Firewall (ufw example)
 
@@ -82,7 +82,8 @@ All variables are read at startup. The relay will refuse to start if a required 
 | `RELAY_FEDERATION_MAX_TUNNELS` / `_PER_CLIENT` | `1024` / `8` | Federation tunnels in total and per client. |
 | `PUSH_PROXY_URL`, `PUSH_PROXY_SECRET` | — | Push notification proxy (`packages/push-proxy`). |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | — | Web Push keys. |
-| `RELAY_LAB_CONTROL_TOKEN` | — | Enables the admin and test-lab endpoints. Leave unset in production. |
+| `RELAY_ADMIN_TOKEN` | — | Operator token (`Authorization: Bearer …`) for `/admin/*` and, with `RELAY_PUBLIC_URL`, `/metrics`. Unset: those are disabled. |
+| `RELAY_LAB_CONTROL_TOKEN` | — | Test lab only: also enables `POST /__lab/restart`, which stops the process. Never set it on a real relay. |
 | `LOG_LEVEL` | `info` | `trace` / `debug` / `info` / `warn` / `error`. |
 
 ### Example `.env` (HTTPS)

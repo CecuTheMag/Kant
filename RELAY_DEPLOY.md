@@ -166,7 +166,7 @@ ciphertext; the peer relay sees your relay's IP, never the user's.
    (WebSocket upgrade passthrough, no buffering, HTTP/1.1).
 4. Check: `curl https://<relay>/relay-info` shows
    `"federation": {"tunnel": …, "peers": ["12D3KooW…"]}` once the peer answers;
-   `GET /admin/federation` (bearer `RELAY_LAB_CONTROL_TOKEN`) shows per-peer
+   `GET /admin/federation` (bearer `RELAY_ADMIN_TOKEN`) shows per-peer
    health and the last error; Prometheus has `kant_federation_*` metrics.
 
 Safeguards: only pinned peers are tunnel targets (never an open proxy); only

@@ -66,6 +66,11 @@ The relay's state is intentionally ephemeral and not designed to hold user messa
 ### Backups
 The relay seed backup and any TLS material backups should be encrypted at rest and restricted to the operational team. Retention should match the deployment's operational continuity requirements and should not exceed what is necessary for recovery.
 
+### The kant.network website
+The website is separate from the app and from any relay. It is hosted on Vercel and uses Vercel Web Analytics to count page views; that service sets no cookies and does not identify a visitor across visits or sites. Vercel also keeps ordinary request logs (IP address, user agent, path) as any web host does.
+
+The app itself contains no analytics, crash reporting or telemetry of any kind. An invite link (`https://kant.network/add#k=…`) carries the key, name and relay after the `#`, which browsers never send to the server, so opening one tells the site only that the `/add` page was visited.
+
 ## 5. Data residency and deployment choices
 
 Kant supports both self-hosted and operator-controlled deployments. The following should be considered in any deployment decision:

@@ -37,8 +37,9 @@ All of these on the commit you are about to tag:
    docker compose -f tests/lab/docker-compose.yml down --remove-orphans
    ```
 3. For changes to messaging or networking: `pnpm run test:reconnect` (about 8 minutes; `KANT_FEDERATE=1` for linked relays). It and the app builds share `packages/app/dist`, so don't build while it runs.
-4. Versions bumped together: `packages/app/package.json`, `packages/desktop/package.json`, and `versionCode` (+1) / `versionName` in `packages/app/android/app/build.gradle`. The workflow fails if they differ from each other or from the tag.
-5. Release notes written to `release-notes/<version>.md` — they become the release description.
+4. Versions bumped together: the root `package.json`, `packages/app`, `packages/desktop`, `packages/core`, `packages/relay` and `packages/cli`; `versionCode` (+1) / `versionName` in `packages/app/android/app/build.gradle`; and `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in the iOS project. The workflow fails if they differ from each other or from the tag. (`packages/push-proxy`, `packages/site` and `packages/admin` are versioned on their own.)
+5. A changelog for the new `versionCode` in `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (at most 500 characters) — Obtainium and F-Droid show it as "what's new".
+6. Release notes written to `release-notes/<version>.md` — they become the release description.
 
 ## Tag and build
 
@@ -52,7 +53,7 @@ The tag format is `X.Y.Z-beta` (no `v`): the website's download links use it.
 [`release.yml`](../../.github/workflows/release.yml) then:
 
 1. runs every CI check again on the tagged commit;
-2. checks the tag and all three version numbers agree;
+2. checks the tag and every version number agree, and that the Android changelog for this `versionCode` exists;
 3. builds the signed APK and verifies its signing certificate;
 4. builds the Linux AppImage and the Windows installer and portable exe, and **launches each one** — it has to start, its bundled relay has to answer `/healthz`, and the window has to render the app ([`packages/desktop/scripts/smoke.mjs`](../../packages/desktop/scripts/smoke.mjs));
 5. creates a **draft** release, marked as the latest (the site links to `releases/latest`), with all files and `SHA256SUMS.txt`.

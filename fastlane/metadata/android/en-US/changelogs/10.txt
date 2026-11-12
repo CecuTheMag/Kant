@@ -1,0 +1,4 @@
+Kant is now available for Mac and iPhone (from the GitHub release).
+Anyone can host a relay from home without opening a port, through Tailscale, Cloudflare Tunnel or ngrok.
+Desktop notifications now work with self-hosted relays.
+Typing a Tailscale address as your relay now connects.
