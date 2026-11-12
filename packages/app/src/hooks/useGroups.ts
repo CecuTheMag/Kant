@@ -102,7 +102,7 @@ async function rowsToThread(
       const n = msg.nonce instanceof Uint8Array
         ? msg.nonce
         : new Uint8Array(Object.values(msg.nonce as any));
-      const decoded = decodeGroupText(await decryptGroupMessage(ct, n, group, identity));
+      const decoded = decodeGroupText(await decryptGroupMessage(ct, n, group, identity, { keyGeneration: msg.keyGeneration }));
       text = decoded.text;
       replyTo = decoded.replyTo;
       edit = decoded.edit;
@@ -595,7 +595,7 @@ export function useGroups(
     let react: { id: string; emoji: string } | undefined;
     let del: { id: string } | undefined;
     try {
-      const decoded = decodeGroupText(await decryptGroupMessage(ciphertext, nonce, group, identity));
+      const decoded = decodeGroupText(await decryptGroupMessage(ciphertext, nonce, group, identity, { keyGeneration: Number.isSafeInteger(payload.keyGeneration) ? payload.keyGeneration : undefined, live: true }));
       text = decoded.text;
       replyTo = decoded.replyTo;
       edit = decoded.edit;

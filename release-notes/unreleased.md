@@ -19,6 +19,11 @@ is on top of 0.6.0.
 - **Leaving a group now tells the group.** Members stop sending to you and the
   group's creator changes the key. Before, leaving only deleted the group on
   your own device.
+- **Group history stays readable after the key changes.** Earlier messages
+  turned into "[encrypted]" on every device once a group's key was changed,
+  and a message sent at the moment of the change could be lost. Devices now
+  keep the group's earlier keys for reading history, and accept a message
+  sent with the previous key for ten minutes after a change.
 - **Members who were offline now get the group key.** A group created (or
   re-keyed) while a member was offline delivers their key when they come back,
   including a group created while you were offline yourself.

@@ -109,6 +109,42 @@ export interface Group {
   keyGeneration: number;
   /** Last successfully processed group-key envelope (idempotent retry guard). */
   lastKeyDeliveryId?: string;
+  /**
+   * Keys this device held before a rotation, newest first. Stored history was
+   * encrypted with them, and a member who had not yet received the new key
+   * may still send with the previous one (see OLD_KEY_GRACE_MS).
+   */
+  previousKeys?: RetiredGroupKey[];
+}
+
+export interface RetiredGroupKey {
+  keyGeneration: number;
+  /** Encrypted at rest exactly like Group.encryptedKey. */
+  encryptedKey: Uint8Array;
+  keyNonce: Uint8Array;
+  retiredAt: number;
+}
+
+/** Past keys kept per group, enough to read any realistic history. */
+export const MAX_PREVIOUS_GROUP_KEYS = 64;
+/**
+ * How long after a rotation a live message under the previous key is still
+ * accepted: covers messages a member sent before the new key reached them.
+ * Only current members get this far (handleIncomingGroupMsg / the app check
+ * membership and bind the sender to its connection first).
+ */
+export const OLD_KEY_GRACE_MS = 10 * 60_000;
+
+/** The previous-keys list after `group`'s current key is retired. */
+export function retireCurrentKey(group: Group, now = Date.now()): RetiredGroupKey[] {
+  const current: RetiredGroupKey = {
+    keyGeneration: group.keyGeneration,
+    encryptedKey: group.encryptedKey,
+    keyNonce: group.keyNonce,
+    retiredAt: now,
+  };
+  const older = (group.previousKeys ?? []).filter(k => k.keyGeneration !== group.keyGeneration);
+  return [current, ...older].slice(0, MAX_PREVIOUS_GROUP_KEYS);
 }
 
 interface GroupKeyAck {
@@ -650,6 +686,7 @@ export async function rotateGroupKey(
     encryptedKey,
     keyNonce,
     keyGeneration: group.keyGeneration + 1,
+    previousKeys: retireCurrentKey(group),
   };
 
   await saveGroup(updated);
@@ -674,19 +711,62 @@ export async function encryptGroupMessage(
   return { ciphertext, nonce };
 }
 
-/** Decrypt a group message */
+export interface GroupDecryptOptions {
+  /** The generation the message claims; picks the key to use. */
+  keyGeneration?: number;
+  /**
+   * A message arriving now rather than one loaded from history: an older
+   * generation is only accepted within OLD_KEY_GRACE_MS of its retirement.
+   */
+  live?: boolean;
+  now?: number;
+}
+
+/**
+ * Decrypt a group message. Without a generation (older callers, older
+ * clients) the current key is tried first, then every retained past key.
+ */
 export async function decryptGroupMessage(
   ciphertext: Uint8Array,
   nonce: Uint8Array,
   group: Group,
-  identity: UnlockedIdentity
+  identity: UnlockedIdentity,
+  options: GroupDecryptOptions = {}
 ): Promise<string> {
-  const sodium   = await getSodium();
-  const groupKey = await decryptGroupKey(group.encryptedKey, group.keyNonce, identity.derivedKey);
-  const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
-    null, ciphertext, null, nonce, groupKey
-  );
-  return new TextDecoder().decode(plaintext);
+  const sodium = await getSodium();
+  const now = options.now ?? Date.now();
+  const current = { keyGeneration: group.keyGeneration, encryptedKey: group.encryptedKey, keyNonce: group.keyNonce };
+  const past = group.previousKeys ?? [];
+  const gen = options.keyGeneration;
+
+  let candidates: Array<{ encryptedKey: Uint8Array; keyNonce: Uint8Array }>;
+  if (Number.isSafeInteger(gen) && gen !== group.keyGeneration) {
+    if ((gen as number) > group.keyGeneration) throw new Error('group message uses a key this device has not received yet');
+    const old = past.find(k => k.keyGeneration === gen);
+    if (!old) throw new Error('group message uses a key this device no longer holds');
+    if (options.live && now - old.retiredAt > OLD_KEY_GRACE_MS) {
+      throw new Error('group message uses a retired key');
+    }
+    candidates = [old];
+  } else if (Number.isSafeInteger(gen) || options.live) {
+    candidates = [current];
+  } else {
+    candidates = [current, ...past];
+  }
+
+  let lastError: unknown;
+  for (const key of candidates) {
+    try {
+      const groupKey = await decryptGroupKey(key.encryptedKey, key.keyNonce, identity.derivedKey);
+      const plaintext = sodium.crypto_aead_xchacha20poly1305_ietf_decrypt(
+        null, ciphertext, null, nonce, groupKey
+      );
+      return new TextDecoder().decode(plaintext);
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError ?? new Error('group message could not be decrypted');
 }
 
 // ── Group message persistence ─────────────────────────────────────────────────
@@ -745,7 +825,7 @@ export async function purgeGroupMessage(
       if (row.deletedAt) { kept.push(row); continue; }
       let decoded: ReturnType<typeof decodeContent>;
       try {
-        decoded = decodeContent(await decryptGroupMessage(asBytes(row.ciphertext), asBytes(row.nonce), group, identity));
+        decoded = decodeContent(await decryptGroupMessage(asBytes(row.ciphertext), asBytes(row.nonce), group, identity, { keyGeneration: row.keyGeneration }));
       } catch {
         kept.push(row); // an older key generation — nothing we can read or rewrite
         continue;
@@ -837,6 +917,14 @@ export async function handleIncomingGroupKey(
   // Re-encrypt the group key with the Argon2id-derived key for at-rest storage
   const { encryptedKey, keyNonce: storedNonce } = await encryptGroupKey(groupKey, identity.derivedKey);
 
+  // A rotation of a group we already have: keep the key we held, so the
+  // history encrypted with it stays readable.
+  const existing = await getGroup(payload.groupId);
+  const previousKeys = existing && existing.createdBy === payload.createdBy
+    && existing.keyGeneration < payload.keyGeneration
+    ? retireCurrentKey(existing)
+    : existing?.previousKeys;
+
   const group: Group = {
     id:            payload.groupId,
     name:          payload.groupName,
@@ -847,6 +935,7 @@ export async function handleIncomingGroupKey(
     keyNonce:      storedNonce,
     keyGeneration: payload.keyGeneration,
     lastKeyDeliveryId: payload.deliveryId,
+    ...(previousKeys?.length ? { previousKeys } : {}),
   };
 
   await saveGroup(group);
@@ -1216,7 +1305,7 @@ export async function handleIncomingGroupMsg(
   const nonce      = new Uint8Array(Object.values(payload.nonce));
 
   // Decrypt to verify the key works — result stored as plaintext in GroupMessage via caller
-  await decryptGroupMessage(ciphertext, nonce, group, identity);
+  await decryptGroupMessage(ciphertext, nonce, group, identity, { keyGeneration: payload.keyGeneration, live: true });
 
   const msg: GroupMessage = {
     id:            payload.msgId,

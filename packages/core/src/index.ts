@@ -58,8 +58,9 @@ export {
   saveGroupMessage, getGroupMessages, purgeGroupMessage,
   handleIncomingGroupKey,
   encodeGroupText, decodeGroupText, saveGroupFileRecord,
+  retireCurrentKey, OLD_KEY_GRACE_MS, MAX_PREVIOUS_GROUP_KEYS,
 } from './groups.js';
-export type { Group, GroupMember, GroupMessage, GroupEvent, GroupEventHandler, StoredGroupConversation, GroupReplyRef } from './groups.js';
+export type { Group, GroupMember, GroupMessage, RetiredGroupKey, GroupDecryptOptions, GroupEvent, GroupEventHandler, StoredGroupConversation, GroupReplyRef } from './groups.js';
 
 export { sendOnion, registerOnionHandler, pickHops, unpadPayload, COVER_TYPE } from './onion.js';
 export type { OnionHop } from './onion.js';

@@ -3,8 +3,13 @@ import { afterEach, beforeEach, describe, test } from 'node:test';
 import 'fake-indexeddb/auto';
 import {
   createGroup,
+  decryptGroupMessage,
   distributeGroupKey,
   encryptGroupMessage,
+  MAX_PREVIOUS_GROUP_KEYS,
+  OLD_KEY_GRACE_MS,
+  retireCurrentKey,
+  rotateGroupKey,
   getDeliveryQueueStatus,
   getGroupMessages,
   groupMember,
@@ -363,5 +368,70 @@ describe('incoming group messages', { concurrency: false }, () => {
     const saved = await handleIncomingGroupMsg(frame({ msgId: 'm2', expiresAt: 'soon' }), fixture.identity);
     assert.equal(saved?.expiresAt, 0);
     assert.equal((await getGroupMessages(group.id)).length, 1);
+  });
+});
+
+describe('group key rotation keeps older messages readable', { concurrency: false }, () => {
+  beforeEach(deleteDatabase);
+  afterEach(deleteDatabase);
+
+  const hexOf = (byte: number) => byte.toString(16).padStart(2, '0').repeat(32);
+
+  async function rotatedGroup() {
+    const fixture = await makeFixture();
+    const member: GroupMember = { publicKeyHex: hexOf(0xab), circuitAddr: '', joinedAt: Date.now() };
+    const before = await createGroup('Rotating', [member, fixture.self], fixture.identity);
+    const old = await encryptGroupMessage('sent before the rotation', before, fixture.identity);
+    // Nobody is reachable: the new key is queued for the member.
+    const after = await rotateGroupKey(fixture.node, before, fixture.identity, new Map());
+    const fresh = await encryptGroupMessage('sent after the rotation', after, fixture.identity);
+    return { fixture, member, before, after, old, fresh };
+  }
+
+  test('the rotated group remembers the key it replaced', async () => {
+    const { before, after } = await rotatedGroup();
+    assert.equal(after.keyGeneration, before.keyGeneration + 1);
+    assert.equal(after.previousKeys?.length, 1);
+    assert.equal(after.previousKeys?.[0].keyGeneration, before.keyGeneration);
+  });
+
+  test('history from before the rotation still decrypts, by generation or by trying', async () => {
+    const { fixture, before, after, old, fresh } = await rotatedGroup();
+    assert.equal(await decryptGroupMessage(old.ciphertext, old.nonce, after, fixture.identity, { keyGeneration: before.keyGeneration }), 'sent before the rotation');
+    assert.equal(await decryptGroupMessage(old.ciphertext, old.nonce, after, fixture.identity), 'sent before the rotation');
+    assert.equal(await decryptGroupMessage(fresh.ciphertext, fresh.nonce, after, fixture.identity, { keyGeneration: after.keyGeneration }), 'sent after the rotation');
+  });
+
+  test('a live message under the previous key is accepted only within the grace period', async () => {
+    const { fixture, member, before, after, old } = await rotatedGroup();
+    const retiredAt = after.previousKeys![0].retiredAt;
+    assert.equal(await decryptGroupMessage(old.ciphertext, old.nonce, after, fixture.identity,
+      { keyGeneration: before.keyGeneration, live: true, now: retiredAt + OLD_KEY_GRACE_MS - 1 }), 'sent before the rotation');
+    await assert.rejects(decryptGroupMessage(old.ciphertext, old.nonce, after, fixture.identity,
+      { keyGeneration: before.keyGeneration, live: true, now: retiredAt + OLD_KEY_GRACE_MS + 1 }), /retired key/);
+    // The receive path stores a member's in-flight message sent with the old key.
+    const saved = await handleIncomingGroupMsg({
+      type: 'group-msg', groupId: after.id, msgId: 'in-flight', fromPubKeyHex: member.publicKeyHex,
+      ciphertext: Array.from(old.ciphertext), nonce: Array.from(old.nonce),
+      timestamp: Date.now(), keyGeneration: before.keyGeneration, expiresAt: 0,
+    }, fixture.identity);
+    assert.equal(saved?.keyGeneration, before.keyGeneration);
+  });
+
+  test('a live message must decrypt under the generation it names', async () => {
+    const { fixture, before, after, old, fresh } = await rotatedGroup();
+    await assert.rejects(decryptGroupMessage(old.ciphertext, old.nonce, after, fixture.identity, { keyGeneration: after.keyGeneration, live: true }));
+    await assert.rejects(decryptGroupMessage(fresh.ciphertext, fresh.nonce, after, fixture.identity, { keyGeneration: after.keyGeneration + 1 }), /not received yet/);
+    await assert.rejects(decryptGroupMessage(fresh.ciphertext, fresh.nonce, before, fixture.identity, { keyGeneration: before.keyGeneration }));
+  });
+
+  test('the list of past keys is bounded and newest first', async () => {
+    const { after } = await rotatedGroup();
+    let group = after;
+    for (let i = 0; i < MAX_PREVIOUS_GROUP_KEYS + 5; i++) {
+      group = { ...group, keyGeneration: group.keyGeneration + 1, previousKeys: retireCurrentKey(group) };
+    }
+    assert.equal(group.previousKeys?.length, MAX_PREVIOUS_GROUP_KEYS);
+    assert.equal(group.previousKeys?.[0].keyGeneration, group.keyGeneration - 1);
   });
 });
