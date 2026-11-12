@@ -485,7 +485,12 @@ async function sendFileUnlocked(node: Libp2p, options: SendFileOptions): Promise
 // ── Transfer: Receiver ────────────────────────────────────────────────────────
 
 export interface ReceiveFileCallbacks {
-  onMeta: (meta: FileMeta) => Promise<'accept' | 'reject' | { reason: string }>;
+  /**
+   * Decide whether to take a file. `fromPeerId` is the PeerID the connection
+   * proved; `meta.senderPubkeyHex` is only the sender's claim, and must match
+   * it (peerIdForIdentity) before the file is attributed to anyone.
+   */
+  onMeta: (meta: FileMeta, fromPeerId: string) => Promise<'accept' | 'reject' | { reason: string }>;
   onChunk: (fileId: string, chunkIndex: number, plainData: Uint8Array) => Promise<void>;
   onProgress: FileProgressCallback;
   /** Called before the success ACK so receiver persistence failures reach the sender. */
@@ -597,7 +602,7 @@ export async function registerFileHandler(
         return;
       }
 
-      const decision = await callbacks.onMeta(meta);
+      const decision = await callbacks.onMeta(meta, peerKey);
       if (typeof decision === 'string' && decision === 'accept') {
         // Authoritative capacity check at accept time — the pre-check state can
         // change while the app decides. A busy reject is a normal protocol

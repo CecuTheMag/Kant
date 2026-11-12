@@ -293,7 +293,7 @@ export function useKant() {
   const reservationRestartRef = useRef(false);
   // Remembered so the app-resume handler can restart the node with the same
   // handlers the original connect used.
-  const nodeCallbacksRef = useRef<{ onGroupMsg?: (payload: any) => void; onCircuitReady?: () => void }>({});
+  const nodeCallbacksRef = useRef<{ onGroupMsg?: (payload: any, fromPeerId: string) => void; onCircuitReady?: () => void }>({});
 
   const instanceNum = (relayHttpPort - 3001) / 2 + 1;
   const activeRelayUrl = sharedRelayUrl ?? relayUrl;
@@ -1128,7 +1128,7 @@ export function useKant() {
     if (sentCount > 0) addLog(`📤 Flushed ${sentCount} message(s) after session setup`);
   }
 
-  function restartForReservation(reason: string, onGroupMsg?: (payload: any) => void, onCircuitReady?: () => void): void {
+  function restartForReservation(reason: string, onGroupMsg?: (payload: any, fromPeerId: string) => void, onCircuitReady?: () => void): void {
     if (reservationRestartRef.current || !shouldReconnectRef.current) return;
     reservationRestartRef.current = true;
     void (async () => {
@@ -1145,7 +1145,7 @@ export function useKant() {
 
   // ── Node ──────────────────────────────────────────────────────────────────
 
-  async function startNode(onGroupMsg?: (payload: any) => void, onCircuitReady?: () => void) {
+  async function startNode(onGroupMsg?: (payload: any, fromPeerId: string) => void, onCircuitReady?: () => void) {
     if (!identityRef.current) return;
     if (startingRef.current) { addLog('⏳ startNode re-entry ignored (already starting)'); return; }
     nodeCallbacksRef.current = { onGroupMsg, onCircuitReady };
@@ -1936,7 +1936,16 @@ export function useKant() {
       try {
         const myX = await ed25519ToX25519(identityRef.current.publicKey, identityRef.current.privateKey);
         await registerFileHandler(node, {
-          onMeta: async (meta) => {
+          onMeta: async (meta, fromPeer) => {
+            // `senderPubkeyHex` is the sender's own claim, and it decides whose
+            // chat (or which group) the file appears in. Take the file only
+            // when it comes from the PeerID of the identity it names — the
+            // connection proved that PeerID — or anyone could drop a file into
+            // a conversation under a contact's name.
+            if (typeof meta.senderPubkeyHex !== 'string' || peerIdForIdentity(meta.senderPubkeyHex) !== fromPeer) {
+              addLog(`⚠️ Refused a file claiming ${String(meta.senderPubkeyHex ?? '').slice(0, 12)}… from ${String(fromPeer).slice(0, 12)}…`);
+              return 'reject';
+            }
             // Auto-accept within the size cap; registerFileHandler already rejects
             // oversized files before allocation.
             incomingFilesRef.current.set(meta.fileId, meta);
