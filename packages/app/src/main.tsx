@@ -11,6 +11,7 @@ if (!(Promise as any).withResolvers) {
 }
 
 import ReactDOM from 'react-dom/client';
+import '@fontsource-variable/inter';
 import App from './App';
 
 // StrictMode intentionally omitted: its double-invoke of effects in dev

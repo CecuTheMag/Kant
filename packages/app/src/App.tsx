@@ -7,6 +7,9 @@ import { useTermsAcceptance } from './hooks/useTermsAcceptance';
 import { KantApp } from './ui/KantApp';
 import { Boot, CreateStep, MoveInScreen, NetworkStep, RestoreScreen, TermsUpdate, Unlock, Welcome } from './ui/Onboarding';
 import { readThemePref, useAppliedTheme } from './ui/lib';
+import { Capacitor } from '@capacitor/core';
+import { popBack } from './ui/core/backStack';
+import { setBarsFor } from './lib/systemBars';
 import './ui/kant.css';
 
 const PROFILE_KEY = 'kant_profile_name';
@@ -34,7 +37,9 @@ export default function App() {
 
   // Screens before sign-in follow the saved theme too. Inside the app the store
   // owns the preference and writes the same localStorage key, so both agree.
-  useAppliedTheme(readThemePref());
+  const theme = useAppliedTheme(readThemePref());
+  // Inside the app the shell colours the system bars per screen.
+  useEffect(() => { if (kant.screen !== 'app') setBarsFor('--bg'); }, [theme, kant.screen]);
 
   useEffect(() => { kant.checkIdentity(); }, []);
 
@@ -50,24 +55,40 @@ export default function App() {
     if (kant.screen === 'app') groups.loadGroups();
   }, [kant.screen]);
 
-  // Once a network step has been shown, keep counting it in the step dots.
-  const sawNetworkStep = useRef(false);
-  if (kant.screen === 'relay') sawNetworkStep.current = true;
-  const totalSteps = sawNetworkStep.current ? 3 : 2;
+  // Android back before sign-in: close the open sheet, step back from move /
+  // restore, otherwise leave the app. (Signed in, the app shell handles it.)
+  const backRef = useRef<() => boolean>(() => false);
+  backRef.current = () => {
+    if (popBack()) return true;
+    if (bringOver) { setBringOver(null); return true; }
+    return false;
+  };
+  const signedIn = kant.screen === 'app';
+  useEffect(() => {
+    if (signedIn || !Capacitor.isNativePlatform()) return;
+    let remove: (() => void) | undefined;
+    let gone = false;
+    void import('@capacitor/app').then(({ App: NativeApp }) => {
+      const handle = NativeApp.addListener('backButton', () => { if (!backRef.current()) void NativeApp.minimizeApp(); });
+      remove = () => { void handle.then((h) => h.remove()); };
+      if (gone) remove();
+    });
+    return () => { gone = true; remove?.(); };
+  }, [signedIn]);
 
   if (kant.screen === 'loading') return <Boot />;
 
   if (kant.screen === 'relay' || kant.screen === 'setup') {
     // A fresh install always starts with the welcome screen, which is also
     // where the Terms are accepted.
-    if (!terms.accepted) return <Welcome totalSteps={totalSteps} onContinue={terms.accept} />;
+    if (!terms.accepted) return <Welcome onContinue={terms.accept} />;
     if (kant.screen === 'relay') {
-      return <NetworkStep step={2} totalSteps={totalSteps} onConfigured={kant.configureRelay} />;
+      return <NetworkStep onConfigured={kant.configureRelay} />;
     }
     if (bringOver === 'move') return <MoveInScreen receive={kant.receiveMove} onBack={() => setBringOver(null)} />;
     if (bringOver === 'restore') return <RestoreScreen restore={kant.restoreBackup} onBack={() => setBringOver(null)} />;
     return (
-      <CreateStep step={totalSteps} totalSteps={totalSteps} onCreate={async (password, name) => {
+      <CreateStep onCreate={async (password, name) => {
         try { localStorage.setItem(PROFILE_KEY, name.trim().slice(0, 40)); } catch { /* storage unavailable */ }
         await kant.setup(password);
       }} onMoveIn={() => setBringOver('move')} onRestore={() => setBringOver('restore')} />

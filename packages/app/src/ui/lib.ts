@@ -219,7 +219,6 @@ export function useLongPress(onLongPress: (pos: { x: number; y: number }) => voi
           clear();
           if (pos) {
             firedAt.current = Date.now();
-            navigator.vibrate?.(8);
             onLongPress(pos);
           }
         }, ms);

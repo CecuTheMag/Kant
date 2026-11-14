@@ -671,9 +671,13 @@ export function useKant() {
     // and has just proven they want to use it. Waiting until a message arrives
     // is too late, and waiting for FCM registration means never asking at all
     // if no relay circuit is ever established.
-    void ensureNotificationPermission().then(granted => {
-      if (!granted) addLog('🔕 Notifications are not permitted — messages will arrive silently');
-    });
+    // On phones the app asks with a sentence of its own first (KantApp), so the
+    // system dialog never appears out of nowhere.
+    if (!Capacitor.isNativePlatform()) {
+      void ensureNotificationPermission().then(granted => {
+        if (!granted) addLog('🔕 Notifications are not permitted — messages will arrive silently');
+      });
+    }
     const all = await getContacts();
     setContacts(all);
     // Messages queued by an older build carry the quoted reply snippet in the

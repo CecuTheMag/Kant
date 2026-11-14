@@ -222,6 +222,30 @@ export function useRealStore(kant: Kant, groupsApi: GroupsApi): Store {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupsApi.selectedGroup?.id, groupsApi.groupMessages, groupsApi.groupHandlerReady]);
 
+  /* ---- group previews straight after unlock, and when something arrives in
+     a group that isn't open ---- */
+  const groupIds = groupsApi.groups.map(g => g.id).join(',');
+  const groupUnread = groupsApi.groups.map(g => groupsApi.unreadCounts.get(g.id) ?? 0).join(',');
+  useEffect(() => {
+    if (!groupIds) return;
+    let live = true;
+    void groupsApi.lastMessages().then((found) => {
+      if (!live) return;
+      setGroupLast(prev => {
+        let next = prev;
+        for (const [id, raw] of Object.entries(found)) {
+          const msg = toDesignGroupMsg(raw);
+          if (prev[id] && prev[id].ts >= msg.ts) continue;
+          if (next === prev) next = { ...prev };
+          next[id] = msg;
+        }
+        return next;
+      });
+    }).catch(() => {});
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupIds, groupUnread, meHex]);
+
   /* ---- identity + ceremony derivation (expensive — derive once, cache) ---- */
   useEffect(() => {
     const hexes = [meHex, ...kant.contacts.map(c => c.publicKeyHex)].filter(Boolean);

@@ -18,10 +18,15 @@ import { SettingsPane } from './Settings';
 import {
   AddContactSheet, ContactInfoSheet, GroupInfoSheet, MyCodeSheet, NewChatSheet, NewGroupSheet, RequestsSheet, VerifySheet,
 } from './sheets';
-import { Check, LockFill } from './icons';
+import { Bell, Check, LockFill } from './icons';
 import { displayName, parseInvite, takePendingInvite, useAppliedTheme, useIsCompact } from './lib';
 import type { Invite } from './lib';
-import { ToastProvider, useToast } from './parts';
+import { Sheet, ToastProvider, useToast } from './parts';
+import { ensureNotificationPermission, getNotificationPermission } from '../lib/localNotify';
+import { popBack } from './core/backStack';
+import { setBarsFor } from '../lib/systemBars';
+
+const NOTIFY_ASKED_KEY = 'kant_notify_prompted';
 
 type SheetState =
   | { type: 'mycode' } | { type: 'add'; invite?: Invite | null } | { type: 'compose' } | { type: 'group' }
@@ -44,12 +49,28 @@ function Shell() {
   const { state } = store;
   const toast = useToast();
   const compact = useIsCompact();
-  useAppliedTheme(state.settings.theme);
+  const theme = useAppliedTheme(state.settings.theme);
 
   const [view, setView] = useState<'list' | 'chat' | 'settings'>('list');
   const [active, setActive] = useState<ChatRef | null>(null);
   const [sheet, setSheet] = useState<SheetState | null>(null);
+  useEffect(() => { setBarsFor(view === 'settings' ? '--bg-grouped' : '--bg'); }, [view, theme]);
   const pendingOpen = useRef<string | null>(null);
+
+  /* Phones: ask for notifications once, with a reason, before the system dialog. */
+  const [askNotify, setAskNotify] = useState(false);
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    try { if (localStorage.getItem(NOTIFY_ASKED_KEY) === '1') return; } catch { return; }
+    let live = true;
+    void getNotificationPermission().then((granted) => { if (live && !granted) setAskNotify(true); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+  const answerNotify = (allow: boolean) => {
+    try { localStorage.setItem(NOTIFY_ASKED_KEY, '1'); } catch { /* storage unavailable */ }
+    setAskNotify(false);
+    if (allow) void ensureNotificationPermission();
+  };
 
   const activeContact: Contact | undefined = active?.kind === 'dm' ? state.contacts.find((c) => c.id === active.id) : undefined;
   const activeGroup: Group | undefined = active?.kind === 'group' ? state.groups.find((g) => g.id === active.id) : undefined;
@@ -121,6 +142,7 @@ function Shell() {
   /* Android back button: close a sheet, then step back through the stack. */
   const backRef = useRef<() => boolean>(() => false);
   backRef.current = () => {
+    if (popBack()) return true;
     if (sheet) { setSheet(null); return true; }
     if (compact && view !== 'list') { setView('list'); return true; }
     return false;
@@ -180,6 +202,19 @@ function Shell() {
         </div>
       </main>
 
+      {askNotify && !sheet && (
+        <Sheet onClose={() => answerNotify(false)} label="Notifications">
+          <div className="k-sheet-hero" style={{ paddingTop: 26 }}>
+            <div className="k-result-icon bad" style={{ width: 72, height: 72 }}><Bell size={34} /></div>
+            <h2 className="k-title-2" style={{ marginTop: 6 }}>Know when friends write</h2>
+            <p>Kant can tell you about new messages, even when it’s closed.</p>
+          </div>
+          <div className="k-sheet-foot">
+            <button type="button" className="k-btn k-btn-primary k-btn-block" onClick={() => answerNotify(true)}>Turn on notifications</button>
+            <button type="button" className="k-btn k-btn-plain k-btn-block" onClick={() => answerNotify(false)}>Not now</button>
+          </div>
+        </Sheet>
+      )}
       {sheet?.type === 'mycode' && <MyCodeSheet onClose={closeSheet} onScan={() => setSheet({ type: 'add' })} />}
       {sheet?.type === 'add' && <AddContactSheet initial={sheet.invite} onClose={closeSheet} onAdded={openWhenReady} />}
       {sheet?.type === 'compose' && (

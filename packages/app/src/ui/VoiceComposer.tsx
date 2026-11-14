@@ -10,6 +10,7 @@
  * The recorder lives in a ref so re-renders at 20 fps for the level meter
  * never touch the MediaRecorder itself.
  */
+import { tap } from '../lib/haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { VoiceRecording } from './core/store';
 import { Pause, Play, Spinner } from './icons';
@@ -54,8 +55,8 @@ export interface VoiceCapture {
   };
 }
 
-function vibrate(ms: number) {
-  try { navigator.vibrate?.(ms); } catch { /* unsupported */ }
+function vibrate(_ms: number) {
+  tap();
 }
 
 export function useVoiceCapture({ onSend, onError, onNotice }: {

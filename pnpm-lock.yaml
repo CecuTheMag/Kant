@@ -51,6 +51,9 @@ importers:
       '@capacitor/filesystem':
         specifier: ^6.0.0
         version: 6.0.4(@capacitor/core@6.2.2)
+      '@capacitor/haptics':
+        specifier: ^6.0.3
+        version: 6.0.3(@capacitor/core@6.2.2)
       '@capacitor/ios':
         specifier: 6.2.2
         version: 6.2.2(@capacitor/core@6.2.2)
@@ -63,6 +66,9 @@ importers:
       '@capacitor/splash-screen':
         specifier: ^6.0.0
         version: 6.0.4(@capacitor/core@6.2.2)
+      '@fontsource-variable/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@kant/core':
         specifier: workspace:*
         version: link:../core
@@ -443,6 +449,11 @@ packages:
     peerDependencies:
       '@capacitor/core': ^6.0.0
 
+  '@capacitor/haptics@6.0.3':
+    resolution: {integrity: sha512-6yKF0+lRUZEEx1GDFWgnKHia974np7o1OgmRl/btL9cSMZh0TSDZTyDMH/qcy4AM39CfuIeLs4N4h5lwixXLuQ==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
+
   '@capacitor/ios@6.2.2':
     resolution: {integrity: sha512-dc9upo3L5wSUVJBJnd7oRGGsiwB2rMe7ZF2bti8hvDVCAZeYMzzw8iqxuUc6cvGBhH2/LsORMBO51/vEQhdmHg==}
     peerDependencies:
@@ -653,6 +664,9 @@ packages:
     engines: {node: '>=12'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource-variable/inter@5.3.0':
+    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
 
   '@hapi/address@5.1.1':
     resolution: {integrity: sha512-A+po2d/dVoY7cYajycYI43ZbYMXukuopIsqCjh5QzsBCipDtdofHntljDlpccMjIfTy6UOkg+5KPriwYch2bXA==}
@@ -3327,6 +3341,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 6.2.2
 
+  '@capacitor/haptics@6.0.3(@capacitor/core@6.2.2)':
+    dependencies:
+      '@capacitor/core': 6.2.2
+
   '@capacitor/ios@6.2.2(@capacitor/core@6.2.2)':
     dependencies:
       '@capacitor/core': 6.2.2
@@ -3492,6 +3510,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.21.5':
     optional: true
+
+  '@fontsource-variable/inter@5.3.0': {}
 
   '@hapi/address@5.1.1':
     dependencies:

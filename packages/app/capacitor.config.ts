@@ -11,13 +11,13 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   android: {
-    backgroundColor: '#08090b',
+    backgroundColor: '#000000',
     allowMixedContent: false,
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,
-      backgroundColor: '#08090b',
+      backgroundColor: '#000000',
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
