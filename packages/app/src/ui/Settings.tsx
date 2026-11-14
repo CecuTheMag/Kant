@@ -10,11 +10,11 @@ import type { NodeStatus } from './core/types';
 import { ensureNotificationPermission, getNotificationPermission } from '../lib/localNotify';
 import { isBackgroundServiceRunning, isBatteryOptimized, openBatterySettings } from '../lib/backgroundService';
 import {
-  Alert, Bell, Block, Check, ChevronLeft, Copy, Globe, Moon, Onion, QR, Refresh, Shield, Spinner, Trash, Wave,
+  Alert, Bell, Block, Check, ChevronLeft, ChevronRight, Copy, EyeOff, Globe, Moon, Onion, QR, Refresh, Shield, Spinner, Trash, Wave,
   Doc, Link as LinkIcon, Bubble, Fingerprint, Lock, ShieldAlert,
 } from './icons';
-import { copyText, normalizeRelayUrl, shortId } from './lib';
-import { Avatar, Cell, Confirm, Section, Segmented, Sheet, SheetHead, Switch, useToast } from './parts';
+import { copyText, isTouch, normalizeRelayUrl, shortId } from './lib';
+import { Avatar, Cell, Confirm, Section, Segmented, Sheet, SheetHead, SheetHero, Switch, useBackHandler, useToast } from './parts';
 import { BlockedSheet } from './sheets';
 import { setChatPrefs, useChatPrefs } from './chat/prefs';
 import { BackupSheet, MoveOutSheet } from './TransferSheets';
@@ -35,98 +35,155 @@ export const STATUS_TEXT: Record<NodeStatus, { label: string; tone: 'ok' | 'warn
   error: { label: 'Can’t connect', tone: 'bad' },
 };
 
+type Page = 'root' | 'notifications' | 'appearance' | 'chats' | 'security' | 'backup' | 'network';
+
+const PAGE_TITLE: Record<Page, string> = {
+  root: 'Settings', notifications: 'Notifications', appearance: 'Appearance', chats: 'Chats',
+  security: 'Privacy & Security', backup: 'Backup & Transfer', network: 'Network',
+};
+const THEME_LABEL = { system: 'Automatic', light: 'Light', dark: 'Dark' } as const;
+
+/**
+ * The root is a short list of places; each opens its own page. Everyday
+ * choices stay one tap away and expert ones stop crowding them.
+ */
 export function SettingsPane({ onBack, onMyCode, showBack }: { onBack: () => void; onMyCode: () => void; showBack: boolean }) {
   const store = useStore();
   const { state } = store;
   const toast = useToast();
   const { settings, meHex, status } = state;
+  const [page, setPage] = useState<Page>('root');
   const [sheet, setSheet] = useState<'relay' | 'diagnostics' | 'blocked' | 'erase' | 'name' | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [transferSheet, setTransferSheet] = useState<'backup' | 'move' | null>(null);
+  const delivery = useDeliveryHealth();
   const blockedCount = state.contacts.filter((c) => c.blocked).length;
   const relayHost = (() => { try { return new URL(settings.relay).host; } catch { return settings.relay; } })();
   const st = STATUS_TEXT[status];
+  const title = PAGE_TITLE[page];
+  const open = (next: Page) => { setScrolled(false); setPage(next); };
+  useBackHandler(() => open('root'), page !== 'root');
 
   return (
     <div className="k-pane">
       <header className={`k-bar${scrolled ? ' is-lined' : ''}`}>
-        {showBack && <button type="button" className="k-back" onClick={onBack} aria-label="Back"><ChevronLeft size={26} /> Chats</button>}
-        <div className={`k-bar-title${scrolled ? ' is-shown' : ''}`}>Settings</div>
+        {page !== 'root'
+          ? <button type="button" className="k-back" onClick={() => open('root')} aria-label="Back to Settings"><ChevronLeft size={26} /> Settings</button>
+          : showBack && <button type="button" className="k-back" onClick={onBack} aria-label="Back"><ChevronLeft size={26} /> Chats</button>}
+        <div className={`k-bar-title${scrolled ? ' is-shown' : ''}`}>{title}</div>
       </header>
-      <div className="k-scroll" onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 40)}>
+      <div key={page} className={`k-scroll${page !== 'root' ? ' k-page-in' : ''}`} onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 40)}>
         <div className="k-grouped">
-          <h1 className="k-large-title" style={{ margin: '0 20px 16px' }}>Settings</h1>
+          <h1 className="k-large-title" style={{ margin: '0 20px 16px' }}>{title}</h1>
 
-          <Section>
-            <button type="button" className="k-cell" style={{ padding: '14px 16px' }} onClick={() => setSheet('name')}>
-              <Avatar name={settings.profileName} seed={meHex} size={60} />
-              <span className="k-cell-body">
-                <span className="k-cell-label" style={{ fontSize: 20, fontWeight: 600 }}>{settings.profileName || 'Add your name'}</span>
-                <span className="k-cell-sub">{shortId(meHex)} · Only shared in your invite link</span>
-              </span>
-            </button>
-            <Cell icon={<QR size={18} />} iconTone="indigo" label="My code" sub="Let friends add you" chevron onClick={onMyCode} />
-          </Section>
+          {page === 'root' && (
+            <>
+              <Section>
+                <button type="button" className="k-cell k-profile-cell" onClick={() => setSheet('name')}>
+                  <Avatar name={settings.profileName} seed={meHex} size={64} />
+                  <span className="k-cell-body">
+                    <span className="k-cell-label">{settings.profileName || 'Add your name'}</span>
+                    <span className="k-cell-sub">Kant ID · {shortId(meHex)}</span>
+                  </span>
+                  <ChevronRight className="k-cell-chev" />
+                </button>
+                <Cell icon={<QR size={18} />} iconTone="indigo" label="My code" sub="Let friends add you" chevron onClick={onMyCode} />
+              </Section>
 
-          <DeliveryHealth />
+              {delivery.supported && !delivery.ok && (
+                <Section>
+                  <Cell icon={<Alert size={18} />} iconTone="orange" label="Messages may arrive late"
+                    sub="Kant can’t reach you while it’s closed" chevron onClick={() => open('notifications')} />
+                </Section>
+              )}
 
-          <Section title="Appearance" icons>
-            <div className="k-cell">
-              <span className="k-cell-icon gray"><Moon size={17} /></span>
-              <span className="k-cell-body"><span className="k-cell-label">Theme</span></span>
-              <Segmented label="Theme" value={settings.theme} onChange={(theme) => store.setSettings({ theme })}
-                options={[{ value: 'system', label: 'Auto' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
-            </div>
-          </Section>
+              <Section icons>
+                {delivery.supported && (
+                  <Cell icon={<Bell size={18} />} iconTone="red" label="Notifications"
+                    value={delivery.notifications === null ? '' : delivery.notifications ? 'On' : 'Off'} chevron onClick={() => open('notifications')} />
+                )}
+                <Cell icon={<Moon size={17} />} iconTone="gray" label="Appearance" value={THEME_LABEL[settings.theme]} chevron onClick={() => open('appearance')} />
+                <Cell icon={<Bubble size={18} />} iconTone="green" label="Chats" chevron onClick={() => open('chats')} />
+              </Section>
 
-          <ChatSettings />
+              <Section icons>
+                <Cell icon={<Shield size={18} />} label="Privacy & Security" chevron onClick={() => open('security')} />
+                <Cell icon={<Refresh size={18} />} iconTone="green" label="Backup & Transfer" chevron onClick={() => open('backup')} />
+              </Section>
 
-          <SecuritySection />
+              <Section icons>
+                <Cell icon={<Globe size={18} />} iconTone="teal" label="Network" chevron onClick={() => open('network')}
+                  value={<span className="k-cell-status"><span className={`k-cell-dot ${st.tone}`} />{st.label}</span>} />
+              </Section>
 
-          <Section title="Backup and moving" icons foot="Backups and moves are end-to-end encrypted. Nothing passes through a server in readable form.">
-            <Cell icon={<Doc size={18} />} iconTone="blue" label="Save an encrypted backup" chevron onClick={() => setTransferSheet('backup')} />
-            <Cell icon={<Refresh size={18} />} iconTone="green" label="Move to a new phone" chevron onClick={() => setTransferSheet('move')} />
-          </Section>
-          {transferSheet === 'backup' && <BackupSheet onClose={() => setTransferSheet(null)} />}
-          {transferSheet === 'move' && <MoveOutSheet onClose={() => setTransferSheet(null)} />}
+              <Section icons>
+                <Cell icon={<Shield size={17} />} iconTone="gray" label="How Kant protects you" href="https://kant.network/security" chevron />
+                <Cell icon={<Doc size={17} />} iconTone="gray" label="Terms of Service" href="https://kant.network/terms" chevron />
+                <Cell icon={<Bubble size={17} />} iconTone="indigo" label="Help & community" href="https://discord.gg/kdn2tAPtRX" chevron />
+                <Cell icon={<LinkIcon size={17} />} iconTone="gray" label="Source code" href="https://github.com/CecuTheMag/Kant" chevron />
+              </Section>
 
-          <Section title="Privacy" icons foot="Extra privacy sends messages through other people’s devices first, so the relay can’t see who you’re talking to. It’s slower and needs other people online.">
-            <div className="k-cell">
-              <span className="k-cell-icon purple"><Onion size={18} /></span>
-              <span className="k-cell-body"><span className="k-cell-label">Extra privacy</span><span className="k-cell-sub">Onion routing</span></span>
-              <Switch label="Extra privacy" checked={settings.onion} onChange={(onion) => store.setSettings({ onion })} />
-            </div>
-            <Cell icon={<Block size={18} />} iconTone="red" label="Blocked" value={blockedCount ? String(blockedCount) : 'None'} chevron onClick={() => setSheet('blocked')} />
-          </Section>
+              <Section foot="Deletes your identity, contacts and messages from this device. Unless you saved a backup, this can’t be undone.">
+                <Cell label="Erase this device" tone="center-danger" onClick={() => setSheet('erase')} />
+              </Section>
 
-          <Section title="Network" icons>
-            <div className="k-cell">
-              <span className="k-cell-icon green"><Wave size={18} /></span>
-              <span className="k-cell-body"><span className="k-cell-label">Status</span></span>
-              <span className={`k-cell-dot ${st.tone}`} />
-              <span className="k-cell-value" style={{ maxWidth: 'none' }}>{st.label}</span>
-            </div>
-            <Cell icon={<Globe size={18} />} iconTone="teal" label="Relay" value={relayHost} chevron onClick={() => setSheet('relay')} />
-            <Cell icon={<Doc size={17} />} iconTone="gray" label="Diagnostics" chevron onClick={() => setSheet('diagnostics')} />
-          </Section>
+              <p className="k-footnote k-muted k-center" style={{ marginTop: -8 }}>
+                Kant {typeof __KANT_VERSION__ === 'string' ? __KANT_VERSION__ : ''} · End-to-end encrypted
+              </p>
+            </>
+          )}
 
-          <Section title="About" icons>
-            <Cell icon={<Shield size={17} />} iconTone="gray" label="How Kant protects you" href="https://kant.network/security" chevron />
-            <Cell icon={<Doc size={17} />} iconTone="gray" label="Terms of Service" href="https://kant.network/terms" chevron />
-            <Cell icon={<Bubble size={17} />} iconTone="indigo" label="Help & community" href="https://discord.gg/kdn2tAPtRX" chevron />
-            <Cell icon={<LinkIcon size={17} />} iconTone="gray" label="Source code" href="https://github.com/CecuTheMag/Kant" chevron />
-          </Section>
+          {page === 'notifications' && <DeliveryHealth delivery={delivery} />}
 
-          <Section foot="Deletes your identity, contacts and messages from this device. There’s no backup and it can’t be undone.">
-            <Cell label="Erase this device" tone="center-danger" onClick={() => setSheet('erase')} />
-          </Section>
+          {page === 'appearance' && (
+            <Section foot="Automatic follows this device’s light or dark setting.">
+              {(['system', 'light', 'dark'] as const).map((theme) => (
+                <Cell key={theme} label={THEME_LABEL[theme]} selected={settings.theme === theme} onClick={() => store.setSettings({ theme })}>
+                  <Check className="k-check" />
+                </Cell>
+              ))}
+            </Section>
+          )}
 
-          <p className="k-footnote k-muted k-center" style={{ marginTop: -8 }}>
-            Kant {typeof __KANT_VERSION__ === 'string' ? __KANT_VERSION__ : ''} · End-to-end encrypted
-          </p>
+          {page === 'chats' && <ChatSettings />}
+
+          {page === 'security' && (
+            <>
+              <SecuritySection />
+              <Section title="Privacy" icons foot="Extra privacy sends messages through other people’s devices first, so the relay can’t see who you’re talking to. It’s slower and needs other people online.">
+                <div className="k-cell">
+                  <span className="k-cell-icon purple"><Onion size={18} /></span>
+                  <span className="k-cell-body"><span className="k-cell-label">Extra privacy</span><span className="k-cell-sub">Onion routing</span></span>
+                  <Switch label="Extra privacy" checked={settings.onion} onChange={(onion) => store.setSettings({ onion })} />
+                </div>
+                <Cell icon={<Block size={18} />} iconTone="red" label="Blocked" value={blockedCount ? String(blockedCount) : 'None'} chevron onClick={() => setSheet('blocked')} />
+              </Section>
+            </>
+          )}
+
+          {page === 'backup' && (
+            <Section icons foot="Backups and moves are end-to-end encrypted. Nothing passes through a server in readable form.">
+              <Cell icon={<Doc size={18} />} iconTone="blue" label="Save an encrypted backup" chevron onClick={() => setTransferSheet('backup')} />
+              <Cell icon={<Refresh size={18} />} iconTone="green" label="Move to a new phone" chevron onClick={() => setTransferSheet('move')} />
+            </Section>
+          )}
+
+          {page === 'network' && (
+            <Section icons foot="A relay helps devices find each other. It only ever sees encrypted data and keeps no messages.">
+              <div className="k-cell">
+                <span className="k-cell-icon green"><Wave size={18} /></span>
+                <span className="k-cell-body"><span className="k-cell-label">Status</span></span>
+                <span className="k-cell-value k-cell-status"><span className={`k-cell-dot ${st.tone}`} />{st.label}</span>
+              </div>
+              <Cell icon={<Globe size={18} />} iconTone="teal" label="Relay" value={relayHost} chevron onClick={() => setSheet('relay')} />
+              <Cell icon={<Doc size={17} />} iconTone="gray" label="Diagnostics" chevron onClick={() => setSheet('diagnostics')} />
+            </Section>
+          )}
         </div>
       </div>
 
+      {transferSheet === 'backup' && <BackupSheet onClose={() => setTransferSheet(null)} />}
+      {transferSheet === 'move' && <MoveOutSheet onClose={() => setTransferSheet(null)} />}
       {sheet === 'name' && <NameSheet onClose={() => setSheet(null)} />}
       {sheet === 'relay' && <RelaySheet onClose={() => setSheet(null)} />}
       {sheet === 'diagnostics' && <DiagnosticsSheet onClose={() => setSheet(null)} />}
@@ -196,7 +253,7 @@ function RelaySheet({ onClose }: { onClose: () => void }) {
       <div className="k-sheet-body">
         <Section title="Relay address" foot="The relay helps devices reach each other. It only ever sees encrypted data and keeps no messages. Everyone you talk to should use a relay they can reach.">
           <div className="k-cell">
-            <input className="k-cell-input k-mono" style={{ fontSize: 15 }} value={value} onChange={(e) => setValue(e.target.value)}
+            <input className="k-cell-input" value={value} onChange={(e) => setValue(e.target.value)}
               autoCapitalize="off" autoCorrect="off" spellCheck={false} inputMode="url" aria-label="Relay address" />
           </div>
         </Section>
@@ -210,7 +267,7 @@ function RelaySheet({ onClose }: { onClose: () => void }) {
         </Section>
         <Section title="This device" foot="Your address changes whenever you reconnect. Kant keeps contacts up to date automatically.">
           <Cell label="Status" value={STATUS_TEXT[status].label} />
-          <Cell label="Your address" value={circuitAddr ? 'Copy' : 'Not connected'} tone={circuitAddr ? 'action' : undefined}
+          <Cell label={circuitAddr ? 'Copy your address' : 'Your address'} value={circuitAddr ? undefined : 'Not connected'} tone={circuitAddr ? 'action' : undefined}
             onClick={circuitAddr ? () => { void copyText(circuitAddr); toast('Address copied', <Copy size={18} />); } : undefined} />
         </Section>
       </div>
@@ -251,65 +308,81 @@ function DiagnosticsSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ── Android delivery health ──────────────────────────────────────── */
+/* ── Delivery health (phones) ─────────────────────────────────────── */
+
+interface Delivery {
+  /** Android or iOS app: there is something to show. */
+  supported: boolean;
+  platform: 'android' | 'ios' | null;
+  /** null while the first check is running. */
+  notifications: boolean | null;
+  background: boolean;
+  batteryRestricted: boolean;
+  /** Everything needed for messages to arrive while Kant is closed. */
+  ok: boolean;
+  refresh: () => void;
+}
 
 /**
  * On Android three things must hold for messages to reach a closed app, and
  * each fails silently: notification permission, the background connection,
- * and a battery-optimisation exemption. Show them plainly with the one action
- * that fixes each.
+ * and a battery-optimisation exemption. iPhone only has the first.
  */
-function DeliveryHealth() {
+function useDeliveryHealth(): Delivery {
+  const native = Capacitor.isNativePlatform();
+  const platform = native && Capacitor.getPlatform() === 'android' ? 'android' : native && Capacitor.getPlatform() === 'ios' ? 'ios' : null;
   const [health, setHealth] = useState<{ notifications: boolean; background: boolean; batteryRestricted: boolean } | null>(null);
-  const isAndroid = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
-  const isIos = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
 
-  const refresh = useCallback(async () => {
-    const [notifications, background, batteryRestricted] = await Promise.all([
-      getNotificationPermission(), isBackgroundServiceRunning(), isBatteryOptimized(),
-    ]);
-    setHealth({ notifications, background, batteryRestricted });
-  }, []);
+  const refresh = useCallback(() => {
+    if (platform === 'android') {
+      void Promise.all([getNotificationPermission(), isBackgroundServiceRunning(), isBatteryOptimized()])
+        .then(([notifications, background, batteryRestricted]) => setHealth({ notifications, background, batteryRestricted }))
+        .catch(() => {});
+    } else if (platform === 'ios') {
+      void getNotificationPermission().then((notifications) => setHealth({ notifications, background: true, batteryRestricted: false })).catch(() => {});
+    }
+  }, [platform]);
 
   useEffect(() => {
-    if (!isAndroid) return;
-    void refresh();
-    const onVisible = () => { if (document.visibilityState === 'visible') void refresh(); };
+    if (!platform) return;
+    refresh();
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [isAndroid, refresh]);
+  }, [platform, refresh]);
 
-  if (isIos) return <IosDeliveryNote />;
-  if (!isAndroid || !health) return null;
-  const allGood = health.notifications && health.background && !health.batteryRestricted;
-
-  return (
-    <Section title="Notifications" icons foot={allGood
-      ? 'All set — Kant can reach you while it’s closed. Swiping Kant away in the app switcher disconnects it until you open it again.'
-      : 'Fix the items above so messages keep arriving when Kant isn’t open.'}>
-      <HealthRow ok={health.notifications} icon={<Bell size={18} />} tone="red" label="Notifications"
-        okText="Allowed" badText="Turned off" action="Allow" onAction={async () => { await ensureNotificationPermission(); void refresh(); }} />
-      <HealthRow ok={health.background} icon={<Wave size={18} />} tone="green" label="Background connection"
-        okText="Running" badText="Starts when you connect" />
-      <HealthRow ok={!health.batteryRestricted} icon={<Refresh size={17} />} tone="orange" label="Battery"
-        okText="Unrestricted" badText="Restricted" action="Change" onAction={openBatterySettings} />
-    </Section>
-  );
+  return {
+    supported: !!platform, platform, refresh,
+    notifications: health ? health.notifications : null,
+    background: health?.background ?? true,
+    batteryRestricted: health?.batteryRestricted ?? false,
+    // iPhone pauses Kant in the background whatever the settings; only a refused permission is worth a warning.
+    ok: !health || (health.notifications && (platform === 'ios' || (health.background && !health.batteryRestricted))),
+  };
 }
 
-/**
- * iPhone: Kant is paused moments after you leave it, and push notifications
- * need an Apple developer account, so say plainly when messages arrive.
- */
-function IosDeliveryNote() {
-  const [allowed, setAllowed] = useState<boolean | null>(null);
-  const refresh = useCallback(() => { void getNotificationPermission().then(setAllowed); }, []);
-  useEffect(refresh, [refresh]);
-  if (allowed === null) return null;
+function DeliveryHealth({ delivery }: { delivery: Delivery }) {
+  const { platform, notifications, refresh } = delivery;
+  if (!platform || notifications === null) return null;
+  const allow = async () => { await ensureNotificationPermission(); refresh(); };
+  if (platform === 'ios') {
+    return (
+      <Section icons foot="iPhone pauses Kant a few seconds after you leave it. Messages sent to you meanwhile wait on the sender’s phone and arrive as soon as you open Kant again.">
+        <HealthRow ok={notifications} icon={<Bell size={18} />} tone="red" label="Notifications"
+          okText="Allowed" badText="Turned off" action="Allow" onAction={allow} />
+      </Section>
+    );
+  }
   return (
-    <Section title="Notifications" icons foot="iPhone pauses Kant a few seconds after you leave it. Messages sent to you meanwhile wait on the sender’s phone and arrive as soon as you open Kant again.">
-      <HealthRow ok={allowed} icon={<Bell size={18} />} tone="red" label="Notifications"
-        okText="Allowed" badText="Turned off" action="Allow" onAction={async () => { await ensureNotificationPermission(); refresh(); }} />
+    <Section icons foot={delivery.ok
+      ? 'All set — Kant can reach you while it’s closed. Swiping Kant away in the app switcher disconnects it until you open it again.'
+      : 'Fix the items above so messages keep arriving when Kant isn’t open.'}>
+      <HealthRow ok={notifications} icon={<Bell size={18} />} tone="red" label="Notifications"
+        okText="Allowed" badText="Turned off" action="Allow" onAction={allow} />
+      <HealthRow ok={delivery.background} icon={<Wave size={18} />} tone="green" label="Background connection"
+        okText="Running" badText="Starts when you connect" />
+      <HealthRow ok={!delivery.batteryRestricted} icon={<Refresh size={17} />} tone="orange" label="Battery"
+        okText="Unrestricted" badText="Restricted" action="Change" onAction={openBatterySettings} />
     </Section>
   );
 }
@@ -339,16 +412,20 @@ function ChatSettings() {
     </div>
   );
   return (
-    <Section title="Chats" foot="Formatting: **bold**, _italic_, ~~strikethrough~~, `code`, > quotes and - lists. Select text while typing for the formatting bar, or use Ctrl/⌘ + B, I, E and Ctrl/⌘ + Shift + X.">
+    <Section foot={isTouch()
+      ? 'Formatting: **bold**, _italic_, ~~strikethrough~~, `code`, > quotes and - lists. Select text while typing for the formatting bar.'
+      : 'Formatting: **bold**, _italic_, ~~strikethrough~~, `code`, > quotes and - lists. Select text while typing for the formatting bar, or use Ctrl/⌘ + B, I, E and Ctrl/⌘ + Shift + X.'}>
       {row('Show formatting', 'Bold, lists, code and links in messages', prefs.formatting, (formatting) => setChatPrefs({ formatting }))}
       {row('Formatting bar', 'When you select text in a message you’re writing', prefs.formatBar, (formatBar) => setChatPrefs({ formatBar }))}
       {row('Swipe to reply', 'Drag a message to the right', prefs.swipeReply, (swipeReply) => setChatPrefs({ swipeReply }))}
       {row('Double-tap to react', `Adds ${prefs.quickReaction}`, prefs.doubleTapReact, (doubleTapReact) => setChatPrefs({ doubleTapReact }))}
       {prefs.doubleTapReact && (
-        <div className="k-cell">
-          <span className="k-cell-body"><span className="k-cell-label">Quick reaction</span></span>
-          <Segmented label="Quick reaction" value={prefs.quickReaction} onChange={(quickReaction) => setChatPrefs({ quickReaction })}
-            options={QUICK_REACTIONS.map((e) => ({ value: e, label: e }))} />
+        <div className="k-cell k-cell-stack">
+          <span className="k-cell-label">Quick reaction</span>
+          <div className="k-seg-full">
+            <Segmented label="Quick reaction" value={prefs.quickReaction} onChange={(quickReaction) => setChatPrefs({ quickReaction })}
+              options={QUICK_REACTIONS.map((e) => ({ value: e, label: e }))} />
+          </div>
         </div>
       )}
       {row('Ask before opening links', 'Websites see your IP address', prefs.confirmLinks, (confirmLinks) => setChatPrefs({ confirmLinks }))}
@@ -416,7 +493,7 @@ function SecuritySection() {
 
   return (
     <>
-      <Section title="Security" icons foot={<>
+      <Section icons foot={<>
         While Kant is locked it’s offline: messages wait on the sender’s device and arrive when you unlock.
         {bio?.enrolled && <> {bioWords.risk}</>}
       </>}>
@@ -441,7 +518,7 @@ function SecuritySection() {
         </div>
         {screenSecuritySupported() && (
           <div className="k-cell">
-            <span className="k-cell-icon gray"><Lock size={17} /></span>
+            <span className="k-cell-icon gray"><EyeOff size={17} /></span>
             <span className="k-cell-body">
               <span className="k-cell-label">Screen security</span>
               <span className="k-cell-sub">Hide Kant in the recent-apps list and block screenshots</span>
@@ -493,32 +570,36 @@ function DuressSheet({ isSet, onClose }: { isSet: boolean; onClose: () => void }
   };
 
   const field = (label: string, value: string, onChange: (v: string) => void, auto: string) => (
-    <input className="k-field" type="password" value={value} onChange={(e) => onChange(e.target.value)} placeholder={label}
-      aria-label={label} autoComplete={auto} style={{ marginBottom: 10 }} />
+    <div className="k-cell">
+      <input className="k-cell-input" type="password" value={value} onChange={(e) => onChange(e.target.value)} placeholder={label}
+        aria-label={label} autoComplete={auto} />
+    </div>
   );
 
   return (
     <Sheet onClose={onClose} label="Duress password" tall>
       <SheetHead left={<button type="button" className="k-btn k-btn-plain" onClick={onClose}>Cancel</button>} title="Duress password" />
       <div className="k-sheet-body">
-        <div className="k-sheet-pad">
-          <p className="k-footnote" style={{ marginBottom: 16 }}>
-            If someone forces you to unlock Kant, type this instead of your password. Kant silently erases everything on this
-            device — identity, contacts, messages, files — and opens a new, empty account that works normally. Nothing erased
-            can be recovered, and nothing on the device shows that a duress password was set.
-          </p>
+        <SheetHero icon={<ShieldAlert size={30} />} tone="danger" title="A password that erases">
+          If someone forces you to unlock Kant, type this instead. Kant silently erases everything and opens a new, empty account.
+        </SheetHero>
+        <Section foot="Identity, contacts, messages and files are all erased and can’t be recovered. The empty account works normally, and nothing on the device shows that a duress password was set.">
           {field(isSet ? 'New duress password' : 'Duress password', duress, setDuress, 'new-password')}
           {field('Repeat duress password', confirm, setConfirm, 'new-password')}
+        </Section>
+        <Section>
           {field('Your current password', current, setCurrent, 'current-password')}
-          {error && <p className="k-error" role="alert"><Alert size={16} />{error}</p>}
-          <button type="button" className="k-btn k-btn-primary k-btn-block" disabled={busy} onClick={() => { void save(false); }}>
-            {busy ? <Spinner size={18} /> : isSet ? 'Change duress password' : 'Set duress password'}
-          </button>
-          {isSet && (
-            <button type="button" className="k-btn k-btn-plain k-btn-block is-danger-text" disabled={busy} style={{ marginTop: 8 }}
-              onClick={() => { void save(true); }}>Turn off duress password</button>
-          )}
-        </div>
+        </Section>
+        {error && <p className="k-error k-sheet-error" role="alert"><Alert size={16} />{error}</p>}
+      </div>
+      <div className="k-sheet-foot">
+        <button type="button" className="k-btn k-btn-primary k-btn-block" disabled={busy} onClick={() => { void save(false); }}>
+          {busy ? <Spinner size={18} /> : isSet ? 'Change duress password' : 'Set duress password'}
+        </button>
+        {isSet && (
+          <button type="button" className="k-btn k-btn-danger k-btn-block" disabled={busy}
+            onClick={() => { void save(true); }}>Turn off duress password</button>
+        )}
       </div>
     </Sheet>
   );

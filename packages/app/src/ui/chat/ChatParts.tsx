@@ -3,12 +3,15 @@
  * in the long-press menu and the chips under a bubble), the composer's
  * formatting bar, the swipe/double-tap gestures and the delete sheet.
  */
-import { memo, useMemo, useRef, useState } from 'react';
-import type { TouchEvent as ReactTouchEvent } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode, TouchEvent as ReactTouchEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { parseMarkdown } from '../preview/markdown';
 import { Markdown } from '../preview/MarkdownView';
-import { Sheet } from '../parts';
-import { Plus } from '../icons';
+import { Sheet, useBackHandler } from '../parts';
+import type { MenuItem } from '../parts';
+import { Camera, Doc, DocText, Photo, Plus, TableIcon } from '../icons';
+import { select } from '../../lib/haptics';
 import { useChatPrefs } from './prefs';
 import {
   MORE_REACTIONS, QUICK_REACTIONS, SWIPE, classifyDrag, summarizeReactions, swipeOffset,
@@ -113,7 +116,7 @@ export function useBubbleGestures({ swipe, doubleTap, onSwipe, onDoubleTap }: {
       if (d.mode !== 'swipe') return;
       const next = swipeOffset(dx);
       set(next);
-      if (next >= SWIPE.trigger && !d.buzzed) { d.buzzed = true; navigator.vibrate?.(10); }
+      if (next >= SWIPE.trigger && !d.buzzed) { d.buzzed = true; select(); }
     },
     onTouchEnd: (e: ReactTouchEvent) => {
       const d = drag.current;
@@ -137,6 +140,119 @@ export function useBubbleGestures({ swipe, doubleTap, onSwipe, onDoubleTap }: {
     onTouchCancel: () => { drag.current = null; set(0); },
   };
   return { offset, handlers };
+}
+
+/* ── Focused message (long-press on a phone) ──────────────────────── */
+
+const FOCUS_GAP = 8;
+const FOCUS_EDGE = 12;
+
+/**
+ * The pressed message lifts out of a blurred chat, with reactions above it and
+ * its actions below — nothing covers the message being acted on.
+ */
+export function MessageFocus({ source, out, header, items, onClose }: {
+  /** The bubble that was pressed; a copy of it is shown in focus. */
+  source: HTMLElement; out: boolean; header?: ReactNode; items: MenuItem[]; onClose: () => void;
+}) {
+  const rect = useMemo(() => source.getBoundingClientRect(), [source]);
+  const holder = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [sizes, setSizes] = useState({ bar: header ? 52 : 0, list: items.length * 45 + 12 });
+  useBackHandler(onClose);
+
+  useLayoutEffect(() => {
+    const copy = source.cloneNode(true) as HTMLElement;
+    copy.classList.remove('is-pressed');
+    copy.style.animation = 'none';
+    holder.current?.appendChild(copy);
+    source.style.visibility = 'hidden';
+    return () => { source.style.visibility = ''; copy.remove(); };
+  }, [source]);
+
+  // The reaction bar can grow ("more"); keep everything on screen when it does.
+  useLayoutEffect(() => {
+    const measure = () => setSizes((prev) => {
+      const next = { bar: barRef.current?.offsetHeight ?? 0, list: listRef.current?.offsetHeight ?? 0 };
+      return next.bar === prev.bar && next.list === prev.list ? prev : next;
+    });
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (barRef.current) observer?.observe(barRef.current);
+    if (listRef.current) observer?.observe(listRef.current);
+    return () => observer?.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onClose);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('resize', onClose); };
+  }, [onClose]);
+
+  const vh = window.innerHeight, vw = window.innerWidth;
+  const above = sizes.bar ? sizes.bar + FOCUS_GAP : 0;
+  const below = sizes.list ? sizes.list + FOCUS_GAP : 0;
+  const minTop = FOCUS_EDGE + above;
+  const room = Math.max(80, vh - FOCUS_EDGE - below - minTop);
+  const height = Math.min(rect.height, room);
+  const top = Math.max(minTop, Math.min(rect.top, vh - FOCUS_EDGE - below - height));
+  const side = out
+    ? { right: Math.max(FOCUS_EDGE, vw - rect.right) }
+    : { left: Math.max(FOCUS_EDGE, rect.left) };
+
+  return createPortal(
+    <div className="k-focus" onClick={onClose} onContextMenu={(e) => e.preventDefault()}>
+      {header && (
+        <div ref={barRef} className="k-menu has-header k-focus-bar" style={{ bottom: vh - top + FOCUS_GAP, ...side }}
+          onClick={(e) => e.stopPropagation()}>{header}</div>
+      )}
+      <div ref={holder} className={`k-msg ${out ? 'out' : 'in'} k-focus-msg`}
+        style={{ top, left: rect.left, width: rect.width, maxHeight: height, '--from': `${rect.top - top}px` } as React.CSSProperties} />
+      {items.length > 0 && (
+        <div ref={listRef} className="k-menu k-focus-actions" role="menu" style={{ top: top + height + FOCUS_GAP, ...side }}
+          onClick={(e) => e.stopPropagation()}>
+          {items.map((it) => (
+            <button key={it.label} type="button" role="menuitem" className={it.danger ? 'is-danger' : ''}
+              onClick={() => { onClose(); it.onSelect(); }}>
+              {it.label}
+              {it.icon}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+/* ── Attach tray ──────────────────────────────────────────────────── */
+
+export type AttachKind = 'photo' | 'camera' | 'file' | 'table' | 'document';
+
+const ATTACH: { kind: AttachKind; label: string; tone: string; icon: ReactNode }[] = [
+  { kind: 'photo', label: 'Photos', tone: 'blue', icon: <Photo size={26} /> },
+  { kind: 'camera', label: 'Camera', tone: 'gray', icon: <Camera size={26} /> },
+  { kind: 'file', label: 'File', tone: 'indigo', icon: <Doc size={26} /> },
+  { kind: 'table', label: 'Table', tone: 'green', icon: <TableIcon size={26} /> },
+  { kind: 'document', label: 'Document', tone: 'orange', icon: <DocText size={26} /> },
+];
+
+/** What the "+" opens: everything that can go into a message, as one row of tiles. */
+export function AttachTray({ onPick, onClose }: { onPick: (kind: AttachKind) => void; onClose: () => void }) {
+  return (
+    <Sheet onClose={onClose} label="Attach">
+      <div className="k-attach-tray" role="menu">
+        {ATTACH.map((a) => (
+          <button key={a.kind} type="button" role="menuitem" aria-label={a.label} onClick={() => { onPick(a.kind); onClose(); }}>
+            <span className={`k-attach-tile ${a.tone}`}>{a.icon}</span>
+            {a.label}
+          </button>
+        ))}
+      </div>
+    </Sheet>
+  );
 }
 
 /* ── Composer formatting bar ──────────────────────────────────────── */

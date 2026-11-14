@@ -6,9 +6,10 @@
 import { useMemo, useState } from 'react';
 import { useStore } from './core/store';
 import type { NodeStatus } from './core/types';
-import { Close, Compose, Info, QR, Refresh, Search, Spinner, Trash, VerifiedSeal, PersonAdd, Leave } from './icons';
+import { Bubble, Close, Compose, Info, QR, Refresh, Search, Spinner, Trash, VerifiedSeal, PersonAdd, Leave } from './icons';
 import { displayName, listTime, useLongPress, isTouch } from './lib';
 import { Avatar, Confirm, Menu } from './parts';
+import { tap } from '../lib/haptics';
 import type { MenuItem } from './parts';
 
 export type ChatRef = { kind: 'dm' | 'group'; id: string };
@@ -60,7 +61,8 @@ export function ChatList({ active, onOpen, onSettings, onCompose, onMyCode, onAd
       .sort((a, b) => b.ts - a.ts);
   }, [state.contacts, state.groups, q]);
 
-  const openMenu = (it: Item, at: { x: number; y: number }) => setMenu({
+  const openMenu = (it: Item, at: { x: number; y: number }) => { if (isTouch()) tap(); showMenu(it, at); };
+  const showMenu = (it: Item, at: { x: number; y: number }) => setMenu({
     at,
     items: [
       { label: it.kind === 'dm' ? 'Contact info' : 'Group info', icon: <Info size={20} />, onSelect: () => onInfo({ kind: it.kind, id: it.id }) },
@@ -100,14 +102,21 @@ export function ChatList({ active, onOpen, onSettings, onCompose, onMyCode, onAd
         <ConnectionNote status={state.status} onRetry={() => { store.disconnect(); window.setTimeout(store.connect, 600); }} />
 
         {requests.length > 0 && !q && (
-          <button type="button" className="k-requests-row" onClick={onRequests}>
-            <PersonAdd size={20} /> Message requests <span className="k-count">{requests.length}</span>
+          <button type="button" className="k-row k-requests-row" onClick={onRequests}>
+            <span className="k-requests-icon"><PersonAdd size={26} /></span>
+            <span className="k-row-body">
+              <span className="k-row-top"><span className="k-row-name">Message requests</span></span>
+              <span className="k-row-bottom">
+                <span className="k-row-sub">{requests.length === 1 ? '1 person wants to message you' : `${requests.length} people want to message you`}</span>
+                <span className="k-count">{requests.length}</span>
+              </span>
+            </span>
           </button>
         )}
 
         {empty ? (
-          <div className="k-empty" style={{ minHeight: '55vh' }}>
-            <div className="k-empty-icon"><Compose size={34} /></div>
+          <div className="k-empty" style={{ minHeight: '70vh' }}>
+            <div className="k-empty-icon"><QR size={34} /></div>
             <h2 className="k-title-2">Start a conversation</h2>
             <p>Share your code with a friend, or add theirs. Once you’re connected, everything you send is end-to-end encrypted.</p>
             <div className="k-actions">
@@ -122,6 +131,14 @@ export function ChatList({ active, onOpen, onSettings, onCompose, onMyCode, onAd
                 onOpen={() => onOpen({ kind: it.kind, id: it.id })} onMenu={(at) => openMenu(it, at)} />
             ))}
             {items.length === 0 && q && <p className="k-center k-muted" style={{ marginTop: 40 }}>No results for “{q}”</p>}
+            {items.length === 0 && !q && (
+              <div className="k-empty" style={{ minHeight: '50vh' }}>
+                <div className="k-empty-icon"><Bubble size={34} /></div>
+                <h2 className="k-title-2">No chats yet</h2>
+                <p>Accept a request, or share your code to start a conversation.</p>
+                <button type="button" className="k-btn k-btn-plain" onClick={onMyCode}>Share my code</button>
+              </div>
+            )}
           </div>
         )}
       </div>

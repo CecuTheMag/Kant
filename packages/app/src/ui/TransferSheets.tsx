@@ -5,9 +5,9 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from './core/store';
-import { Alert, Check, Doc, Spinner } from './icons';
+import { Alert, Check, Doc, Refresh, Spinner } from './icons';
 import { QrScanner } from './Scanner';
-import { Segmented, Sheet, SheetHead, Switch, useToast } from './parts';
+import { Section, Segmented, Sheet, SheetHead, SheetHero, Switch, useToast } from './parts';
 import { isTouch } from './lib';
 
 function Close({ onClick, label = 'Cancel' }: { onClick: () => void; label?: string }) {
@@ -42,22 +42,25 @@ export function BackupSheet({ onClose }: { onClose: () => void }) {
     <Sheet onClose={onClose} label="Save a backup" tall>
       <SheetHead left={<Close onClick={onClose} />} title="Save a backup" />
       <div className="k-sheet-body">
-        <div className="k-sheet-pad">
-          <p className="k-footnote" style={{ marginBottom: 16 }}>
-            A single file with your identity, contacts and messages, encrypted with your password. Keep it somewhere safe —
-            anyone with the file and your password can become you. To restore it, choose <b>Restore a backup</b> when setting up Kant.
-          </p>
-          <div className="k-cell" style={{ padding: '6px 0' }}>
+        <SheetHero icon={<Doc size={30} />} title="An encrypted backup">
+          One file with your identity, contacts and messages. Anyone with the file <b>and</b> your password can become you — keep it somewhere safe.
+        </SheetHero>
+        <Section foot={<>To restore it, choose <b>I already use Kant</b> → <b>Restore a backup</b> when setting up Kant.</>}>
+          <div className="k-cell">
             <span className="k-cell-body"><span className="k-cell-label">Include photos and files</span><span className="k-cell-sub">Makes the backup larger</span></span>
             <Switch label="Include photos and files" checked={includeFiles} onChange={setIncludeFiles} />
           </div>
-          <input className="k-field" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            placeholder="Your password" aria-label="Your password" autoComplete="current-password" style={{ margin: '12px 0' }} />
-          {error && <p className="k-error" role="alert"><Alert size={16} />{error}</p>}
-          <button type="button" className="k-btn k-btn-primary k-btn-block" disabled={busy || !password} onClick={() => { void save(); }}>
-            {busy ? <><Spinner size={18} /> Encrypting…</> : <><Doc size={18} /> Save backup</>}
-          </button>
-        </div>
+          <div className="k-cell">
+            <input className="k-cell-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="Your password" aria-label="Your password" autoComplete="current-password" />
+          </div>
+        </Section>
+        {error && <p className="k-error k-sheet-error" role="alert"><Alert size={16} />{error}</p>}
+      </div>
+      <div className="k-sheet-foot">
+        <button type="button" className="k-btn k-btn-primary k-btn-block" disabled={busy || !password} onClick={() => { void save(); }}>
+          {busy ? <><Spinner size={18} /> Encrypting…</> : 'Save backup'}
+        </button>
       </div>
     </Sheet>
   );
@@ -116,18 +119,23 @@ export function MoveOutSheet({ onClose }: { onClose: () => void }) {
       <div className="k-sheet-body">
         <div className="k-sheet-pad">
           {phase === 'intro' && (
-            <>
-              <p className="k-footnote" style={{ marginBottom: 16 }}>
-                Your identity, contacts, chats and files move to the new phone, directly and end-to-end encrypted.
-                <b> When it’s done, this phone is erased</b> — the same account can’t run on two phones.
-              </p>
-              <ol className="k-footnote" style={{ paddingLeft: 20, marginBottom: 16 }}>
-                <li>On the new phone, install Kant and choose <b>Move from your other phone</b>.</li>
-                <li>Scan the code it shows.</li>
-                <li>Check both phones show the same 6 digits, and confirm on the new one.</li>
-              </ol>
-              <button type="button" className="k-btn k-btn-primary k-btn-block" onClick={() => setPhase('scan')}>Continue</button>
-            </>
+            <div className="k-sheet-unpad">
+              <SheetHero icon={<Refresh size={30} />} tone="ok" title="Bring everything with you">
+                Everything moves directly to the new phone, end-to-end encrypted. <b>When it’s done, this phone is erased</b> — the same account can’t run on two phones.
+              </SheetHero>
+              <Section>
+                {[
+                  <>On the new phone, install Kant and choose <b>I already use Kant</b> → <b>Move from your other phone</b>.</>,
+                  <>Scan the code it shows.</>,
+                  <>Check both phones show the same 6 digits, and confirm on the new one.</>,
+                ].map((step, i) => (
+                  <div key={i} className="k-cell k-step"><span className="k-step-n">{i + 1}</span><span className="k-cell-body">{step}</span></div>
+                ))}
+              </Section>
+              <div className="k-sheet-pad">
+                <button type="button" className="k-btn k-btn-primary k-btn-block" onClick={() => setPhase('scan')}>Continue</button>
+              </div>
+            </div>
           )}
           {phase === 'scan' && (
             <>

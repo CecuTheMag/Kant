@@ -368,7 +368,7 @@ export function MoveInScreen({ receive, onBack }: { receive: ReceiveMove; onBack
           {phase === 'starting' && <p className="k-onboard-lede"><Spinner size={18} /> Getting ready…</p>}
           {phase === 'code' && (
             <>
-              <p className="k-onboard-lede">On your other phone open Kant → <b>Settings</b> → <b>Move to a new phone</b>, and scan this code.</p>
+              <p className="k-onboard-lede">On your other phone open Kant → <b>Settings</b> → <b>Backup &amp; Transfer</b> → <b>Move to a new phone</b>, and scan this code.</p>
               <div className="k-move-qr"><QRCodeSVG value={code} level="L" marginSize={0} bgColor="#ffffff" fgColor="#1d1d1f" aria-label="Move code" /></div>
               <button type="button" className="k-btn k-btn-plain" onClick={() => { void copyText(code); setCopied(true); }}>
                 {copied ? <><Check size={18} /> Copied</> : <><Copy size={18} /> Copy code instead</>}

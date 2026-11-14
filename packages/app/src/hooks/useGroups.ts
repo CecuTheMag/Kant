@@ -908,6 +908,27 @@ export function useGroups(
     if (selectedGroupRef.current?.id === group.id) setGroupMessages(merged);
   }
 
+  // ── Newest message of every group (chat-list previews) ───────────────────
+
+  /**
+   * Reads each group's stored tail and decrypts only that, so the chat list
+   * can show previews straight after unlock without opening any group.
+   */
+  async function lastMessages(): Promise<Record<string, PlainGroupMessage>> {
+    const identity = identityRef.current;
+    if (!identity) return {};
+    const out: Record<string, PlainGroupMessage> = {};
+    for (const group of groups) {
+      try {
+        const rows = (await getGroupMessages(group.id)).slice(-30);
+        const plain = await rowsToThread(rows, group, identity, () => []);
+        const last = plain[plain.length - 1];
+        if (last) out[group.id] = last;
+      } catch { /* an unreadable group just keeps its member count */ }
+    }
+    return out;
+  }
+
   // ── Send a group message ──────────────────────────────────────────────────
 
   async function sendToGroup(text: string, replyTo?: { id: string; from: string; text: string }) {
@@ -1294,7 +1315,7 @@ export function useGroups(
     expiryTtl, setExpiryTtl,
     onlineMembers, unreadCounts, keyDistStatus,
     loadGroups, startGroupHandler, handleIncomingMsg,
-    createNewGroup, selectGroup, sendToGroup, sendFileToGroup, editGroupMessage, reactGroupMessage, deleteGroupMessage, handleIncomingFile,
+    createNewGroup, selectGroup, lastMessages, sendToGroup, sendFileToGroup, editGroupMessage, reactGroupMessage, deleteGroupMessage, handleIncomingFile,
     removeMember, leaveGroup,
     setSelectedGroup, updateMemberAddr,
   };

@@ -71,7 +71,7 @@
   --ok-tint: rgba(48, 209, 88, 0.16);
   --warn: #ff9f0a;
   --warn-tint: rgba(255, 159, 10, 0.16);
-  --bar-bg: rgba(18, 18, 20, 0.78);
+  --bar-bg: rgba(0, 0, 0, 0.78);
   --menu-bg: rgba(44, 44, 46, 0.86);
   --backdrop: rgba(0, 0, 0, 0.55);
   --shadow-sheet: 0 20px 60px rgba(0, 0, 0, 0.6);
@@ -348,21 +348,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .k-status.is-warn { background: var(--warn-tint); color: var(--warn); }
 .k-status.is-warn b { color: var(--warn); }
 
-.k-requests-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: calc(100% - 32px);
-  margin: 0 16px 8px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--accent-tint);
-  color: var(--accent);
-  font-size: 16px;
-  font-weight: 600;
-  text-align: left;
-}
-.k-requests-row .k-count { margin-left: auto; }
+.k-requests-icon { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: var(--accent-tint); color: var(--accent); }
 
 /* ── Chat rows ────────────────────────────────────────────────────── */
 
@@ -475,7 +461,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .k-empty-icon {
   width: 72px;
   height: 72px;
-  border-radius: 22px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--accent-tint);
@@ -502,6 +488,14 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .k-conv-name { font-size: 17px; font-weight: 600; letter-spacing: -0.018em; display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-conv-sub { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .k-conv-sub.is-online { color: var(--ok); }
+/* Phones: avatar over name, centred, like a contact card you can tap. */
+.k-conv-head.is-centered { display: grid; grid-template-columns: 48px 1fr 48px; min-height: calc(66px + var(--safe-top)); padding-bottom: 5px; }
+.k-conv-head.is-centered .k-conv-who { flex-direction: column; gap: 3px; padding: 4px 10px 3px; justify-self: center; max-width: 100%; text-align: center; }
+.k-conv-head.is-centered .k-conv-name { font-size: 12px; font-weight: 500; letter-spacing: 0; gap: 3px; justify-content: center; }
+.k-conv-name-text { overflow: hidden; text-overflow: ellipsis; }
+.k-conv-chev { color: var(--text-3); flex-shrink: 0; }
+/* The dot on the avatar says "online"; the line of text stays for screen readers. */
+.k-conv-head.is-centered .k-conv-sub { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
 .k-thread {
   flex: 1;
@@ -512,7 +506,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   display: flex;
   flex-direction: column;
 }
-.k-thread-inner { margin-top: auto; display: flex; flex-direction: column; width: 100%; max-width: 820px; margin-left: auto; margin-right: auto; }
+.k-thread-inner { isolation: isolate; margin-top: auto; display: flex; flex-direction: column; width: 100%; max-width: 820px; margin-left: auto; margin-right: auto; }
 @media (min-width: 768px) { .k-thread { padding: 16px 24px 10px; } }
 
 .k-e2e {
@@ -530,7 +524,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .k-e2e svg { display: inline-block; vertical-align: -2px; margin-right: 4px; }
 .k-e2e button { color: var(--accent); font-weight: 600; font-size: 13px; }
 
-.k-day { align-self: center; margin: 14px 0 8px; font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: 0.01em; }
+.k-day { align-self: center; margin: 16px 0 8px; font-size: 12px; font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+.k-day b { font-weight: 600; }
 
 .k-msg { display: flex; flex-direction: column; margin-top: 8px; max-width: min(78%, 560px); position: relative; }
 .k-msg.is-grouped { margin-top: 2px; }
@@ -559,6 +554,16 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .k-msg.in:not(.is-last) .k-bubble { border-bottom-left-radius: 6px; }
 .k-msg.in.is-grouped .k-bubble { border-top-left-radius: 6px; }
 .k-msg.is-failed .k-bubble { opacity: 0.6; }
+/* Tails: the last bubble of a run points at who said it. */
+.k-msg.is-last .k-bubble:not(.has-image):not(.is-deleted)::before,
+.k-msg.is-last .k-bubble:not(.has-image):not(.is-deleted)::after { content: ""; position: absolute; bottom: 0; height: 22px; z-index: -1; pointer-events: none; }
+.k-msg.out.is-last .k-bubble:not(.has-image):not(.is-deleted)::before { right: -7px; width: 20px; background: var(--bubble-out); border-bottom-left-radius: 16px 14px; }
+.k-msg.out.is-last .k-bubble:not(.has-image):not(.is-deleted)::after { right: -26px; width: 26px; background: var(--bg-chat); border-bottom-left-radius: 10px; }
+.k-msg.in.is-last .k-bubble:not(.has-image):not(.is-deleted)::before { left: -7px; width: 20px; background: var(--bubble-in); border-bottom-right-radius: 16px 14px; }
+.k-msg.in.is-last .k-bubble:not(.has-image):not(.is-deleted)::after { left: -26px; width: 26px; background: var(--bg-chat); border-bottom-right-radius: 10px; }
+.k-msg.out.is-last .k-bubble:not(.has-image) { border-bottom-right-radius: 19px; }
+.k-msg.in.is-last .k-bubble:not(.has-image) { border-bottom-left-radius: 19px; }
+@media (max-width: 767px) { .k-thread { padding-left: 16px; padding-right: 16px; } }
 @keyframes k-bubble-in {
   from { opacity: 0; transform: translateY(6px) scale(0.98); }
   to { opacity: 1; transform: none; }
@@ -1193,20 +1198,44 @@ textarea.k-field { padding: 14px 16px; min-height: 96px; resize: none; line-heig
   100% { opacity: 0; transform: translate(-50%, -4px); }
 }
 
-/* Lightbox */
-.k-lightbox {
+/* Photo viewer */
+.k-photo {
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: rgba(0, 0, 0, 0.92);
-  display: grid;
-  place-items: center;
-  padding: calc(56px + var(--safe-top)) 12px calc(56px + var(--safe-bottom));
+  background: rgba(0, 0, 0, var(--dim, 1));
   animation: k-fade 0.2s var(--ease) both;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  color: #fff;
 }
-.k-lightbox img { max-width: 100%; max-height: 100%; border-radius: 8px; object-fit: contain; }
-.k-lightbox-bar { position: fixed; top: calc(8px + var(--safe-top)); left: 8px; right: 8px; display: flex; justify-content: space-between; }
-.k-lightbox-bar button { color: #fff; }
+.k-photo-stage { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
+.k-photo-stage img { max-width: 100%; max-height: 100%; object-fit: contain; animation: k-photo-in 0.32s var(--spring) both; will-change: transform; }
+@keyframes k-photo-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+.k-photo-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  transition: opacity 0.2s var(--ease);
+}
+.k-photo-bar.is-top { top: 0; min-height: calc(56px + var(--safe-top)); padding-top: var(--safe-top); }
+.k-photo-bar.is-bottom { bottom: 0; justify-content: space-around; padding-bottom: var(--safe-bottom); min-height: calc(64px + var(--safe-bottom)); }
+.k-photo.is-bare .k-photo-bar, .k-photo.is-dragging .k-photo-bar { opacity: 0; pointer-events: none; }
+.k-photo-bar .k-icon-btn { color: #fff; }
+.k-photo-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.k-photo-title b { font-size: 15px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-photo-title span { font-size: 12px; opacity: 0.7; }
+.k-photo-spacer { width: 44px; flex-shrink: 0; }
+.k-photo-action { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 88px; padding: 8px 12px; color: #fff; font-size: 11.5px; font-weight: 500; }
+.k-photo-action:active:not(:disabled) { opacity: 0.55; }
+.k-photo-action:disabled { opacity: 0.5; }
 
 /* File preview */
 .k-preview-actions { display: flex; align-items: center; gap: 2px; }
@@ -1816,3 +1845,59 @@ button.k-md-image { color: var(--accent); }
 }
 .k-progress { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; margin: 12px 0; }
 .k-progress > i { display: block; height: 100%; background: var(--accent); transition: width 0.3s var(--ease); }
+
+/* ── Focused message (long-press) ─────────────────────────────────── */
+.k-focus {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  animation: k-fade 0.2s var(--ease) both;
+}
+.k-focus-msg { position: fixed; margin: 0; max-width: none; overflow: hidden; border-radius: 19px; animation: k-focus-lift 0.38s var(--spring) both; }
+.k-focus-msg .k-bubble { width: 100%; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22); }
+.k-focus-msg .k-bubble::before, .k-focus-msg .k-bubble::after { display: none; }
+@keyframes k-focus-lift { from { transform: translateY(var(--from, 0px)); } 60% { transform: scale(1.03); } to { transform: none; } }
+.k-focus-bar { border-radius: 26px; padding: 0; transform-origin: bottom center; }
+.k-focus-bar .k-react-bar { border-bottom: 0; padding: 7px 9px; }
+.k-focus-actions { min-width: 250px; transform-origin: top center; animation-delay: 0.04s; }
+
+/* ── Attach tray ──────────────────────────────────────────────────── */
+.k-attach-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px 0; padding: 18px 16px calc(22px + var(--safe-bottom)); }
+.k-attach-tray button { display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 12px; color: var(--text); }
+.k-attach-tile { width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #007aff; transition: transform 0.2s var(--spring); }
+.k-attach-tray button:active .k-attach-tile { transform: scale(0.92); }
+.k-attach-tile.gray { background: #8e8e93; }
+.k-attach-tile.indigo { background: #5856d6; }
+.k-attach-tile.green { background: #34c759; }
+.k-attach-tile.orange { background: #ff9500; }
+
+/* ── Message request card ─────────────────────────────────────────── */
+.k-request { max-width: 820px; margin: 0 auto; padding: 16px; border-radius: 18px; background: var(--surface-2); display: flex; flex-direction: column; gap: 10px; text-align: center; }
+:root[data-theme="dark"] .k-request { background: var(--surface); }
+.k-request h3 { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; }
+.k-request p { font-size: 14px; line-height: 1.4; color: var(--text-2); margin-top: -6px; }
+.k-request .k-field { min-height: 46px; background: var(--bg); text-align: center; }
+.k-request .k-btn-secondary { background: var(--bg); }
+
+/* ── Settings pages ───────────────────────────────────────────────── */
+.k-page-in { animation: k-push 0.42s var(--spring) both; }
+.k-profile-cell { padding: 14px 16px; gap: 14px; }
+.k-profile-cell .k-cell-label { font-family: var(--font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.k-cell-status { display: inline-flex; align-items: center; gap: 7px; max-width: none; }
+.k-cell-stack { flex-direction: column; align-items: stretch; gap: 10px; padding-bottom: 14px; }
+.k-cell-stack .k-seg button { font-size: 18px; min-height: 36px; }
+.k-cell-icon.blue { background: #007aff; }
+
+/* ── Sheets that do one job ───────────────────────────────────────── */
+.k-hero-symbol.is-compact { width: 64px; height: 64px; margin-bottom: 6px; }
+.k-sheet-hero b { color: var(--text); font-weight: 600; }
+.k-sheet-error { margin: -16px 32px 20px; }
+.k-sheet-unpad { margin: 0 -20px; }
+.k-step { align-items: flex-start; font-size: 15px; line-height: 1.4; }
+.k-step b { font-weight: 600; }
+.k-step-n { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: var(--accent); color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.k-sas { background: var(--surface); }
+:root[data-theme="dark"] .k-sheet .k-sas { background: #2c2c2e; }

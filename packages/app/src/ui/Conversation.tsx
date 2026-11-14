@@ -10,17 +10,20 @@ import type { ReplyRef, VoiceRecording } from './core/store';
 import type { Contact, MessageAttachment, NodeStatus, PlainMessage } from './core/types';
 import { dayLabel, fileSize, formatTime, expiryLabel } from './core/format';
 import {
-  Alert, ArrowUp, Block, ChevronLeft, ChevronUp, Close, Copy, Doc, DocText, Download, Info, Lock, LockFill, Mic, Pencil, Plus,
-  Reply, ShieldAlert, Spinner, TableIcon, Trash, VerifiedSeal, Check, Clock, More, Photo, Smile,
+  Alert, ArrowUp, Block, ChevronLeft, ChevronRight, ChevronUp, Close, Copy, Doc, Download, Info, Lock, LockFill, Mic, Pencil, Plus,
+  Reply, ShieldAlert, Spinner, Trash, VerifiedSeal, Check, Clock, More, Smile,
 } from './icons';
 import { CAP_MESSAGE_DELETE } from '@kant/core';
 import { openExternalUrl } from '../lib/fileActions';
-import { ChatText, DeleteSheet, FormatBar, ReactionBar, ReactionChips, useBubbleGestures } from './chat/ChatParts';
+import { AttachTray, ChatText, DeleteSheet, FormatBar, MessageFocus, ReactionBar, ReactionChips, useBubbleGestures } from './chat/ChatParts';
+import { PhotoViewer } from './PhotoViewer';
+import type { PhotoRef } from './PhotoViewer';
+import { select, tap } from '../lib/haptics';
 import { applyFormat, formatForShortcut, plainText, toggledReaction } from './chat/chatLogic';
 import type { FormatKind } from './chat/chatLogic';
 import { useChatPrefs } from './chat/prefs';
 import { copyText, displayName, isTouch, seenLabel, shortId, useLongPress } from './lib';
-import { Avatar, Confirm, Menu, useBackHandler, useToast } from './parts';
+import { Avatar, Confirm, Menu, useToast } from './parts';
 import type { MenuItem } from './parts';
 import { FilePreview } from './FilePreview';
 import { FileEditor } from './FileEditor';
@@ -69,7 +72,8 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
   const [pendingLink, setPendingLink] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<PlainMessage | null>(null);
   const prefs = useChatPrefs();
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<PhotoRef | null>(null);
+  const [focus, setFocus] = useState<{ source: HTMLElement; out: boolean; items: MenuItem[]; header?: ReactNode } | null>(null);
   const [preview, setPreview] = useState<MessageAttachment | null>(null);
   const [creating, setCreating] = useState<'table' | 'document' | null>(null);
   const [autoplayId, setAutoplayId] = useState<string | null>(null);
@@ -138,7 +142,7 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
       .catch(() => toast('Couldn’t react to that message', <Alert size={18} />));
   };
   const reactionBar = (m: PlainMessage) => (
-    <ReactionBar current={m.reactions?.me} onPick={(emoji) => { setMenu(null); react(m, emoji); }} />
+    <ReactionBar current={m.reactions?.me} onPick={(emoji) => { setMenu(null); setFocus(null); select(); react(m, emoji); }} />
   );
 
   const openLink = (href: string) => {
@@ -162,7 +166,7 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
     setEditing({ id: m.id, text: m.text });
   };
 
-  const openMenu = (m: PlainMessage, at: { x: number; y: number }) => {
+  const openMenu = (m: PlainMessage, at: { x: number; y: number }, bubble?: HTMLElement | null) => {
     const items: MenuItem[] = [];
     if (m.id.startsWith('pending-')) return;
     if (!m.deletedAt) {
@@ -172,13 +176,18 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
       if (m.status === 'failed' && isDm && m.text) items.push({ label: 'Retry now', icon: <ArrowUp size={20} />, onSelect: () => retry(m) });
     }
     if (!m.system) items.push({ label: 'Delete', icon: <Trash size={20} />, danger: true, onSelect: () => setDeleting(m) });
-    if (items.length) setMenu({ at, items, header: canReact(m) ? reactionBar(m) : undefined });
+    if (!items.length) return;
+    const header = canReact(m) ? reactionBar(m) : undefined;
+    // Phones lift the message into focus; a mouse gets a menu at the pointer.
+    if (isTouch() && bubble) { tap(); setFocus({ source: bubble, out: m.from === 'me', items, header }); }
+    else setMenu({ at, items, header });
   };
   const openReactions = (m: PlainMessage, at: { x: number; y: number }) => {
     if (canReact(m)) setMenu({ at, items: [], header: reactionBar(m) });
   };
 
   const send = (text: string) => {
+    tap();
     if (isDm) store.send(contact!.id!, text, replyTo ?? undefined);
     else store.sendGroup(target.groupId, text, replyTo ?? undefined);
     setReplyTo(null);
@@ -220,21 +229,29 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
     ? (isRequest ? 'Not in your contacts' : seenLabel(contact!) || 'Tap for contact info')
     : `${group?.memberKeys.length ?? 0} members`;
 
+  /* Green means online — never "not in your contacts". */
+  const subOnline = isDm && !isRequest && !!contact!.online;
+
   return (
     <div className="k-pane">
-      <header className="k-bar k-conv-head is-lined">
+      <header className={`k-bar k-conv-head is-lined${showBack ? ' is-centered' : ''}`}>
         {showBack && (
           <button type="button" className="k-back" onClick={onBack} aria-label="Back to chats"><ChevronLeft size={26} /></button>
         )}
         <button type="button" className="k-conv-who" onClick={onInfo} aria-label={`${title} — info`}>
-          <Avatar name={isDm ? contact!.nickname ?? '' : ''} seed={isDm ? contact!.publicKeyHex : target.groupId} size={38}
-            group={!isDm} online={isDm && contact!.online} />
+          <Avatar name={isDm ? contact!.nickname ?? '' : ''} seed={isDm ? contact!.publicKeyHex : target.groupId} size={showBack ? 36 : 38}
+            group={!isDm} online={subOnline} />
           <span style={{ minWidth: 0 }}>
-            <span className="k-conv-name">{title}{contact?.trust === 'verified' && <VerifiedSeal size={15} className="k-verified" />}</span>
-            <span className={`k-conv-sub${isDm && contact!.online ? ' is-online' : ''}`}>{sub}</span>
+            <span className="k-conv-name">
+              <span className="k-conv-name-text">{title}</span>
+              {contact?.trust === 'verified' && <VerifiedSeal size={showBack ? 12 : 15} className="k-verified" />}
+              {showBack && <ChevronRight size={9} className="k-conv-chev" />}
+            </span>
+            <span className={`k-conv-sub${subOnline ? ' is-online' : ''}`}>{sub}</span>
           </span>
         </button>
-        <button type="button" className="k-icon-btn" onClick={onInfo} aria-label="Info"><Info size={23} /></button>
+        {showBack ? <span className="k-conv-balance" aria-hidden="true" />
+          : <button type="button" className="k-icon-btn" onClick={onInfo} aria-label="Info"><Info size={23} /></button>}
       </header>
 
       {contact?.trust === 'changed' && !ackKeyChange && (
@@ -277,7 +294,8 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
                 isEditing={editing?.id === m.id}
                 autoPlay={autoplayId === m.id}
                 onVoiceEnded={() => playNextAfter(m.id)}
-                onMenu={(at) => openMenu(m, at)} onOpenImage={setLightbox} onOpenFile={setPreview}
+                onMenu={(at, bubble) => openMenu(m, at, bubble)} onOpenFile={setPreview}
+                onOpenImage={(src, attachment) => setPhoto({ src, attachment, who: nameOf(m.from), when: `${dayLabel(m.ts)}, ${formatTime(m.ts)}` })}
                 onReactMenu={canReact(m) ? (at) => openReactions(m, at) : undefined}
                 onReact={canReact(m) ? (emoji) => react(m, emoji) : undefined}
                 onReply={!isRequest && !m.deletedAt && !m.id.startsWith('pending-') ? () => startReply(m) : undefined}
@@ -299,6 +317,7 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
       )}
 
       {menu && <Menu at={menu.at} items={menu.items} header={menu.header} onClose={() => setMenu(null)} />}
+      {focus && <MessageFocus source={focus.source} out={focus.out} items={focus.items} header={focus.header} onClose={() => setFocus(null)} />}
       {deleting && (
         <DeleteSheet
           forEveryone={deleting.from === 'me' && !deleting.deletedAt && !isRequest && peerCanDelete && !deleting.id.startsWith('pending-')}
@@ -318,7 +337,7 @@ export function Conversation({ target, status, onBack, onInfo, onVerify, showBac
               .catch(() => toast('This link can’t be opened', <Alert size={18} />));
           }} />
       )}
-      {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
+      {photo && <PhotoViewer photo={photo} onClose={() => setPhoto(null)} />}
       {preview && <FilePreview attachment={preview} onClose={() => setPreview(null)} onSendEdited={isRequest ? undefined : sendFile} />}
       {creating && (
         <FileEditor source={NEW_FILES[creating].source} name={NEW_FILES[creating].name} title={NEW_FILES[creating].title} isNew
@@ -336,7 +355,8 @@ function MessageRow({
 }: {
   m: PlainMessage; grouped: boolean; last: boolean; newDay: boolean; senderName?: string; showStatus: boolean;
   isEditing: boolean; autoPlay: boolean; onVoiceEnded: () => void;
-  onMenu: (at: { x: number; y: number }) => void; onOpenImage: (src: string) => void;
+  onMenu: (at: { x: number; y: number }, bubble?: HTMLElement | null) => void;
+  onOpenImage: (src: string, attachment: MessageAttachment) => void;
   onOpenFile: (attachment: MessageAttachment) => void; onRetry?: () => void;
   /** Open just the reaction bar (desktop hover button). */
   onReactMenu?: (at: { x: number; y: number }) => void;
@@ -349,7 +369,9 @@ function MessageRow({
 }) {
   const out = m.from === 'me';
   const prefs = useChatPrefs();
-  const { pressed, handlers, justFired } = useLongPress(onMenu);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const openMenu = (at: { x: number; y: number }) => onMenu(at, bubbleRef.current);
+  const { pressed, handlers, justFired } = useLongPress(openMenu);
   const gestures = useBubbleGestures({
     swipe: prefs.swipeReply && !!onReply,
     doubleTap: prefs.doubleTapReact && !!onReact,
@@ -371,7 +393,7 @@ function MessageRow({
 
   return (
     <>
-      {newDay && <div className="k-day">{dayLabel(m.ts)}</div>}
+      {newDay && <div className="k-day"><b>{dayLabel(m.ts)}</b> {formatTime(m.ts)}</div>}
       {senderName && <div className="k-sender">{senderName}</div>}
       <div className={`k-msg ${out ? 'out' : 'in'}${grouped ? ' is-grouped' : ''}${last ? ' is-last' : ''}${m.status === 'failed' && !m.deletedAt ? ' is-failed' : ''}${isEditing ? ' is-editing' : ''}`}>
         {gestures.offset > 0 && (
@@ -381,18 +403,18 @@ function MessageRow({
         )}
         <div className="k-bubble-row" style={gestures.offset ? { transform: `translateX(${gestures.offset}px)`, transition: 'none' } : undefined}>
           {m.deletedAt ? (
-            <div className="k-bubble is-deleted" {...bubbleHandlers}
-              onContextMenu={(e) => { e.preventDefault(); if (!justFired()) onMenu({ x: e.clientX, y: e.clientY }); }}>
+            <div ref={bubbleRef} className="k-bubble is-deleted" {...bubbleHandlers}
+              onContextMenu={(e) => { e.preventDefault(); if (!justFired()) openMenu({ x: e.clientX, y: e.clientY }); }}>
               <Trash size={15} /> {out ? 'You deleted this message' : 'This message was deleted'}
             </div>
           ) : (
           <div className={`k-bubble${image && !m.text && !m.replyTo ? ' has-image' : ''}${voiceOnly ? ' has-voice' : ''}${pressed ? ' is-pressed' : ''}`}
-            {...bubbleHandlers}
-            onContextMenu={(e) => { e.preventDefault(); if (!justFired()) onMenu({ x: e.clientX, y: e.clientY }); }}>
+            ref={bubbleRef} {...bubbleHandlers}
+            onContextMenu={(e) => { e.preventDefault(); if (!justFired()) openMenu({ x: e.clientX, y: e.clientY }); }}>
             {m.replyTo && (
               <span className="k-quote"><b>{quoteAuthor ?? m.replyTo.from}</b><span>{m.replyTo.text ? plainText(m.replyTo.text) : <i>Deleted message</i>}</span></span>
             )}
-            {image && <ImageAttachment attachment={image} onOpen={onOpenImage} />}
+            {image && <ImageAttachment attachment={image} onOpen={(src) => { if (!justFired()) onOpenImage(src, image); }} />}
             {audio.map((a) => (
               <VoiceNote key={a.fileId ?? a.name} attachment={a} out={out} autoPlay={autoPlay && !!a.voice}
                 onEnded={a.voice ? onVoiceEnded : undefined} ignoreClick={justFired}
@@ -527,23 +549,6 @@ function FileAttachment({ attachment, onOpen }: { attachment: MessageAttachment;
   );
 }
 
-function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
-  useBackHandler(onClose);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  return (
-    <div className="k-lightbox" onClick={onClose} role="dialog" aria-label="Photo">
-      <div className="k-lightbox-bar">
-        <button type="button" className="k-icon-btn" onClick={onClose} aria-label="Close"><Close size={24} /></button>
-      </div>
-      <img src={src} alt="" onClick={(e) => e.stopPropagation()} />
-    </div>
-  );
-}
-
 /* ── Request bar ──────────────────────────────────────────────────── */
 
 function RequestBar({ contact }: { contact: Contact }) {
@@ -552,14 +557,13 @@ function RequestBar({ contact }: { contact: Contact }) {
   const [name, setName] = useState('');
   return (
     <div className="k-composer">
-      <div className="k-composer-inner" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-        <p className="k-footnote k-muted k-center">
-          <b style={{ color: 'var(--text)' }}>{displayName(contact)}</b> isn’t in your contacts. Accept to reply — only do this if you know who they are.
-        </p>
-        <input className="k-field" style={{ minHeight: 44 }} value={name} onChange={(e) => setName(e.target.value)}
+      <div className="k-request">
+        <h3>{displayName(contact)} wants to message you</h3>
+        <p>They aren’t in your contacts. Accept to reply — only do this if you know who they are.</p>
+        <input className="k-field" value={name} onChange={(e) => setName(e.target.value)}
           placeholder="Give them a name (optional)" aria-label="Name" maxLength={40} />
         <div className="k-callout-actions">
-          <button type="button" className="k-btn k-btn-danger" onClick={() => { store.blockContact(contact.id!, true); toast('Blocked', <Block size={18} />); }}>Block</button>
+          <button type="button" className="k-btn k-btn-secondary is-danger-text" onClick={() => { store.blockContact(contact.id!, true); toast('Blocked', <Block size={18} />); }}>Block</button>
           <button type="button" className="k-btn k-btn-primary" onClick={() => { store.acceptRequest(contact.id!, name); toast('Added to contacts', <Check size={18} />); }}>Accept</button>
         </div>
       </div>
@@ -592,7 +596,8 @@ function Composer({
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
-  const [attachMenu, setAttachMenu] = useState<{ x: number; y: number } | null>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const [attaching, setAttaching] = useState(false);
   const canRecord = useMemo(canRecordVoice, []);
   const prefs = useChatPrefs();
   const [hasSelection, setHasSelection] = useState(false);
@@ -728,11 +733,12 @@ function Composer({
           </button>
         ) : (
           <button type="button" className="k-attach-btn" aria-label="Attach" disabled={!connected || !!editing || capturing}
-            onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setAttachMenu({ x: r.left, y: r.top - 206 }); }}>
+            onClick={() => setAttaching(true)}>
             <Plus size={20} stroke={2.4} />
           </button>
         )}
         <input ref={photoRef} type="file" accept="image/*" hidden onChange={onFiles} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={onFiles} />
         <input ref={fileRef} type="file" hidden onChange={onFiles} />
         {recording ? (
           <RecordingPanel capture={capture} onStop={capture.stopToReview} />
@@ -780,13 +786,13 @@ function Composer({
           </button>
         </div>
       </div>
-      {attachMenu && (
-        <Menu at={attachMenu} onClose={() => setAttachMenu(null)} items={[
-          { label: 'Photo', icon: <Photo size={20} />, onSelect: () => pick(photoRef.current) },
-          { label: 'File', icon: <Doc size={20} />, onSelect: () => pick(fileRef.current) },
-          { label: 'New table', icon: <TableIcon size={20} />, onSelect: () => onCreate('table') },
-          { label: 'New document', icon: <DocText size={20} />, onSelect: () => onCreate('document') },
-        ]} />
+      {attaching && (
+        <AttachTray onClose={() => setAttaching(false)} onPick={(kind) => {
+          if (kind === 'photo') pick(photoRef.current);
+          else if (kind === 'camera') pick(cameraRef.current);
+          else if (kind === 'file') pick(fileRef.current);
+          else onCreate(kind);
+        }} />
       )}
     </div>
   );

@@ -192,6 +192,19 @@ export function SheetHead({ title, left, right }: { title?: ReactNode; left?: Re
   );
 }
 
+/** The top of a sheet that does one job: a symbol, what it is, and one or two sentences. */
+export function SheetHero({ icon, tone, title, children }: {
+  icon: ReactNode; tone?: 'ok' | 'danger'; title: string; children?: ReactNode;
+}) {
+  return (
+    <div className="k-sheet-hero">
+      <div className={`k-hero-symbol is-compact${tone ? ` is-${tone}` : ''}`} aria-hidden="true">{icon}</div>
+      <h2 className="k-title-2">{title}</h2>
+      {children && <p>{children}</p>}
+    </div>
+  );
+}
+
 /* ── Grouped lists ────────────────────────────────────────────────── */
 
 export function Section({ title, foot, children, icons }: {
