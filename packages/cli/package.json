@@ -16,7 +16,7 @@
     "@kant/core": "workspace:*",
     "@multiformats/multiaddr": "13.0.3",
     "blessed": "^0.1.81",
-    "libp2p": "3.3.11",
+    "libp2p": "3.5.1",
     "libsodium-wrappers-sumo": "0.8.2"
   },
   "devDependencies": {

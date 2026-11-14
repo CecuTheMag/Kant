@@ -19,7 +19,7 @@
     "@libp2p/peer-id": "6.0.15",
     "@libp2p/websockets": "10.1.21",
     "@libp2p/yamux": "8.0.3",
-    "libp2p": "3.3.11",
+    "libp2p": "3.5.1",
     "libsodium-wrappers-sumo": "0.8.2",
     "pino": "9.14.0",
     "prom-client": "15.1.3"
